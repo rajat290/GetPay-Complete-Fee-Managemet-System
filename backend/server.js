@@ -1,5 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
 const cors = require("cors");
 const connectDB = require("./config/db");
 
@@ -8,8 +9,11 @@ const Student = require("./models/Student");
 
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
+const feeRoutes = require("./routes/feeRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
-dotenv.config();
+
+
 connectDB();
 
 const app = express();
@@ -19,6 +23,8 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/fees", feeRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Default route
 app.get("/", (req, res) => {

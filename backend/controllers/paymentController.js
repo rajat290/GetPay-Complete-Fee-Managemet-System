@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const razorpayInstance = require("../config/razorpay");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
+const generateReceipt = require("../utils/receiptGenerator");
+const sendReceiptEmail = require("../utils/emailService");
 
 // 1. Create Razorpay Order
 exports.createOrder = async (req, res) => {
@@ -69,3 +71,22 @@ exports.verifyPayment = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// if (expectedSignature === razorpay_signature) {
+//   const payment = await Payment.create({
+//     studentId: req.user._id,
+//     assignmentId,
+//     amount: req.body.amount,
+//     mode: "online",
+//     status: "success",
+//     razorpayPaymentId: razorpay_payment_id,
+//     razorpayOrderId: razorpay_order_id,
+//     razorpaySignature: razorpay_signature,
+//   });
+
+//   await FeeAssignment.findByIdAndUpdate(assignmentId, { status: "paid" });
+
+//   const filePath = generateReceipt(req.user, assignmentId, payment);
+//   await sendReceiptEmail(req.user, filePath);
+
+//   return res.json({ success: true, message: "Payment verified & receipt sent!" });
+// }

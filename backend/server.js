@@ -11,6 +11,7 @@ const Student = require("./models/Student");
 const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 
 
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/fees", feeRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Default route
 app.get("/", (req, res) => {

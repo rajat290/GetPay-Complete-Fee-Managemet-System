@@ -9,6 +9,8 @@ import Fees from "./pages/Fees";
 import History from "./pages/History";
 // import PaymentPage from "./pages/PaymentPage";
 import StudentProfile from "./pages/StudentProfile";
+import Receipts from "./pages/Receipts";
+import Notifications from "./pages/Notifications";
 
 import { AuthProvider } from "./context/AuthContext";
 
@@ -25,6 +27,8 @@ function App() {
     <Route path="dashboard" element={<StudentDashboard />} />
     <Route path="fees" element={<Fees />} />
     <Route path="history" element={<History />} />
+    <Route path="/student/receipts" element={<Receipts />} />
+<Route path="/student/notifications" element={<Notifications />} />
   </Route>
   <Route path="/student/profile" element={<StudentProfile />} />
 

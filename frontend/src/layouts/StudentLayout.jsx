@@ -37,6 +37,29 @@ export default function StudentLayout() {
           >
             📜 Fee History
           </Link>
+          <Link
+  to="/student/profile"
+  className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+  onClick={() => setSidebarOpen(false)}
+>
+  👤 Profile
+</Link>
+<Link
+  to="/student/receipts"
+  className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+  onClick={() => setSidebarOpen(false)}
+>
+  🧾 Receipts
+</Link>
+
+<Link
+  to="/student/notifications"
+  className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+  onClick={() => setSidebarOpen(false)}
+>
+  🔔 Notifications
+</Link>
+
         </nav>
       </div>
 

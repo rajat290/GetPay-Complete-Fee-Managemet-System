@@ -8,6 +8,8 @@ import StudentDashboard from "./pages/StudentDashboard";
 import Fees from "./pages/Fees";
 import History from "./pages/History";
 // import PaymentPage from "./pages/PaymentPage";
+import StudentProfile from "./pages/StudentProfile";
+
 import { AuthProvider } from "./context/AuthContext";
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
     <Route path="fees" element={<Fees />} />
     <Route path="history" element={<History />} />
   </Route>
+  <Route path="/student/profile" element={<StudentProfile />} />
+
           {/* <Route path="/payment/:id" element={<PaymentPage />} /> */}
         </Routes>
       </Router>

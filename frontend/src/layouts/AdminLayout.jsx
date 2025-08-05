@@ -31,6 +31,14 @@ export default function AdminLayout() {
           <Link to="/admin/analytics" onClick={() => setSidebarOpen(false)} className="block hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded">
             📈 Analytics
           </Link>
+          <Link
+  to="/admin/students"
+  onClick={() => setSidebarOpen(false)}
+  className="block hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded"
+>
+  👥 Manage Students
+</Link>
+
         </nav>
       </div>
 

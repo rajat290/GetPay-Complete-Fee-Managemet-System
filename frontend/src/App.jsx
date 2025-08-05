@@ -15,8 +15,8 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageStudents from "./pages/admin/ManageStudents";
 import ManageFees from "./pages/admin/ManageFees";
-// import ManagePayments from "./pages/admin/ManagePayments";
-// import Analytics from "./pages/admin/Analytics";
+import ManagePayments from "./pages/admin/ManagePayments";
+import Analytics from "./pages/admin/Analytics";
 
 function App() {
   return (
@@ -59,9 +59,9 @@ function App() {
 
 
 
-    {/* <Route path="payments" element={<ManagePayments />} /> */}
+    <Route path="payments" element={<ManagePayments />} />
 
-    {/* <Route path="analytics" element={<Analytics />} />  */}
+    <Route path="analytics" element={<Analytics />} /> 
   </Route>
 </Routes>
       </Router>

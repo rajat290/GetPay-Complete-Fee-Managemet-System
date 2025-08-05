@@ -20,7 +20,15 @@ mongoose.connect(process.env.MONGO_URI)
       role: "admin",
     });
 
-    await admin.save();
+    const student = new Student({
+      name: "Student User",
+      email: "student@example.com",
+      registrationNo: "STU1001",
+      password: "student123",  // will be auto-hashed
+      role: "student",
+    });
+
+    await student.save();
 
     console.log("🌱 Admin user created successfully!");
     mongoose.connection.close();

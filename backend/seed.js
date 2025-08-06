@@ -17,41 +17,43 @@ mongoose
     await Student.deleteMany();
     await Fee.deleteMany();
 
-    // Create admin
+    // Passwords
+    const studentPassword = await bcrypt.hash("123456", 10);
     const adminPassword = await bcrypt.hash("admin123", 10);
+
+    // Admin user
     await Student.create({
       name: "Admin User",
       email: "admin@example.com",
       password: adminPassword,
       registrationNo: "ADM1001",
       role: "admin",
-      className: "Admin",
+      className: "Administration", // ✅ required field
     });
 
     // Classes list
-    const classes = ["Class A", "Class B", "Class C"];
+    const classes = ["Class 10", "Class 11", "Class 12"];
+    const allStudents = [];
 
-    // Create demo students + fees
-    for (let classIndex = 0; classIndex < classes.length; classIndex++) {
-      const className = classes[classIndex];
-
+    for (let c = 0; c < classes.length; c++) {
       for (let i = 1; i <= 20; i++) {
-        const regNo = `${className.replace(" ", "").toUpperCase()}${1000 + i}`;
-        const studentPassword = await bcrypt.hash("123456", 10);
-
-        const student = await Student.create({
-          name: `${className} Student ${i}`,
-          email: `student${classIndex + 1}_${i}@example.com`,
+        const regNo = `STU${c + 1}${i.toString().padStart(3, "0")}`;
+        const student = new Student({
+          name: `${classes[c]} Student ${i}`,
+          email: `student${c + 1}_${i}@example.com`,
           password: studentPassword,
           registrationNo: regNo,
           role: "student",
-          className,
+          className: classes[c], // ✅ Add className
         });
 
-        // Assign 3 types of fees to each student
+        await student.save();
+        allStudents.push(student);
+
+        // Fees for each student
         await Fee.insertMany([
           {
-            title: "Tuition Fee - Semester 1",
+            title: "Tuition Fee - Term 1",
             category: "Tuition",
             student: student._id,
             amount: 20000,
@@ -59,26 +61,26 @@ mongoose
             status: "pending",
           },
           {
-            title: "Hostel Fee - Semester 1",
+            title: "Hostel Fee - Term 1",
             category: "Hostel",
             student: student._id,
             amount: 5000,
-            dueDate: new Date("2025-08-20"),
+            dueDate: new Date("2025-09-15"),
             status: "pending",
           },
           {
-            title: "Transport Fee - Semester 1",
+            title: "Transport Fee - Term 1",
             category: "Transport",
             student: student._id,
-            amount: 10000,
-            dueDate: new Date("2025-09-10"),
+            amount: 8000,
+            dueDate: new Date("2025-09-20"),
             status: "pending",
           },
         ]);
       }
     }
 
-    console.log("🌱 Demo admin, students, and fees seeded successfully!");
+    console.log(`🌱 Seeded ${allStudents.length} students with demo fees.`);
     mongoose.connection.close();
   })
   .catch((err) => console.error("❌ Seeding error:", err));

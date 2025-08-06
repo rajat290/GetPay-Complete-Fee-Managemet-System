@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle"; // ✅ Added
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,14 +32,6 @@ export default function AdminLayout() {
           <Link to="/admin/analytics" onClick={() => setSidebarOpen(false)} className="block hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded">
             📈 Analytics
           </Link>
-          <Link
-  to="/admin/students"
-  onClick={() => setSidebarOpen(false)}
-  className="block hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded"
->
-  👥 Manage Students
-</Link>
-
         </nav>
       </div>
 
@@ -52,7 +45,10 @@ export default function AdminLayout() {
           >
             ☰
           </button>
-          <h1 className="text-lg font-bold">Admin Dashboard</h1>
+          <h1 className="text-lg font-bold text-gray-800 dark:text-white">
+            Admin Dashboard
+          </h1>
+          <ThemeToggle /> {/* ✅ Dark Mode Toggle */}
         </header>
 
         {/* Page Content */}

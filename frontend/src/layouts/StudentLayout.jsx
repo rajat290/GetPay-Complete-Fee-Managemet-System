@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle"; // ✅ Added
 
 export default function StudentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,50 +17,24 @@ export default function StudentLayout() {
           Student Panel
         </div>
         <nav className="p-4 space-y-4">
-          <Link
-            to="/student/dashboard"
-            className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => setSidebarOpen(false)}
-          >
+          <Link to="/student/dashboard" className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setSidebarOpen(false)}>
             📊 Dashboard
           </Link>
-          <Link
-            to="/student/fees"
-            className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => setSidebarOpen(false)}
-          >
+          <Link to="/student/fees" className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setSidebarOpen(false)}>
             💳 Fees
           </Link>
-          <Link
-            to="/student/history"
-            className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => setSidebarOpen(false)}
-          >
+          <Link to="/student/history" className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setSidebarOpen(false)}>
             📜 Fee History
           </Link>
-          <Link
-  to="/student/profile"
-  className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-  onClick={() => setSidebarOpen(false)}
->
-  👤 Profile
-</Link>
-<Link
-  to="/student/receipts"
-  className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-  onClick={() => setSidebarOpen(false)}
->
-  🧾 Receipts
-</Link>
-
-<Link
-  to="/student/notifications"
-  className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-  onClick={() => setSidebarOpen(false)}
->
-  🔔 Notifications
-</Link>
-
+          <Link to="/student/profile" className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setSidebarOpen(false)}>
+            👤 Profile
+          </Link>
+          <Link to="/student/receipts" className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setSidebarOpen(false)}>
+            🧾 Receipts
+          </Link>
+          <Link to="/student/notifications" className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setSidebarOpen(false)}>
+            🔔 Notifications
+          </Link>
         </nav>
       </div>
 
@@ -73,7 +48,10 @@ export default function StudentLayout() {
           >
             ☰
           </button>
-          <h1 className="text-lg font-bold">Student Dashboard</h1>
+          <h1 className="text-lg font-bold text-gray-800 dark:text-white">
+            Student Dashboard
+          </h1>
+          <ThemeToggle /> {/* ✅ Dark Mode Toggle */}
         </header>
 
         {/* Page Content */}

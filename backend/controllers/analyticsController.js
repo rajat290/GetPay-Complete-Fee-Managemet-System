@@ -1,5 +1,7 @@
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
+const Student = require("../models/Student");
+const Fee = require("../models/Fee");
 
 exports.getAnalytics = async (req, res) => {
   try {
@@ -75,5 +77,46 @@ exports.getPaymentAnalytics = async (req, res) => {
   } catch (error) {
     console.error("Error fetching payment analytics:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getClassAnalytics = async (req, res) => {
+  try {
+    const classes = await Student.distinct("className"); // sab classes ka naam
+
+    const result = [];
+
+    for (const className of classes) {
+      const students = await Student.find({ className });
+      const studentIds = students.map((s) => s._id);
+
+      const totalCollected = await Fee.aggregate([
+        { $match: { student: { $in: studentIds }, status: "paid" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
+
+      const pendingFees = await Fee.aggregate([
+        { $match: { student: { $in: studentIds }, status: "pending" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
+
+      const defaulters = await Fee.countDocuments({
+        student: { $in: studentIds },
+        status: "pending",
+        dueDate: { $lt: new Date() },
+      });
+
+      result.push({
+        className,
+        totalCollected: totalCollected[0]?.total || 0,
+        pendingFees: pendingFees[0]?.total || 0,
+        defaulters,
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error("Error in class analytics:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };

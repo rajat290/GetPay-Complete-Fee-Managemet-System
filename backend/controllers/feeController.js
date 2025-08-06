@@ -4,6 +4,10 @@ const FeeAssignment = require("../models/FeeAssignment");
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -24,6 +28,10 @@ exports.createFee = async (req, res) => {
 // Admin: Assign Fee to a Student
 exports.assignFee = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }

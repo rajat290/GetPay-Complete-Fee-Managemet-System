@@ -12,6 +12,8 @@ const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+app.use("/api/receipts", require("./routes/receiptRoutes"));
+
 
 
 
@@ -27,6 +29,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/fees", feeRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/receipts", receiptRoutes);
+
 
 // Default route
 app.get("/", (req, res) => {

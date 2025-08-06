@@ -12,7 +12,7 @@ const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
-app.use("/api/receipts", require("./routes/receiptRoutes"));
+const receiptRoutes = require("./routes/receiptRoutes");
 
 
 

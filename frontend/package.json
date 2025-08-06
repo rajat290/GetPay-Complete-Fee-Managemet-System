@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
+    "css": "^3.0.0",
     "install": "^0.13.0",
     "lucide-react": "^0.536.0",
     "npm": "^11.5.2",

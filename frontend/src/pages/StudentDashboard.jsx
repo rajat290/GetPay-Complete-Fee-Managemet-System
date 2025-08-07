@@ -21,7 +21,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const feesRes = await api.get("/fees/assigned");
+        const feesRes = await api.get("/fees/my-fees");
         setAssignedFees(feesRes.data);
         const historyRes = await api.get("/payments/history");
         setPaymentHistory(historyRes.data);

@@ -26,6 +26,10 @@ mongoose
       className: "Administration",
     });
 
+
+    // student1_1@example.com
+    // 123456
+
     // Classes list
     const classes = ["Class 10", "Class 11", "Class 12"];
     const allStudents = [];

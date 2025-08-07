@@ -9,7 +9,7 @@ export default function Fees() {
   useEffect(() => {
     const fetchFees = async () => {
       try {
-        const res = await api.get("/fees/assigned");
+        const res = await api.get("/fees/my-fees");
         setFees(res.data);
       } catch (err) {
         console.error("Error fetching fees:", err);

@@ -64,10 +64,11 @@ exports.verifyPayment = async (req, res) => {
 
       // Generate receipt and send email
       try {
-        const filePath = generateReceipt(req.user, assignmentId, payment);
+        const filePath = await generateReceipt(req.user, assignmentId, payment);
         await sendReceiptEmail(req.user, filePath);
       } catch (receiptError) {
         console.error("Receipt generation error:", receiptError);
+        // Don't fail the payment if receipt generation fails
       }
 
       // Create notification
@@ -82,6 +83,7 @@ exports.verifyPayment = async (req, res) => {
         });
       } catch (notificationError) {
         console.error("Notification creation error:", notificationError);
+        // Don't fail the payment if notification creation fails
       }
 
       return res.json({ success: true, message: "Payment verified & receipt sent!" });

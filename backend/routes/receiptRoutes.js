@@ -1,8 +1,13 @@
 const express = require("express");
-const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
-const { getReceipts } = require("../controllers/receiptController");
+const { getReceipts, downloadReceipt } = require("../controllers/receiptController");
 
+const router = express.Router();
+
+// Get all receipts for student
 router.get("/", protect, getReceipts);
+
+// Download a specific receipt
+router.get("/download/:paymentId", protect, downloadReceipt);
 
 module.exports = router;

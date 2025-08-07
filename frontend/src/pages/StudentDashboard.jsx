@@ -8,6 +8,7 @@ import {
   Check,
   Sun,
   Moon,
+  Bell,
 } from "lucide-react";
 import api from "../services/api";
 import { AuthContext } from "../context/AuthContext";
@@ -17,6 +18,7 @@ export default function StudentDashboard() {
   const [assignedFees, setAssignedFees] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,6 +27,14 @@ export default function StudentDashboard() {
         setAssignedFees(feesRes.data);
         const historyRes = await api.get("/payments/history");
         setPaymentHistory(historyRes.data);
+        
+        // Fetch unread notification count
+        try {
+          const notifRes = await api.get("/notifications/unread-count");
+          setUnreadNotifications(notifRes.data.count);
+        } catch (err) {
+          console.error("Error fetching notification count:", err);
+        }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
       }
@@ -65,6 +75,14 @@ export default function StudentDashboard() {
               <span className="text-sm bg-blue-600 text-white px-2 py-1 rounded">
                 {user?.role || "student"}
               </span>
+              <Link to="/student/notifications" className="relative">
+                <Bell className="h-5 w-5" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </header>

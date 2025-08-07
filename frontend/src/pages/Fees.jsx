@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function Fees() {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,13 +39,56 @@ export default function Fees() {
     fetchFees();
   }, [navigate]);
 
-  const handlePay = async (feeId) => {
+  const handlePay = async (assignmentId, amount) => {
     setMessage("Processing payment...");
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      setMessage("Failed to load payment gateway. Please try again later.");
+      return;
+    }
     try {
-      const res = await api.post("/payments/pay", { feeId });
-      setMessage(res.data.message || "Payment successful!");
+      // 1. Create order on backend
+      const res = await api.post("/payments/create-order", { amount, assignmentId });
+      const { orderId, key, currency } = res.data;
+      // 2. Open Razorpay modal
+      const options = {
+        key,
+        amount: amount * 100,
+        currency,
+        name: "PayWise Institution",
+        description: "Fee Payment",
+        order_id: orderId,
+        handler: async function (response) {
+          // 3. Verify payment on backend
+          try {
+            await api.post("/payments/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              assignmentId,
+              amount,
+            });
+            setMessage("Payment successful! Receipt will be generated shortly.");
+            // Wait a moment for backend processing, then refresh fees
+            setTimeout(async () => {
+              try {
+                const updated = await api.get("/fees/my-fees");
+                setFees(updated.data);
+              } catch (err) {
+                console.error("Error refreshing fees:", err);
+              }
+            }, 2000);
+          } catch (err) {
+            setMessage("Payment verification failed!");
+          }
+        },
+        prefill: {},
+        theme: { color: "#2563eb" },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (err) {
-      setMessage(err.response?.data?.error || "Payment failed!");
+      setMessage(err.response?.data?.message || "Payment failed!");
     }
   };
 
@@ -57,13 +111,12 @@ export default function Fees() {
               <div>
                 <p className="font-semibold">{fee.title}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Amount: ₹{fee.amount} | Due:{" "}
-                  {new Date(fee.dueDate).toLocaleDateString()}
+                  Amount: ₹{fee.amount} | Due: {new Date(fee.dueDate).toLocaleDateString()}
                 </p>
               </div>
               {fee.status === "pending" ? (
                 <button
-                  onClick={() => handlePay(fee._id)}
+                  onClick={() => handlePay(fee._id, fee.amount)}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                 >
                   Pay Now

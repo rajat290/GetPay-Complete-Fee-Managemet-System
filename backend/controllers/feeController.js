@@ -56,7 +56,16 @@ exports.getStudentFees = async (req, res) => {
       .populate("feeId")
       .sort({ dueDate: 1 });
 
-    res.json(assignments);
+    // Flatten the structure for frontend
+    const formatted = assignments.map((a) => ({
+      _id: a._id,
+      title: a.feeId?.title || "-",
+      amount: a.feeId?.amount || 0,
+      category: a.feeId?.category || "-",
+      dueDate: a.dueDate,
+      status: a.status,
+    }));
+    res.json(formatted);
   } catch (err) {
     console.error("Error fetching student fees:", err);
     res.status(500).json({ message: "Server error" });
@@ -75,5 +84,28 @@ exports.getAllFees = async (req, res) => {
   } catch (err) {
     console.error("Error fetching fees:", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Admin: Get all fee assignments with student and fee info
+exports.getAllFeeAssignments = async (req, res) => {
+  try {
+    const assignments = await FeeAssignment.find()
+      .populate('studentId', 'name registrationNo')
+      .populate('feeId', 'title amount dueDate')
+      .sort({ dueDate: 1 });
+    // Format for frontend
+    const formatted = assignments.map(a => ({
+      _id: a._id,
+      student: a.studentId ? { name: a.studentId.name, registrationNo: a.studentId.registrationNo } : null,
+      feeTitle: a.feeId?.title || '-',
+      amount: a.feeId?.amount || 0,
+      dueDate: a.feeId?.dueDate || a.dueDate,
+      status: a.status,
+    }));
+    res.json(formatted);
+  } catch (err) {
+    console.error('Error fetching fee assignments:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 };

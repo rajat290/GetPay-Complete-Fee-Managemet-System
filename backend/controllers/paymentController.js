@@ -49,12 +49,12 @@ exports.verifyPayment = async (req, res) => {
 
     if (expectedSignature === razorpay_signature) {
       // Update Payment in DB
-      await Payment.create({
+      const payment = await Payment.create({
         studentId: req.user._id,
         assignmentId,
         amount: req.body.amount,
         mode: "online",
-        status: "success",
+        status: "completed",
         razorpayPaymentId: razorpay_payment_id,
         razorpayOrderId: razorpay_order_id,
         razorpaySignature: razorpay_signature,
@@ -62,7 +62,29 @@ exports.verifyPayment = async (req, res) => {
 
       await FeeAssignment.findByIdAndUpdate(assignmentId, { status: "paid" });
 
-      return res.json({ success: true, message: "Payment verified successfully" });
+      // Generate receipt and send email
+      try {
+        const filePath = generateReceipt(req.user, assignmentId, payment);
+        await sendReceiptEmail(req.user, filePath);
+      } catch (receiptError) {
+        console.error("Receipt generation error:", receiptError);
+      }
+
+      // Create notification
+      try {
+        const Notification = require("../models/Notification");
+        await Notification.create({
+          studentId: req.user._id,
+          title: "Payment Successful",
+          message: `Your payment of ₹${req.body.amount} has been processed successfully. Receipt has been sent to your email.`,
+          type: "success",
+          relatedPayment: payment._id
+        });
+      } catch (notificationError) {
+        console.error("Notification creation error:", notificationError);
+      }
+
+      return res.json({ success: true, message: "Payment verified & receipt sent!" });
     } else {
       return res.status(400).json({ success: false, message: "Payment verification failed" });
     }
@@ -90,3 +112,28 @@ exports.verifyPayment = async (req, res) => {
 
 //   return res.json({ success: true, message: "Payment verified & receipt sent!" });
 // }
+
+// 3. Get Payment History for Student
+exports.getPaymentHistory = async (req, res) => {
+  try {
+    const payments = await Payment.find({ studentId: req.user._id })
+      .populate({
+        path: "assignmentId",
+        populate: { path: "feeId", select: "title" }
+      })
+      .sort({ createdAt: -1 });
+
+    // Format response to include fee title
+    const formatted = payments.map((p) => ({
+      _id: p._id,
+      amount: p.amount,
+      status: p.status === 'completed' ? 'success' : p.status,
+      createdAt: p.createdAt,
+      feeTitle: p.assignmentId?.feeId?.title || "-"
+    }));
+    res.json(formatted);
+  } catch (err) {
+    console.error("Error fetching payment history:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

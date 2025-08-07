@@ -4,7 +4,8 @@ import api from "../../services/api";
 export default function ManageFees() {
   const [students, setStudents] = useState([]);
   const [fees, setFees] = useState([]);
-  const [form, setForm] = useState({ studentId: "", feeTitle: "", amount: "", dueDate: "" });
+  const [form, setForm] = useState({ studentId: "", feeId: "", dueDate: "" });
+  const [feesList, setFeesList] = useState([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -15,11 +16,14 @@ export default function ManageFees() {
       try {
         // Use the correct backend route for fetching students
         // According to your backend, the students list is likely at "/users"
-        const studentsRes = await api.get("/users");
+        const studentsRes = await api.get("/admin/students");
         setStudents(studentsRes.data);
+        // Fetch all available fees for dropdown
+        const allFeesRes = await api.get("/fees/");
+        setFeesList(allFeesRes.data);
 
         // Fetch all fees with student info populated
-        const feesRes = await api.get("/admin/fees");
+        const feesRes = await api.get("/fees/assignments");
         setFees(feesRes.data);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -39,12 +43,12 @@ export default function ManageFees() {
     e.preventDefault();
     setMessage("");
     try {
-      await api.post("/admin/fees", form);
+      await api.post("/fees/assign", form);
       setMessage("Fee assigned successfully!");
-      setForm({ studentId: "", feeTitle: "", amount: "", dueDate: "" });
+      setForm({ studentId: "", feeId: "", dueDate: "" });
 
       // Re-fetch all fees to ensure the latest data is reflected everywhere (including student section)
-      const feesRes = await api.get("/admin/fees");
+      const feesRes = await api.get("/fees/assignments");
       setFees(feesRes.data);
     } catch (err) {
       setMessage(err.response?.data?.error || "Error assigning fee");
@@ -77,24 +81,20 @@ export default function ManageFees() {
               </option>
             ))}
           </select>
-          <input
-            type="text"
-            name="feeTitle"
-            placeholder="Fee Title (e.g. Tuition, Transport)"
-            value={form.feeTitle}
+          <select
+            name="feeId"
+            value={form.feeId}
             onChange={handleChange}
             required
             className="p-2 border rounded"
-          />
-          <input
-            type="number"
-            name="amount"
-            placeholder="Amount"
-            value={form.amount}
-            onChange={handleChange}
-            required
-            className="p-2 border rounded"
-          />
+          >
+            <option value="">Select Fee</option>
+            {feesList.map((fee) => (
+              <option key={fee._id} value={fee._id}>
+                {fee.title} (₹{fee.amount}, {fee.category}, Due: {new Date(fee.dueDate).toLocaleDateString()})
+              </option>
+            ))}
+          </select>
           <input
             type="date"
             name="dueDate"

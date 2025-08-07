@@ -4,7 +4,7 @@ import api from "../../services/api";
 export default function ManageStudents() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: "", email: "", registrationNo: "", department: "" });
+  const [form, setForm] = useState({ name: "", email: "", registrationNo: "", department: "", className: "" });
   const [message, setMessage] = useState("");
 
   // Use the correct backend route for fetching and adding students
@@ -12,7 +12,7 @@ export default function ManageStudents() {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await api.get("/users");
+        const res = await api.get("/admin/students");
         setStudents(res.data);
       } catch (err) {
         console.error("Error fetching students:", err);
@@ -34,10 +34,10 @@ export default function ManageStudents() {
     e.preventDefault();
     setMessage("");
     try {
-      const res = await api.post("/users", form);
+      const res = await api.post("/admin/students", form);
       setStudents([...students, res.data]);
       setMessage("Student added successfully!");
-      setForm({ name: "", email: "", registrationNo: "", department: "" });
+      setForm({ name: "", email: "", registrationNo: "", department: "", className: "" });
     } catch (err) {
       setMessage(err.response?.data?.error || "Error adding student");
     }
@@ -89,6 +89,15 @@ export default function ManageStudents() {
             name="department"
             placeholder="Department"
             value={form.department}
+            onChange={handleChange}
+            required
+            className="p-2 border rounded"
+          />
+          <input
+            type="text"
+            name="className"
+            placeholder="Class Name"
+            value={form.className}
             onChange={handleChange}
             required
             className="p-2 border rounded"

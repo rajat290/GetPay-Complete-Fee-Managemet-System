@@ -6,16 +6,25 @@ export default function ManageFees() {
   const [fees, setFees] = useState([]);
   const [form, setForm] = useState({ studentId: "", feeTitle: "", amount: "", dueDate: "" });
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  // Fetch students and all fees on mount
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const studentsRes = await api.get("/admin/students");
-        const feesRes = await api.get("/admin/fees");
+        // Use the correct backend route for fetching students
+        // According to your backend, the students list is likely at "/users"
+        const studentsRes = await api.get("/users");
         setStudents(studentsRes.data);
+
+        // Fetch all fees with student info populated
+        const feesRes = await api.get("/admin/fees");
         setFees(feesRes.data);
       } catch (err) {
         console.error("Error loading data:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -25,13 +34,18 @@ export default function ManageFees() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // After assigning a fee, re-fetch all fees to ensure student section is updated everywhere
   const handleAddFee = async (e) => {
     e.preventDefault();
+    setMessage("");
     try {
-      const res = await api.post("/admin/fees", form);
-      setFees([...fees, res.data]);
+      await api.post("/admin/fees", form);
       setMessage("Fee assigned successfully!");
       setForm({ studentId: "", feeTitle: "", amount: "", dueDate: "" });
+
+      // Re-fetch all fees to ensure the latest data is reflected everywhere (including student section)
+      const feesRes = await api.get("/admin/fees");
+      setFees(feesRes.data);
     } catch (err) {
       setMessage(err.response?.data?.error || "Error assigning fee");
     }
@@ -97,40 +111,48 @@ export default function ManageFees() {
 
       {/* Fees Table */}
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-gray-100 dark:bg-gray-700 text-left">
-              <th className="py-3 px-4">Student</th>
-              <th className="py-3 px-4">Fee Title</th>
-              <th className="py-3 px-4">Amount</th>
-              <th className="py-3 px-4">Due Date</th>
-              <th className="py-3 px-4">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fees.map((fee) => (
-              <tr key={fee._id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td className="py-3 px-4">{fee.student?.name}</td>
-                <td className="py-3 px-4">{fee.feeTitle}</td>
-                <td className="py-3 px-4">₹{fee.amount}</td>
-                <td className="py-3 px-4">{new Date(fee.dueDate).toLocaleDateString()}</td>
-                <td className="py-3 px-4">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      fee.status === "paid"
-                        ? "bg-green-100 text-green-800"
-                        : fee.status === "overdue"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {fee.status}
-                  </span>
-                </td>
+        {loading ? (
+          <div className="text-center py-8">Loading fees...</div>
+        ) : (
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100 dark:bg-gray-700 text-left">
+                <th className="py-3 px-4">Student</th>
+                <th className="py-3 px-4">Fee Title</th>
+                <th className="py-3 px-4">Amount</th>
+                <th className="py-3 px-4">Due Date</th>
+                <th className="py-3 px-4">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {fees.map((fee) => (
+                <tr key={fee._id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="py-3 px-4">
+                    {fee.student?.name
+                      ? `${fee.student.name} (${fee.student.registrationNo})`
+                      : "N/A"}
+                  </td>
+                  <td className="py-3 px-4">{fee.feeTitle}</td>
+                  <td className="py-3 px-4">₹{fee.amount}</td>
+                  <td className="py-3 px-4">{new Date(fee.dueDate).toLocaleDateString()}</td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        fee.status === "paid"
+                          ? "bg-green-100 text-green-800"
+                          : fee.status === "overdue"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {fee.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

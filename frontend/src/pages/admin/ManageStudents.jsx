@@ -7,13 +7,16 @@ export default function ManageStudents() {
   const [form, setForm] = useState({ name: "", email: "", registrationNo: "", department: "" });
   const [message, setMessage] = useState("");
 
+  // Use the correct backend route for fetching and adding students
+  // According to your backend, the students list is likely at "/users"
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await api.get("/admin/students");
+        const res = await api.get("/users");
         setStudents(res.data);
       } catch (err) {
         console.error("Error fetching students:", err);
+        setMessage("Error fetching students");
       } finally {
         setLoading(false);
       }
@@ -25,10 +28,13 @@ export default function ManageStudents() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Use the correct backend route for adding a student
+  // According to your backend, adding a student is likely at "/users"
   const handleAdd = async (e) => {
     e.preventDefault();
+    setMessage("");
     try {
-      const res = await api.post("/admin/students", form);
+      const res = await api.post("/users", form);
       setStudents([...students, res.data]);
       setMessage("Student added successfully!");
       setForm({ name: "", email: "", registrationNo: "", department: "" });

@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const bcrypt = require("bcryptjs");
 
 // Models
 const Student = require("./models/Student");
@@ -17,18 +16,14 @@ mongoose
     await Student.deleteMany();
     await Fee.deleteMany();
 
-    // Passwords
-    const studentPassword = await bcrypt.hash("123456", 10);
-    const adminPassword = await bcrypt.hash("admin123", 10);
-
-    // Admin user
+    // Admin user (plain password, schema will hash)
     await Student.create({
       name: "Admin User",
       email: "admin@example.com",
-      password: adminPassword,
+      password: "admin123", // plain password
       registrationNo: "ADM1001",
       role: "admin",
-      className: "Administration", // ✅ required field
+      className: "Administration",
     });
 
     // Classes list
@@ -41,10 +36,10 @@ mongoose
         const student = new Student({
           name: `${classes[c]} Student ${i}`,
           email: `student${c + 1}_${i}@example.com`,
-          password: studentPassword,
+          password: "123456", // plain password
           registrationNo: regNo,
           role: "student",
-          className: classes[c], // ✅ Add className
+          className: classes[c],
         });
 
         await student.save();

@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function Fees() {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     const fetchFees = async () => {
       try {
         const res = await api.get("/fees/my-fees");
@@ -18,7 +26,7 @@ export default function Fees() {
       }
     };
     fetchFees();
-  }, []);
+  }, [navigate]);
 
   const handlePay = async (feeId) => {
     setMessage("Processing payment...");

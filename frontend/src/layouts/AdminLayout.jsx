@@ -6,7 +6,7 @@ import {
   FiHome, 
   FiUsers, 
   FiCreditCard, 
-  FiBarChart3, 
+  FiBarChart2, 
   FiTrendingUp,
   FiLogOut,
   FiSettings
@@ -41,7 +41,7 @@ export default function AdminLayout() {
     { name: 'Dashboard', href: '/admin/dashboard', icon: FiHome },
     { name: 'Manage Students', href: '/admin/students', icon: FiUsers },
     { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard },
-    { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart3 },
+    { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2 },
     { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp },
   ];
 

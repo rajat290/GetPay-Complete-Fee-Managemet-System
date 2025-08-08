@@ -5,7 +5,7 @@ import {
   FiClock, 
   FiAlertTriangle, 
   FiTrendingUp,
-  FiBarChart3,
+  // FiBarChart3,
   FiActivity,
   FiCreditCard
 } from "react-icons/fi";
@@ -253,9 +253,9 @@ export default function AdminDashboard() {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fee Overview</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">Collection vs Pending vs Defaulters</p>
             </div>
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+            {/* <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
               <FiBarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            </div>
+            </div> */}
           </div>
           <div className="h-80">
             <Bar data={barData} options={chartOptions} />
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
             <span className="text-sm font-medium text-green-700 dark:text-green-300">Create Fee</span>
           </button>
           <button className="flex flex-col items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
-            <FiBarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400 mb-2" />
+            {/* <FiBarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400 mb-2" /> */}
             <span className="text-sm font-medium text-purple-700 dark:text-purple-300">View Reports</span>
           </button>
           <button className="flex flex-col items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">

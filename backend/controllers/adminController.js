@@ -16,9 +16,9 @@ exports.getAllStudents = async (req, res) => {
 // Create a new student (admin only)
 exports.createStudent = async (req, res) => {
   try {
-    const { name, email, registrationNo, department } = req.body;
+    const { name, email, registrationNo, className } = req.body;
 
-    if (!name || !email || !registrationNo || !department) {
+    if (!name || !email || !registrationNo || !className) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -35,7 +35,7 @@ exports.createStudent = async (req, res) => {
       name,
       email,
       registrationNo,
-      department,
+      className,
       password: registrationNo, // Default password
       role: "student"
     });

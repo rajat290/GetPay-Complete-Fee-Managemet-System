@@ -9,21 +9,28 @@ exports.getAnalytics = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
+    // Get total students count
+    const totalStudents = await Student.countDocuments({ role: "student" });
+
+    // Get total collected from completed payments
     const totalCollected = await Payment.aggregate([
-      { $match: { status: "success" } },
+      { $match: { status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
-    const pendingFees = await FeeAssignment.countDocuments({ status: "pending" });
+    // Get pending fees amount
+    const pendingFees = await Payment.aggregate([
+      { $match: { status: "pending" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
 
-    const defaulters = await FeeAssignment.countDocuments({
-      status: "pending",
-      dueDate: { $lt: new Date() },
-    });
+    // Get defaulters count (pending payments)
+    const defaulters = await Payment.countDocuments({ status: "pending" });
 
     res.json({
+      totalStudents,
       totalCollected: totalCollected[0]?.total || 0,
-      pendingFees,
+      pendingFees: pendingFees[0]?.total || 0,
       defaulters,
     });
   } catch (error) {

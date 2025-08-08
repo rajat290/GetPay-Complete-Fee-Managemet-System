@@ -253,8 +253,8 @@ This project is licensed under the MIT License.
 
 ## 📞 Support
 
-For support and questions, please contact the development team.
+For support and questions, please contact to rajatsinghtomarofficial@gmail.com.
 
 ---
 
-**PayWise Institution** - Streamlining payment management for educational institutions.
+**GetPay** - Streamlining payment management for educational institutions, Restaurants, Hotels, and for Commercials usage. 

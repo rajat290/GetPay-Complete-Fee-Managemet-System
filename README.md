@@ -1,4 +1,4 @@
-# PayWise Institution - Payment Management System
+# GetPay Institution - Payment Management System
 
 A comprehensive payment management system for educational institutions with real-time payment tracking, admin dashboard, and Razorpay integration.
 

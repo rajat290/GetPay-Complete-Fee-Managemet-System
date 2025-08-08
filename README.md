@@ -1,6 +1,7 @@
-# PayWise Institution - Payment Management System
+# GetPay  - Payment Management System
 
-A comprehensive payment management system for educational institutions with real-time payment tracking, admin dashboard, and Razorpay integration.
+A comprehensive payment management system for Colleges,educational institutions, Restaurents, Hotels, and every where you need to track you payment and provide a receipt to user 
+with real-time payment tracking, admin dashboard, and Razorpay integration.
 
 ## 🚀 Features
 
@@ -252,8 +253,8 @@ This project is licensed under the MIT License.
 
 ## 📞 Support
 
-For support and questions, please contact the development team.
+For support and questions, please contact to rajatsinghtomarofficial@gmail.com.
 
 ---
 
-**PayWise Institution** - Streamlining payment management for educational institutions.
+**GetPay** - Streamlining payment management for educational institutions, Restaurants, Hotels, and for Commercials usage. 

@@ -1,109 +1,68 @@
-# GetPay - Complete Fee Management System
+# PayWise Institution - Payment Management System
 
-A comprehensive web-based fee management system designed for educational institutions to streamline fee collection, tracking, and management processes.
+A comprehensive payment management system for educational institutions with real-time payment tracking, admin dashboard, and Razorpay integration.
 
 ## 🚀 Features
 
-### Core Features
-- **Student Management**: Complete student profile management with enrollment tracking
-- **Fee Structure Management**: Flexible fee structure creation and assignment
-- **Payment Processing**: Secure online payment collection and tracking
-- **Payment History**: Detailed transaction history and payment records
-- **Fee Assignment**: Automated fee assignment based on student categories
-- **Real-time Updates**: Live payment status and fee balance updates
+### Admin Payment Management Dashboard
+- **Real-time Payment Overview**: Live statistics showing total received, pending, and failed payments
+- **Payment Statistics**: Monthly trends and percentage changes
+- **Advanced Filtering**: Filter by class, status, date range, and search functionality
+- **Class-based Filtering**: View payments by specific student classes (e.g., 12thA, 11thB)
+- **Real-time Updates**: Automatic refresh every 30 seconds with new payment notifications
+- **Export Functionality**: Export payment data to CSV format
+- **Payment Details Modal**: Detailed view of each payment with Razorpay transaction IDs
 
-### Administrative Features
-- **Dashboard Analytics**: Comprehensive overview of fee collection status
-- **Student Management**: Add, edit, and manage student records
-- **Fee Configuration**: Create and manage different fee structures
-- **Payment Tracking**: Monitor all payments and pending fees
-- **Reports Generation**: Generate detailed fee collection reports
-- **Multi-user Support**: Role-based access for admins and staff
+### Payment Tracking
+- **Razorpay Integration**: Complete payment gateway integration with transaction IDs
+- **Payment Status Tracking**: Real-time status updates (completed, pending, failed)
+- **Receipt Generation**: Automatic PDF receipt generation and email delivery
+- **Payment History**: Complete payment history for each student
 
-### Technical Features
-- **Secure Authentication**: JWT-based authentication system
-- **Responsive Design**: Mobile-friendly interface
-- **Real-time Notifications**: Payment confirmation and alerts
-- **Data Validation**: Comprehensive input validation
-- **Error Handling**: Robust error handling and user feedback
+### Student Management
+- **Class-based Organization**: Students organized by classes (12thA, 12thB, etc.)
+- **Fee Assignment**: Assign different fee types to students
+- **Payment Notifications**: Email notifications for successful payments
 
-## 🛠️ Tech Stack
-
-### Frontend
-- **React** - UI framework
-- **Vite** - Build tool and development server
-- **CSS3** - Styling
-- **React Router** - Client-side routing
+## 🛠️ Technology Stack
 
 ### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **MongoDB** - Database
-- **Mongoose** - MongoDB object modeling
-- **JWT** - Authentication tokens
-- **Bcrypt** - Password hashing
+- **Node.js** with Express.js
+- **MongoDB** with Mongoose ODM
+- **Razorpay** payment gateway integration
+- **JWT** authentication
+- **PDF generation** for receipts
+- **Email service** for notifications
 
-### Development Tools
-- **Nodemon** - Development server auto-restart
-- **ESLint** - Code linting
-- **Git** - Version control
+### Frontend
+- **React.js** with Vite
+- **Tailwind CSS** for styling
+- **React Icons** for UI icons
+- **Real-time updates** with polling
+- **Responsive design** for all devices
 
-## 📁 Project Structure
+## 📋 Prerequisites
 
-```
-GetPay/
-├── backend/
-│   ├── config/
-│   │   └── db.js                 # Database configuration
-│   ├── controllers/
-│   │   └── authController.js     # Authentication logic
-│   ├── models/
-│   │   ├── Student.js           # Student schema
-│   │   ├── Fee.js               # Fee structure schema
-│   │   ├── FeeAssignment.js     # Fee assignment schema
-│   │   ├── Payment.js           # Payment schema
-│   │   └── Payment.js           # Payment records
-│   ├── routes/
-│   │   └── authRoutes.js        # Authentication routes
-│   ├── .gitignore               # Backend gitignore
-│   ├── package.json             # Backend dependencies
-│   └── server.js                # Express server
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx              # Main React component
-│   │   ├── main.jsx             # React entry point
-│   │   ├── App.css              # Component styles
-│   │   └── index.css            # Global styles
-│   ├── public/
-│   ├── .gitignore               # Frontend gitignore
-│   ├── package.json             # Frontend dependencies
-│   ├── vite.config.js           # Vite configuration
-│   └── index.html               # HTML template
-└── README.md                    # This file
-```
+- Node.js (v16 or higher)
+- MongoDB
+- Razorpay account
+- SMTP email service
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or cloud instance)
-- Git
-
-### Installation
+## 🚀 Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/rajat290/GetPay-Complete-Fee-Managemet-System.git
-   cd GetPay-Complete-Fee-Managemet-System
+   git clone <repository-url>
+   cd GetPay
    ```
 
-2. **Install Backend Dependencies**
+2. **Install backend dependencies**
    ```bash
    cd backend
    npm install
    ```
 
-3. **Install Frontend Dependencies**
+3. **Install frontend dependencies**
    ```bash
    cd ../frontend
    npm install
@@ -111,125 +70,190 @@ GetPay/
 
 4. **Environment Setup**
    
-   Create a `.env` file in the backend directory:
+   Create `.env` file in the backend directory:
    ```env
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   RAZORPAY_KEY_ID=your_razorpay_key_id
+   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+   EMAIL_USER=your_email
+   EMAIL_PASS=your_email_password
    PORT=5000
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret_key
    ```
 
-### Running the Application
+5. **Seed the database**
+   ```bash
+   cd backend
+   node seed.js
+   ```
 
-1. **Start the Backend Server**
+6. **Start the servers**
+   
+   Backend:
    ```bash
    cd backend
    npm start
    ```
-   The server will start on http://localhost:5000
-
-2. **Start the Frontend Development Server**
+   
+   Frontend:
    ```bash
    cd frontend
    npm run dev
    ```
-   The frontend will be available at http://localhost:5173
 
-## 🔧 API Endpoints
+## 📊 Database Schema
+
+### Student Model
+```javascript
+{
+  name: String,
+  email: String,
+  registrationNo: String,
+  password: String,
+  role: String,
+  className: String
+}
+```
+
+### Payment Model
+```javascript
+{
+  studentId: ObjectId,
+  assignmentId: ObjectId,
+  amount: Number,
+  mode: String,
+  status: String,
+  razorpayPaymentId: String,
+  razorpayOrderId: String,
+  razorpaySignature: String
+}
+```
+
+### Fee Model
+```javascript
+{
+  title: String,
+  amount: Number,
+  category: String,
+  dueDate: Date
+}
+```
+
+## 🔌 API Endpoints
+
+### Admin Payment Management
+- `GET /api/admin/payments` - Get all payments with filters
+- `GET /api/admin/payments/stats` - Get payment statistics
+- `GET /api/admin/payments/:id` - Get payment details
+- `GET /api/admin/payments/recent` - Get recent payments
+- `GET /api/admin/classes` - Get all class names
+
+### Payment Processing
+- `POST /api/payments/create-order` - Create Razorpay order
+- `POST /api/payments/verify` - Verify payment
+- `GET /api/payments/history` - Get payment history
 
 ### Authentication
-- `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
+- `POST /api/auth/register` - User registration
 
-### Students
-- `GET /api/students` - Get all students
-- `POST /api/students` - Create new student
-- `GET /api/students/:id` - Get student by ID
-- `PUT /api/students/:id` - Update student
-- `DELETE /api/students/:id` - Delete student
+## 🎯 Key Features Implementation
 
-### Fees
-- `GET /api/fees` - Get all fee structures
-- `POST /api/fees` - Create new fee structure
-- `GET /api/fees/:id` - Get fee structure by ID
-- `PUT /api/fees/:id` - Update fee structure
-- `DELETE /api/fees/:id` - Delete fee structure
+### 1. Real-time Payment Updates
+- Polling mechanism updates payment data every 30 seconds
+- New payment notifications appear automatically
+- Live statistics updates
 
-### Payments
-- `GET /api/payments` - Get all payments
-- `POST /api/payments` - Create new payment
-- `GET /api/payments/:id` - Get payment by ID
-- `PUT /api/payments/:id` - Update payment
-- `DELETE /api/payments/:id` - Delete payment
+### 2. Class-based Filtering
+- Dropdown to select specific classes (12thA, 12thB, etc.)
+- Filtered view shows only payments from selected class
+- Statistics update based on selected filters
 
-## 📝 Usage Guide
+### 3. Razorpay Transaction Tracking
+- Complete Razorpay integration
+- Transaction IDs stored and displayed
+- Payment verification with signature validation
 
-### For Administrators
-1. **Setup Fee Structures**: Create different fee categories and amounts
-2. **Enroll Students**: Add student records with personal and academic details
-3. **Assign Fees**: Assign appropriate fee structures to students
-4. **Track Payments**: Monitor all payments and pending fees
-5. **Generate Reports**: Create detailed fee collection reports
+### 4. Advanced Search & Filtering
+- Search by student name, registration number, or transaction ID
+- Filter by payment status (completed, pending, failed)
+- Date range filtering
+- Multiple filter combinations
 
-### For Students/Parents
-1. **View Fee Details**: Check assigned fees and payment history
-2. **Make Payments**: Pay fees online securely
-3. **Download Receipts**: Get payment receipts for records
-4. **Track Balance**: Monitor remaining fee balance
+### 5. Export Functionality
+- Export filtered payment data to CSV
+- Includes all payment details and transaction IDs
+- Downloadable reports for accounting
 
-## 🔐 Security Features
+## 🎨 UI/UX Features
 
-- **Password Hashing**: All passwords are hashed using bcrypt
-- **JWT Authentication**: Secure token-based authentication
-- **Input Validation**: Comprehensive validation on all inputs
-- **HTTPS Ready**: Configured for secure HTTPS deployment
-- **Rate Limiting**: Protection against brute force attacks
+### Payment Overview Cards
+- **Total Received**: Green gradient with percentage change
+- **Pending**: Yellow gradient with payment count
+- **Failed**: Red gradient with payment count
+
+### Interactive Table
+- Sortable columns
+- Hover effects
+- Status indicators with colored dots
+- Clickable payment IDs for details
+
+### Responsive Design
+- Mobile-friendly interface
+- Adaptive layouts
+- Touch-friendly controls
+
+## 🔒 Security Features
+
+- JWT authentication
+- Password hashing with bcrypt
+- Protected admin routes
+- Input validation and sanitization
+- Secure payment verification
+
+## 📱 Usage
+
+### Admin Login
+1. Navigate to the admin panel
+2. Login with admin credentials
+3. Access the payment management dashboard
+
+### Viewing Payments
+1. All payments are displayed in the main table
+2. Use filters to narrow down results
+3. Click "Details" to view complete payment information
+4. Export data using the export button
+
+### Real-time Monitoring
+1. Dashboard automatically updates every 30 seconds
+2. New payments trigger notifications
+3. Statistics update in real-time
+4. Payment status changes are reflected immediately
 
 ## 🧪 Testing
 
-### Backend Testing
+Run the test suite:
 ```bash
 cd backend
 npm test
 ```
 
-### Frontend Testing
-```bash
-cd frontend
-npm test
-```
+## 📝 License
 
-## 🚀 Deployment
-
-### Backend Deployment
-1. Set environment variables on your hosting platform
-2. Deploy backend to services like Heroku, AWS, or DigitalOcean
-3. Update frontend API endpoints to point to deployed backend
-
-### Frontend Deployment
-1. Build the frontend: `npm run build`
-2. Deploy build folder to services like Netlify, Vercel, or GitHub Pages
-3. Configure environment variables for production
+This project is licensed under the MIT License.
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## 📞 Support
 
-For support, email rajat290@gmail.com or create an issue in the GitHub repository.
+For support and questions, please contact the development team.
 
-## 🙏 Acknowledgments
+---
 
-- Thanks to all contributors who helped make this project possible
-- Special thanks to the open-source community for providing excellent tools and libraries
-</result>
-</attempt_completion>
+**PayWise Institution** - Streamlining payment management for educational institutions.

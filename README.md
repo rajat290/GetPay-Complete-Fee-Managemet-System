@@ -1,6 +1,7 @@
 # GetPay Institution - Payment Management System
 
-A comprehensive payment management system for educational institutions with real-time payment tracking, admin dashboard, and Razorpay integration.
+A comprehensive payment management system for Colleges,educational institutions, Restaurents, Hotels, and every where you need to track you payment and provide a receipt to user 
+with real-time payment tracking, admin dashboard, and Razorpay integration.
 
 ## 🚀 Features
 

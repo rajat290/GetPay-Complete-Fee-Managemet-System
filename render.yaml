@@ -2,7 +2,10 @@ services:
   - type: web
     name: getpay-frontend
     env: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: |
+      cd frontend
+      npm ci --production=false
+      npm run build
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
@@ -14,7 +17,7 @@ services:
   - type: web
     name: getpay-backend
     env: node
-    buildCommand: cd backend && npm install
+    buildCommand: cd backend && npm ci
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV

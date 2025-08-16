@@ -3,6 +3,14 @@
 A comprehensive payment management system for Colleges,educational institutions, Restaurents, Hotels, and every where you need to track you payment and provide a receipt to user 
 with real-time payment tracking, admin dashboard, and Razorpay integration.
 
+## 📸 Dashboard Previews
+
+### Admin Dashboard
+![Admin Dashboard](Admin%20Dashboard.png)
+
+### Student Dashboard  
+![Student Dashboard](Student%20Dashboard.png)
+
 ## 🚀 Features
 
 ### Admin Payment Management Dashboard

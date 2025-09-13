@@ -266,3 +266,4 @@ For support and questions, please contact to rajatsinghtomarofficial@gmail.com.
 ---
 
 **GetPay** - Streamlining payment management for educational institutions, Restaurants, Hotels, and for Commercials usage. 
+looking for peoples who can suggest me to improve UI/UX 

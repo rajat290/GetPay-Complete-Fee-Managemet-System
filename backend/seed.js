@@ -4,6 +4,9 @@ const dotenv = require("dotenv");
 // Models
 const Student = require("./models/Student");
 const Institution = require("./models/Institution");
+const Branch = require("./models/Branch");
+const AcademicSession = require("./models/AcademicSession");
+const ClassGroup = require("./models/ClassGroup");
 const Fee = require("./models/Fee");
 const FeeAssignment = require("./models/FeeAssignment");
 const Payment = require("./models/Payment");
@@ -17,6 +20,9 @@ mongoose
 
     // Clear old data
     await Institution.deleteMany();
+    await Branch.deleteMany();
+    await AcademicSession.deleteMany();
+    await ClassGroup.deleteMany();
     await Student.deleteMany();
     await Fee.deleteMany();
     await FeeAssignment.deleteMany();
@@ -31,9 +37,27 @@ mongoose
       address: "Demo Campus"
     });
 
+    const branch = await Branch.create({
+      institutionId: institution._id,
+      name: "Main Campus",
+      code: "MAIN",
+      address: "Demo Campus",
+      phone: "9999999999"
+    });
+
+    const academicSession = await AcademicSession.create({
+      institutionId: institution._id,
+      name: "2026-27",
+      startsAt: new Date("2026-04-01"),
+      endsAt: new Date("2027-03-31"),
+      isCurrent: true
+    });
+
     // Admin user (plain password, schema will hash)
     await Student.create({
       institutionId: institution._id,
+      branchId: branch._id,
+      academicSessionId: academicSession._id,
       name: "Admin User",
       email: "admin@example.com",
       password: "admin123", // plain password
@@ -44,6 +68,18 @@ mongoose
 
     // Classes list
     const classes = ["12thA", "12thB", "11thA", "11thB", "10thA", "10thB"];
+    const classGroups = new Map();
+    for (const className of classes) {
+      const classGroup = await ClassGroup.create({
+        institutionId: institution._id,
+        branchId: branch._id,
+        academicSessionId: academicSession._id,
+        name: className,
+        code: className
+      });
+      classGroups.set(className, classGroup);
+    }
+
     const allStudents = [];
     const allFees = [];
     const allFeeAssignments = [];
@@ -60,6 +96,7 @@ mongoose
     for (const feeType of feeTypes) {
       const fee = await Fee.create({
         institutionId: institution._id,
+        academicSessionId: academicSession._id,
         ...feeType,
         dueDate: new Date("2024-12-31")
       });
@@ -71,6 +108,9 @@ mongoose
         const regNo = `STU${c + 1}${i.toString().padStart(3, "0")}`;
         const student = await Student.create({
           institutionId: institution._id,
+          branchId: branch._id,
+          academicSessionId: academicSession._id,
+          classGroupId: classGroups.get(classes[c])._id,
           name: `${classes[c]} Student ${i}`,
           email: `student${c + 1}_${i}@example.com`,
           password: "123456", // plain password
@@ -85,6 +125,7 @@ mongoose
         for (const fee of allFees) {
           const feeAssignment = await FeeAssignment.create({
             institutionId: institution._id,
+            academicSessionId: academicSession._id,
             studentId: student._id,
             feeId: fee._id,
             dueDate: new Date("2024-12-31"),

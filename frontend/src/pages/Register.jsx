@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import api from "../services/api";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    institutionCode: "GETPAY-DEMO",
     name: "",
     email: "",
     registrationNo: "",
+    className: "",
     password: "",
   });
 
@@ -15,10 +20,17 @@ export default function Register() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Register Submitted:", formData);
-    // 👉 Yaha API call karna hai
+    setMessage("");
+
+    try {
+      await api.post("/auth/register", formData);
+      setMessage("Registration successful. You can log in now.");
+      setTimeout(() => navigate("/"), 1200);
+    } catch (err) {
+      setMessage(err.response?.data?.error || "Registration failed");
+    }
   };
 
   return (
@@ -27,7 +39,28 @@ export default function Register() {
         <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">
           Student Registration
         </h2>
+
+        {message && (
+          <div className="mb-4 p-3 text-sm rounded bg-blue-50 text-blue-700">
+            {message}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Institution Code
+            </label>
+            <input
+              type="text"
+              name="institutionCode"
+              value={formData.institutionCode}
+              onChange={(e) => setFormData({ ...formData, institutionCode: e.target.value.toUpperCase() })}
+              required
+              className="w-full mt-2 px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Full Name
@@ -64,6 +97,20 @@ export default function Register() {
               type="text"
               name="registrationNo"
               value={formData.registrationNo}
+              onChange={handleChange}
+              required
+              className="w-full mt-2 px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Class / Batch
+            </label>
+            <input
+              type="text"
+              name="className"
+              value={formData.className}
               onChange={handleChange}
               required
               className="w-full mt-2 px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500"

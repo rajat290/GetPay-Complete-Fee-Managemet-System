@@ -10,12 +10,32 @@ exports.createOrder = async (req, res) => {
   try {
     const { amount, assignmentId } = req.body;
 
-    if (!amount || !assignmentId) {
-      return res.status(400).json({ message: "Amount and assignmentId required" });
+    if (!assignmentId) {
+      return res.status(400).json({ message: "assignmentId required" });
+    }
+
+    const assignment = await FeeAssignment.findOne({
+      _id: assignmentId,
+      institutionId: req.institutionId,
+      studentId: req.user._id
+    }).populate("feeId", "amount title");
+
+    if (!assignment || !assignment.feeId) {
+      return res.status(404).json({ message: "Fee assignment not found" });
+    }
+
+    if (assignment.status === "paid") {
+      return res.status(400).json({ message: "Fee assignment is already paid" });
+    }
+
+    const payableAmount = assignment.feeId.amount;
+
+    if (amount && Number(amount) !== payableAmount) {
+      return res.status(400).json({ message: "Payment amount does not match assigned fee" });
     }
 
     const options = {
-      amount: amount * 100, // Razorpay needs paise (1 INR = 100 paise)
+      amount: payableAmount * 100, // Razorpay needs paise (1 INR = 100 paise)
       currency: "INR",
       receipt: `rcpt_${assignmentId}`,
     };
@@ -40,6 +60,16 @@ exports.verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, assignmentId } = req.body;
 
+    const assignment = await FeeAssignment.findOne({
+      _id: assignmentId,
+      institutionId: req.institutionId,
+      studentId: req.user._id
+    }).populate("feeId", "amount title");
+
+    if (!assignment || !assignment.feeId) {
+      return res.status(404).json({ success: false, message: "Fee assignment not found" });
+    }
+
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
@@ -50,9 +80,10 @@ exports.verifyPayment = async (req, res) => {
     if (expectedSignature === razorpay_signature) {
       // Update Payment in DB
       const payment = await Payment.create({
+        institutionId: req.institutionId,
         studentId: req.user._id,
         assignmentId,
-        amount: req.body.amount,
+        amount: assignment.feeId.amount,
         mode: "online",
         status: "completed",
         razorpayPaymentId: razorpay_payment_id,
@@ -60,7 +91,10 @@ exports.verifyPayment = async (req, res) => {
         razorpaySignature: razorpay_signature,
       });
 
-      await FeeAssignment.findByIdAndUpdate(assignmentId, { status: "paid" });
+      await FeeAssignment.findOneAndUpdate(
+        { _id: assignmentId, institutionId: req.institutionId, studentId: req.user._id },
+        { status: "paid" }
+      );
 
       // Generate receipt and send email
       try {
@@ -75,9 +109,10 @@ exports.verifyPayment = async (req, res) => {
       try {
         const Notification = require("../models/Notification");
         await Notification.create({
+          institutionId: req.institutionId,
           studentId: req.user._id,
           title: "Payment Successful",
-          message: `Your payment of ₹${req.body.amount} has been processed successfully. Receipt has been sent to your email.`,
+          message: `Your payment of INR ${assignment.feeId.amount} has been processed successfully. Receipt has been sent to your email.`,
           type: "success",
           relatedPayment: payment._id
         });
@@ -118,7 +153,10 @@ exports.verifyPayment = async (req, res) => {
 // 3. Get Payment History for Student
 exports.getPaymentHistory = async (req, res) => {
   try {
-    const payments = await Payment.find({ studentId: req.user._id })
+    const payments = await Payment.find({
+        institutionId: req.institutionId,
+        studentId: req.user._id
+      })
       .populate({
         path: "assignmentId",
         populate: { path: "feeId", select: "title" }

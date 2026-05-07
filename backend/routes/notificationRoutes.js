@@ -1,5 +1,5 @@
 const express = require("express");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireStudent } = require("../middleware/authMiddleware");
 const {
   getNotifications,
   markAsRead,
@@ -10,15 +10,15 @@ const {
 const router = express.Router();
 
 // Get all notifications for student
-router.get("/", protect, getNotifications);
+router.get("/", protect, requireStudent, getNotifications);
 
 // Mark specific notification as read
-router.put("/:notificationId/read", protect, markAsRead);
+router.put("/:notificationId/read", protect, requireStudent, markAsRead);
 
 // Mark all notifications as read
-router.put("/read-all", protect, markAllAsRead);
+router.put("/read-all", protect, requireStudent, markAllAsRead);
 
 // Get unread notification count
-router.get("/unread-count", protect, getUnreadCount);
+router.get("/unread-count", protect, requireStudent, getUnreadCount);
 
 module.exports = router;

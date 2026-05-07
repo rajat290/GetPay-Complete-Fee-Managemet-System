@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const cors = require("cors");
 const connectDB = require("./config/db");
+const { applySecurityHeaders } = require("./middleware/securityMiddleware");
 
 // Import Models (for test route)
 const Student = require("./models/Student");
@@ -23,7 +24,22 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(applySecurityHeaders);
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes

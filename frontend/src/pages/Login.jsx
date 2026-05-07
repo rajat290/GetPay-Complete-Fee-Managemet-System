@@ -6,6 +6,7 @@ import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const [institutionCode, setInstitutionCode] = useState("GETPAY-DEMO");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -16,7 +17,7 @@ export default function Login() {
     e.preventDefault();
     setError("");
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/auth/login", { email, password, institutionCode });
       login(res.data, res.data.token);
 
       if (res.data.role === "admin") {
@@ -46,6 +47,21 @@ export default function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Institution Code
+            </label>
+            <input
+              type="text"
+              className="mt-1 w-full px-4 py-2 border rounded-lg text-gray-800 dark:text-gray-200 
+                         bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 
+                         focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              value={institutionCode}
+              onChange={(e) => setInstitutionCode(e.target.value.toUpperCase())}
+              required
+            />
+          </div>
+
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

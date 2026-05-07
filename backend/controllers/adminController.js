@@ -2,10 +2,20 @@ const Student = require("../models/Student");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 
+const requireAdmin = (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403).json({ error: "Access denied" });
+    return false;
+  }
+  return true;
+};
+
 // Get all students (admin only)
 exports.getAllStudents = async (req, res) => {
   try {
-    const students = await Student.find().select("-password");
+    if (!requireAdmin(req, res)) return;
+
+    const students = await Student.find({ institutionId: req.institutionId }).select("-password");
     res.json(students);
   } catch (err) {
     console.error("Error fetching students:", err);
@@ -16,6 +26,8 @@ exports.getAllStudents = async (req, res) => {
 // Create a new student (admin only)
 exports.createStudent = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { name, email, registrationNo, className } = req.body;
 
     if (!name || !email || !registrationNo || !className) {
@@ -24,6 +36,7 @@ exports.createStudent = async (req, res) => {
 
     // Check for existing student by email or registrationNo
     const studentExists = await Student.findOne({
+      institutionId: req.institutionId,
       $or: [{ email }, { registrationNo }]
     });
     if (studentExists) {
@@ -32,6 +45,7 @@ exports.createStudent = async (req, res) => {
 
     // Create new student
     const student = new Student({
+      institutionId: req.institutionId,
       name,
       email,
       registrationNo,
@@ -60,13 +74,19 @@ exports.createStudent = async (req, res) => {
 // Get all payments for admin dashboard
 exports.getAllPayments = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { className, status, search, startDate, endDate } = req.query;
     
-    let query = {};
+    let query = { institutionId: req.institutionId };
     
     // Filter by class
     if (className) {
-      query['studentId.className'] = className;
+      const students = await Student.find({
+        institutionId: req.institutionId,
+        className
+      }).select("_id");
+      query.studentId = { $in: students.map((student) => student._id) };
     }
     
     // Filter by status
@@ -84,10 +104,17 @@ exports.getAllPayments = async (req, res) => {
     
     // Search functionality
     if (search) {
+      const matchingStudents = await Student.find({
+        institutionId: req.institutionId,
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { registrationNo: { $regex: search, $options: 'i' } }
+        ]
+      }).select("_id");
+
       query.$or = [
-        { 'studentId.name': { $regex: search, $options: 'i' } },
-        { 'studentId.registrationNo': { $regex: search, $options: 'i' } },
-        { razorpayPaymentId: { $regex: search, $options: 'i' } }
+        { razorpayPaymentId: { $regex: search, $options: 'i' } },
+        { studentId: { $in: matchingStudents.map((student) => student._id) } }
       ];
     }
     
@@ -100,7 +127,7 @@ exports.getAllPayments = async (req, res) => {
         path: 'assignmentId',
         populate: {
           path: 'feeId',
-          select: 'feeTitle'
+          select: 'title'
         }
       })
       .sort({ createdAt: -1 });
@@ -112,7 +139,7 @@ exports.getAllPayments = async (req, res) => {
       studentId: `STD${payment.studentId.registrationNo}`,
       student: payment.studentId.name,
       amount: payment.amount,
-      type: payment.assignmentId?.feeId?.feeTitle || 'Unknown',
+      type: payment.assignmentId?.feeId?.title || 'Unknown',
       date: payment.createdAt,
       status: payment.status,
       razorpayTransactionId: payment.razorpayPaymentId || '-',
@@ -129,9 +156,11 @@ exports.getAllPayments = async (req, res) => {
 // Get payment statistics for admin dashboard
 exports.getPaymentStats = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { className, startDate, endDate } = req.query;
     
-    let matchQuery = {};
+    let matchQuery = { institutionId: req.institutionId };
     
     // Filter by class
     if (className) {
@@ -298,7 +327,9 @@ exports.getPaymentStats = async (req, res) => {
 // Get all unique class names
 exports.getClassNames = async (req, res) => {
   try {
-    const classNames = await Student.distinct('className');
+    if (!requireAdmin(req, res)) return;
+
+    const classNames = await Student.distinct('className', { institutionId: req.institutionId });
     res.json(classNames);
   } catch (err) {
     console.error("Error fetching class names:", err);
@@ -309,9 +340,11 @@ exports.getClassNames = async (req, res) => {
 // Get payment details by ID
 exports.getPaymentDetails = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { paymentId } = req.params;
     
-    const payment = await Payment.findById(paymentId)
+    const payment = await Payment.findOne({ _id: paymentId, institutionId: req.institutionId })
       .populate({
         path: 'studentId',
         select: 'name registrationNo className email'
@@ -320,7 +353,7 @@ exports.getPaymentDetails = async (req, res) => {
         path: 'assignmentId',
         populate: {
           path: 'feeId',
-          select: 'feeTitle description'
+          select: 'title description'
         }
       });
     
@@ -338,7 +371,7 @@ exports.getPaymentDetails = async (req, res) => {
         email: payment.studentId.email
       },
       fee: {
-        title: payment.assignmentId?.feeId?.feeTitle || 'Unknown',
+        title: payment.assignmentId?.feeId?.title || 'Unknown',
         description: payment.assignmentId?.feeId?.description || ''
       },
       amount: payment.amount,
@@ -360,9 +393,11 @@ exports.getPaymentDetails = async (req, res) => {
 // Get recent payments for real-time updates
 exports.getRecentPayments = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { limit = 10 } = req.query;
     
-    const recentPayments = await Payment.find()
+    const recentPayments = await Payment.find({ institutionId: req.institutionId })
       .populate({
         path: 'studentId',
         select: 'name registrationNo className'
@@ -371,7 +406,7 @@ exports.getRecentPayments = async (req, res) => {
         path: 'assignmentId',
         populate: {
           path: 'feeId',
-          select: 'feeTitle'
+          select: 'title'
         }
       })
       .sort({ createdAt: -1 })
@@ -384,7 +419,7 @@ exports.getRecentPayments = async (req, res) => {
       studentId: `STD${payment.studentId.registrationNo}`,
       student: payment.studentId.name,
       amount: payment.amount,
-      type: payment.assignmentId?.feeId?.feeTitle || 'Unknown',
+      type: payment.assignmentId?.feeId?.title || 'Unknown',
       date: payment.createdAt,
       status: payment.status,
       razorpayTransactionId: payment.razorpayPaymentId || '-',

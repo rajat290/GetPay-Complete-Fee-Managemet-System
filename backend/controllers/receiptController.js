@@ -6,7 +6,11 @@ const path = require("path");
 // Get all receipts for a student
 exports.getReceipts = async (req, res) => {
   try {
-    const payments = await Payment.find({ studentId: req.user._id, status: "completed" })
+    const payments = await Payment.find({
+        institutionId: req.institutionId,
+        studentId: req.user._id,
+        status: "completed"
+      })
       .populate({
         path: "assignmentId",
         populate: { path: "feeId", select: "title" }
@@ -37,6 +41,7 @@ exports.downloadReceipt = async (req, res) => {
     // Verify the payment belongs to the student
     const payment = await Payment.findOne({ 
       _id: paymentId, 
+      institutionId: req.institutionId,
       studentId: req.user._id,
       status: "completed"
     });

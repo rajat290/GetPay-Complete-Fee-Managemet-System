@@ -1,80 +1,122 @@
-const request = require('supertest');
-const express = require('express');
-const mongoose = require('mongoose');
-const feeRoutes = require('../../routes/feeRoutes');
-const Fee = require('../../models/Fee');
+const request = require("supertest");
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const feeRoutes = require("../../routes/feeRoutes");
+const Fee = require("../../models/Fee");
+const Institution = require("../../models/Institution");
+const Student = require("../../models/Student");
 
-// Create test app
 const app = express();
 app.use(express.json());
-app.use('/api/fees', feeRoutes);
+app.use("/api/fees", feeRoutes);
 
-describe('Fee Routes', () => {
-  beforeAll(async () => {
-    // Connect to test database
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/getpay_test');
-    }
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
-  });
+describe("Fee Routes", () => {
+  let institution;
+  let admin;
+  let student;
+  let token;
+  let studentToken;
 
   beforeEach(async () => {
-    await Fee.deleteMany({});
+    process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
+
+    institution = await Institution.create({
+      name: "Test Institution",
+      code: "TEST-INST"
+    });
+
+    admin = await Student.create({
+      institutionId: institution._id,
+      name: "Admin User",
+      email: "admin@example.com",
+      password: "password",
+      registrationNo: "ADM001",
+      className: "Administration",
+      role: "admin"
+    });
+
+    student = await Student.create({
+      institutionId: institution._id,
+      name: "Student User",
+      email: "student@example.com",
+      password: "password",
+      registrationNo: "STD001",
+      className: "10A",
+      role: "student"
+    });
+
+    token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET);
+    studentToken = jwt.sign({ id: student._id, role: student.role }, process.env.JWT_SECRET);
   });
 
-  describe('GET /api/fees', () => {
-    it('should return all fees', async () => {
-      const fee1 = new Fee({
-        name: 'Tuition Fee',
+  describe("GET /api/fees", () => {
+    it("returns fees for the authenticated admin institution", async () => {
+      await Fee.create({
+        institutionId: institution._id,
+        title: "Tuition Fee",
         amount: 1000,
-        type: 'monthly',
-        description: 'Monthly tuition fee'
+        category: "Tuition",
+        dueDate: new Date("2026-12-31")
       });
-      const fee2 = new Fee({
-        name: 'Exam Fee',
-        amount: 500,
-        type: 'annual',
-        description: 'Annual exam fee'
-      });
-      
-      await fee1.save();
-      await fee2.save();
 
-      const response = await request(app).get('/api/fees');
-      
+      const response = await request(app)
+        .get("/api/fees")
+        .set("Authorization", `Bearer ${token}`);
+
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0]).toHaveProperty('name', 'Tuition Fee');
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0]).toHaveProperty("title", "Tuition Fee");
     });
   });
 
-  describe('POST /api/fees', () => {
-    it('should create a new fee', async () => {
-      const feeData = {
-        name: 'Library Fee',
-        amount: 200,
-        type: 'annual',
-        description: 'Annual library fee'
-      };
-
+  describe("POST /api/fees/create", () => {
+    it("creates a new institution-scoped fee", async () => {
       const response = await request(app)
-        .post('/api/fees')
-        .send(feeData);
+        .post("/api/fees/create")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          title: "Library Fee",
+          amount: 200,
+          category: "Other",
+          dueDate: "2026-12-31"
+        });
 
       expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('name', 'Library Fee');
-      expect(response.body).toHaveProperty('_id');
+      expect(response.body).toHaveProperty("title", "Library Fee");
+      expect(response.body).toHaveProperty("institutionId", institution._id.toString());
     });
 
-    it('should not create fee without required fields', async () => {
+    it("does not create fee without required fields", async () => {
       const response = await request(app)
-        .post('/api/fees')
+        .post("/api/fees/create")
+        .set("Authorization", `Bearer ${token}`)
         .send({});
 
       expect(response.status).toBe(400);
+    });
+
+    it("blocks students from creating fees", async () => {
+      const response = await request(app)
+        .post("/api/fees/create")
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send({
+          title: "Library Fee",
+          amount: 200,
+          category: "Other",
+          dueDate: "2026-12-31"
+        });
+
+      expect(response.status).toBe(403);
+    });
+  });
+
+  describe("GET /api/fees/my-fees", () => {
+    it("blocks admins from student fee endpoint", async () => {
+      const response = await request(app)
+        .get("/api/fees/my-fees")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
     });
   });
 });

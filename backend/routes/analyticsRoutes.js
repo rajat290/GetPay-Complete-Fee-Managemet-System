@@ -9,32 +9,34 @@ const {
   getFeeAnalytics,
   getPaymentAnalytics
 } = require("../controllers/analyticsController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, requireAdmin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+router.use(protect, requireAdmin);
+
 // Total summary (collected, pending, defaulters)
-router.get("/", protect, getAnalytics);
+router.get("/", getAnalytics);
 
 // Comprehensive dashboard analytics
-router.get("/dashboard", protect, getDashboardAnalytics);
+router.get("/dashboard", getDashboardAnalytics);
 
 // Class-wise collection report
-router.get("/class-report", protect, getClassWiseReport);
+router.get("/class-report", getClassWiseReport);
 
 // Monthly revenue trends
-router.get("/monthly-trends", protect, getMonthlyRevenueTrends);
+router.get("/monthly-trends", getMonthlyRevenueTrends);
 
 // Payment status distribution
-router.get("/status-distribution", protect, getPaymentStatusDistribution);
+router.get("/status-distribution", getPaymentStatusDistribution);
 
 // Class-wise fee collection
-router.get("/class/:className", protect, getClassAnalytics);
+router.get("/class/:className", getClassAnalytics);
 
 // Category-wise fee totals
-router.get("/fees", protect, getFeeAnalytics);
+router.get("/fees", getFeeAnalytics);
 
 // Monthly payments trend
-router.get("/payments", protect, getPaymentAnalytics);
+router.get("/payments", getPaymentAnalytics);
 
 module.exports = router;

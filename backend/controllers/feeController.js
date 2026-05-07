@@ -1,5 +1,6 @@
 const Fee = require("../models/Fee");
 const FeeAssignment = require("../models/FeeAssignment");
+const Student = require("../models/Student");
 
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
@@ -17,7 +18,13 @@ exports.createFee = async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    const fee = await Fee.create({ title, amount, category, dueDate });
+    const fee = await Fee.create({
+      institutionId: req.institutionId,
+      title,
+      amount,
+      category,
+      dueDate
+    });
     res.status(201).json(fee);
   } catch (err) {
     console.error("Error creating fee:", err);
@@ -41,7 +48,22 @@ exports.assignFee = async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    const assignment = await FeeAssignment.create({ studentId, feeId, dueDate, status: "pending" });
+    const [fee, student] = await Promise.all([
+      Fee.findOne({ _id: feeId, institutionId: req.institutionId }),
+      Student.findOne({ _id: studentId, institutionId: req.institutionId })
+    ]);
+
+    if (!fee || !student) {
+      return res.status(404).json({ message: "Student or fee not found for this institution" });
+    }
+
+    const assignment = await FeeAssignment.create({
+      institutionId: req.institutionId,
+      studentId,
+      feeId,
+      dueDate,
+      status: "pending"
+    });
     res.status(201).json(assignment);
   } catch (err) {
     console.error("Error assigning fee:", err);
@@ -52,7 +74,10 @@ exports.assignFee = async (req, res) => {
 // Student: Get My Fees
 exports.getStudentFees = async (req, res) => {
   try {
-    const assignments = await FeeAssignment.find({ studentId: req.user._id })
+    const assignments = await FeeAssignment.find({
+        institutionId: req.institutionId,
+        studentId: req.user._id
+      })
       .populate("feeId")
       .sort({ dueDate: 1 });
 
@@ -79,7 +104,7 @@ exports.getAllFees = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const fees = await Fee.find();
+    const fees = await Fee.find({ institutionId: req.institutionId });
     res.json(fees);
   } catch (err) {
     console.error("Error fetching fees:", err);
@@ -90,7 +115,11 @@ exports.getAllFees = async (req, res) => {
 // Admin: Get all fee assignments with student and fee info
 exports.getAllFeeAssignments = async (req, res) => {
   try {
-    const assignments = await FeeAssignment.find()
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const assignments = await FeeAssignment.find({ institutionId: req.institutionId })
       .populate('studentId', 'name registrationNo')
       .populate('feeId', 'title amount dueDate')
       .sort({ dueDate: 1 });

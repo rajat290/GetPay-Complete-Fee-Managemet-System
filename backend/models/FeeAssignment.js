@@ -7,6 +7,11 @@ const feeAssignmentSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    academicSessionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AcademicSession',
+        index: true
+    },
     studentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student',

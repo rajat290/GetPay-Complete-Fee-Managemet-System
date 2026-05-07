@@ -8,6 +8,21 @@ const studentSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    branchId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch',
+        index: true
+    },
+    academicSessionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AcademicSession',
+        index: true
+    },
+    classGroupId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ClassGroup',
+        index: true
+    },
     name: {
         type: String,
         required: [true, 'Please add a name']
@@ -36,6 +51,16 @@ const studentSchema = new mongoose.Schema({
     className: {
         type: String,
         required: true,
+    },
+    guardian: {
+        name: { type: String, trim: true },
+        email: { type: String, lowercase: true, trim: true },
+        phone: { type: String, trim: true }
+    },
+    status: {
+        type: String,
+        enum: ['active', 'inactive', 'alumni'],
+        default: 'active'
     },
 
 }, { timestamps: true });

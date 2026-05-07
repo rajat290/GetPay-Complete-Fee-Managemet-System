@@ -7,6 +7,11 @@ const feeSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  academicSessionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AcademicSession",
+    index: true
+  },
   title: { type: String, required: true },
   amount: { type: Number, required: true },
   category: { type: String, enum: ["Tuition", "Hostel", "Transport", "Other"], required: true },

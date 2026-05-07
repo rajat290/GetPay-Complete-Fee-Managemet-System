@@ -1,92 +1,93 @@
-const request = require('supertest');
-const express = require('express');
-const mongoose = require('mongoose');
-const authController = require('../../controllers/authController');
-const Student = require('../../models/Student');
+const request = require("supertest");
+const express = require("express");
+const authController = require("../../controllers/authController");
+const Institution = require("../../models/Institution");
+const Student = require("../../models/Student");
 
-// Create test app
 const app = express();
 app.use(express.json());
-app.post('/api/auth/register', authController.register);
-app.post('/api/auth/login', authController.login);
+app.post("/api/auth/register", authController.registerStudent);
+app.post("/api/auth/login", authController.loginStudent);
 
-describe('Auth Controller', () => {
+describe("Auth Controller", () => {
+  let institution;
+
   beforeEach(async () => {
-    await Student.deleteMany({});
-  });
+    process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 
-  describe('POST /api/auth/register', () => {
-    it('should register a new student', async () => {
-      const studentData = {
-        name: 'Test Student',
-        email: 'test@example.com',
-        password: 'password123',
-        rollNumber: 'TEST001',
-        class: '10',
-        section: 'A'
-      };
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(studentData);
-
-      expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.student).toHaveProperty('email', 'test@example.com');
-    });
-
-    it('should not register duplicate email', async () => {
-      const studentData = {
-        name: 'Test Student',
-        email: 'test@example.com',
-        password: 'password123',
-        rollNumber: 'TEST001',
-        class: '10',
-        section: 'A'
-      };
-
-      await request(app).post('/api/auth/register').send(studentData);
-      
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(studentData);
-
-      expect(response.status).toBe(400);
+    institution = await Institution.create({
+      name: "Test Institution",
+      code: "TEST-INST"
     });
   });
 
-  describe('POST /api/auth/login', () => {
-    it('should login with valid credentials', async () => {
-      const student = new Student({
-        name: 'Test Student',
-        email: 'test@example.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // hashed 'password'
-        rollNumber: 'TEST001',
-        class: '10',
-        section: 'A'
+  it("registers a student inside an institution", async () => {
+    const response = await request(app)
+      .post("/api/auth/register")
+      .send({
+        institutionCode: institution.code,
+        name: "Test Student",
+        email: "test@example.com",
+        password: "password123",
+        registrationNo: "TEST001",
+        className: "10A"
       });
-      await student.save();
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'password'
-        });
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty("token");
+    expect(response.body).toHaveProperty("email", "test@example.com");
+    expect(response.body).toHaveProperty("role", "student");
+    expect(response.body.institution).toHaveProperty("code", institution.code);
+  });
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('token');
+  it("rejects duplicate students inside the same institution", async () => {
+    const studentData = {
+      institutionCode: institution.code,
+      name: "Test Student",
+      email: "test@example.com",
+      password: "password123",
+      registrationNo: "TEST001",
+      className: "10A"
+    };
+
+    await request(app).post("/api/auth/register").send(studentData);
+    const response = await request(app).post("/api/auth/register").send(studentData);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("logs in with valid institution-scoped credentials", async () => {
+    await Student.create({
+      institutionId: institution._id,
+      name: "Test Student",
+      email: "test@example.com",
+      password: "password",
+      registrationNo: "TEST001",
+      className: "10A"
     });
 
-    it('should not login with invalid credentials', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'wrongpassword'
-        });
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({
+        institutionCode: institution.code,
+        email: "test@example.com",
+        password: "password"
+      });
 
-      expect(response.status).toBe(401);
-    });
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty("token");
+    expect(response.body.institution).toHaveProperty("code", institution.code);
+  });
+
+  it("does not login with invalid credentials", async () => {
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({
+        institutionCode: institution.code,
+        email: "test@example.com",
+        password: "wrongpassword"
+      });
+
+    expect(response.status).toBe(401);
   });
 });

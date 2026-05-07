@@ -10,22 +10,28 @@ exports.getAnalytics = async (req, res) => {
     }
 
     // Get total students count
-    const totalStudents = await Student.countDocuments({ role: "student" });
+    const totalStudents = await Student.countDocuments({
+      institutionId: req.institutionId,
+      role: "student"
+    });
 
     // Get total collected from completed payments
     const totalCollected = await Payment.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { institutionId: req.institutionId, status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
     // Get pending fees amount
     const pendingFees = await Payment.aggregate([
-      { $match: { status: "pending" } },
+      { $match: { institutionId: req.institutionId, status: "pending" } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
     // Get defaulters count (pending payments)
-    const defaulters = await Payment.countDocuments({ status: "pending" });
+    const defaulters = await Payment.countDocuments({
+      institutionId: req.institutionId,
+      status: "pending"
+    });
 
     res.json({
       totalStudents,
@@ -48,18 +54,19 @@ exports.getDashboardAnalytics = async (req, res) => {
 
     // Total Revenue (all completed payments)
     const totalRevenue = await Payment.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { institutionId: req.institutionId, status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
     // Pending Payments
     const pendingPayments = await Payment.aggregate([
-      { $match: { status: "pending" } },
+      { $match: { institutionId: req.institutionId, status: "pending" } },
       { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
     ]);
 
     // Total Expected Revenue (all payments)
     const totalExpected = await Payment.aggregate([
+      { $match: { institutionId: req.institutionId } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
@@ -70,7 +77,7 @@ exports.getDashboardAnalytics = async (req, res) => {
 
     // Monthly Revenue Data (last 12 months)
     const monthlyRevenue = await Payment.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { institutionId: req.institutionId, status: "completed" } },
       {
         $group: {
           _id: {
@@ -94,6 +101,7 @@ exports.getDashboardAnalytics = async (req, res) => {
 
     // Class-wise collection data
     const classWiseData = await Payment.aggregate([
+      { $match: { institutionId: req.institutionId } },
       {
         $lookup: {
           from: 'students',
@@ -155,7 +163,7 @@ exports.getClassWiseReport = async (req, res) => {
 
     const { startDate, endDate, className } = req.query;
     
-    let matchQuery = {};
+    let matchQuery = { institutionId: req.institutionId };
     
     // Filter by date range
     if (startDate && endDate) {
@@ -292,7 +300,7 @@ exports.getMonthlyRevenueTrends = async (req, res) => {
     const { months = 12 } = req.query;
 
     const monthlyData = await Payment.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { institutionId: req.institutionId, status: "completed" } },
       {
         $group: {
           _id: {
@@ -328,6 +336,7 @@ exports.getPaymentStatusDistribution = async (req, res) => {
     }
 
     const statusDistribution = await Payment.aggregate([
+      { $match: { institutionId: req.institutionId } },
       {
         $group: {
           _id: '$status',
@@ -358,11 +367,21 @@ exports.getFeeAnalytics = async (req, res) => {
     }
 
     const feeStats = await FeeAssignment.aggregate([
+      { $match: { institutionId: req.institutionId } },
+      {
+        $lookup: {
+          from: "fees",
+          localField: "feeId",
+          foreignField: "_id",
+          as: "fee"
+        }
+      },
+      { $unwind: "$fee" },
       {
         $group: {
           _id: "$status",
           count: { $sum: 1 },
-          totalAmount: { $sum: "$amount" }
+          totalAmount: { $sum: "$fee.amount" }
         }
       }
     ]);
@@ -381,6 +400,7 @@ exports.getPaymentAnalytics = async (req, res) => {
     }
 
     const paymentStats = await Payment.aggregate([
+      { $match: { institutionId: req.institutionId } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -401,34 +421,35 @@ exports.getPaymentAnalytics = async (req, res) => {
 
 exports.getClassAnalytics = async (req, res) => {
   try {
-    const classes = await Student.distinct("className");
+    const classes = await Student.distinct("className", { institutionId: req.institutionId });
 
     const result = [];
 
     for (const className of classes) {
-      const students = await Student.find({ className });
+      const students = await Student.find({ institutionId: req.institutionId, className });
       const studentIds = students.map((s) => s._id);
 
-      const totalCollected = await Fee.aggregate([
-        { $match: { student: { $in: studentIds }, status: "paid" } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]);
+      const assignments = await FeeAssignment.find({
+        institutionId: req.institutionId,
+        studentId: { $in: studentIds }
+      }).populate("feeId", "amount");
 
-      const pendingFees = await Fee.aggregate([
-        { $match: { student: { $in: studentIds }, status: "pending" } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]);
+      const totalCollected = assignments
+        .filter((assignment) => assignment.status === "paid")
+        .reduce((sum, assignment) => sum + (assignment.feeId?.amount || 0), 0);
 
-      const defaulters = await Fee.countDocuments({
-        student: { $in: studentIds },
-        status: "pending",
-        dueDate: { $lt: new Date() },
-      });
+      const pendingFees = assignments
+        .filter((assignment) => assignment.status === "pending")
+        .reduce((sum, assignment) => sum + (assignment.feeId?.amount || 0), 0);
+
+      const defaulters = assignments.filter((assignment) => (
+        assignment.status === "pending" && assignment.dueDate < new Date()
+      )).length;
 
       result.push({
         className,
-        totalCollected: totalCollected[0]?.total || 0,
-        pendingFees: pendingFees[0]?.total || 0,
+        totalCollected,
+        pendingFees,
         defaulters,
       });
     }

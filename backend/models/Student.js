@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const studentSchema = new mongoose.Schema({
+    institutionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Institution',
+        required: true,
+        index: true
+    },
     name: {
         type: String,
         required: [true, 'Please add a name']
@@ -9,12 +15,13 @@ const studentSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'Please add an email'],
-        unique: true
+        lowercase: true,
+        trim: true
     },
     registrationNo: {
         type: String,
         required: true,
-        unique: true
+        trim: true
     },
     password: {
         type: String,
@@ -32,6 +39,9 @@ const studentSchema = new mongoose.Schema({
     },
 
 }, { timestamps: true });
+
+studentSchema.index({ institutionId: 1, email: 1 }, { unique: true });
+studentSchema.index({ institutionId: 1, registrationNo: 1 }, { unique: true });
 
 
 // courses: [{type: mongoose.Schema.Types.ObjectId, ref: 'Course'}]// this is for one to many relationship

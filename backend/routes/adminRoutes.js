@@ -24,13 +24,13 @@ router.get("/payments", protect, getAllPayments);
 // GET /admin/payments/stats - Get payment statistics
 router.get("/payments/stats", protect, getPaymentStats);
 
+// GET /admin/payments/recent - Get recent payments for real-time updates
+router.get("/payments/recent", protect, getRecentPayments);
+
 // GET /admin/classes - Get all unique class names
 router.get("/classes", protect, getClassNames);
 
 // GET /admin/payments/:paymentId - Get payment details
 router.get("/payments/:paymentId", protect, getPaymentDetails);
-
-// GET /admin/payments/recent - Get recent payments for real-time updates
-router.get("/payments/recent", protect, getRecentPayments);
 
 module.exports = router;

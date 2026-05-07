@@ -3,7 +3,10 @@ const Notification = require("../models/Notification");
 // Get all notifications for a student
 exports.getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ studentId: req.user._id })
+    const notifications = await Notification.find({
+        institutionId: req.institutionId,
+        studentId: req.user._id
+      })
       .sort({ createdAt: -1 })
       .limit(50);
     
@@ -19,7 +22,19 @@ exports.markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
     
-    await Notification.findByIdAndUpdate(notificationId, { isRead: true });
+    const notification = await Notification.findOneAndUpdate(
+      {
+        _id: notificationId,
+        institutionId: req.institutionId,
+        studentId: req.user._id
+      },
+      { isRead: true },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
     
     res.json({ message: "Notification marked as read" });
   } catch (error) {
@@ -32,7 +47,7 @@ exports.markAsRead = async (req, res) => {
 exports.markAllAsRead = async (req, res) => {
   try {
     await Notification.updateMany(
-      { studentId: req.user._id, isRead: false },
+      { institutionId: req.institutionId, studentId: req.user._id, isRead: false },
       { isRead: true }
     );
     
@@ -48,6 +63,7 @@ exports.getUnreadCount = async (req, res) => {
   try {
     const count = await Notification.countDocuments({
       studentId: req.user._id,
+      institutionId: req.institutionId,
       isRead: false
     });
     

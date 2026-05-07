@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const feeSchema = new mongoose.Schema({
+  institutionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Institution",
+    required: true,
+    index: true
+  },
   title: { type: String, required: true },
   amount: { type: Number, required: true },
   category: { type: String, enum: ["Tuition", "Hostel", "Transport", "Other"], required: true },

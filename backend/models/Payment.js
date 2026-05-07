@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const paymenrtSchema = new mongoose.Schema({
+    institutionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Institution',
+        required: true,
+        index: true
+    },
     studentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student',

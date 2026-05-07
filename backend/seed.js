@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 
 // Models
 const Student = require("./models/Student");
+const Institution = require("./models/Institution");
 const Fee = require("./models/Fee");
 const FeeAssignment = require("./models/FeeAssignment");
 const Payment = require("./models/Payment");
@@ -15,13 +16,24 @@ mongoose
     console.log("✅ MongoDB Connected for seeding");
 
     // Clear old data
+    await Institution.deleteMany();
     await Student.deleteMany();
     await Fee.deleteMany();
     await FeeAssignment.deleteMany();
     await Payment.deleteMany();
 
+    const institution = await Institution.create({
+      name: "GetPay Demo College",
+      code: "GETPAY-DEMO",
+      type: "college",
+      email: "admin@example.com",
+      phone: "9999999999",
+      address: "Demo Campus"
+    });
+
     // Admin user (plain password, schema will hash)
     await Student.create({
+      institutionId: institution._id,
       name: "Admin User",
       email: "admin@example.com",
       password: "admin123", // plain password
@@ -47,6 +59,7 @@ mongoose
 
     for (const feeType of feeTypes) {
       const fee = await Fee.create({
+        institutionId: institution._id,
         ...feeType,
         dueDate: new Date("2024-12-31")
       });
@@ -57,6 +70,7 @@ mongoose
       for (let i = 1; i <= 10; i++) {
         const regNo = `STU${c + 1}${i.toString().padStart(3, "0")}`;
         const student = await Student.create({
+          institutionId: institution._id,
           name: `${classes[c]} Student ${i}`,
           email: `student${c + 1}_${i}@example.com`,
           password: "123456", // plain password
@@ -70,6 +84,7 @@ mongoose
         // Create fee assignments for each student
         for (const fee of allFees) {
           const feeAssignment = await FeeAssignment.create({
+            institutionId: institution._id,
             studentId: student._id,
             feeId: fee._id,
             dueDate: new Date("2024-12-31"),
@@ -83,6 +98,7 @@ mongoose
     // Create sample payments
     const samplePayments = [
       {
+        institutionId: institution._id,
         studentId: allStudents[0]._id,
         assignmentId: allFeeAssignments[0]._id,
         amount: 25000,
@@ -93,6 +109,7 @@ mongoose
         razorpaySignature: "signature_1234567890abcdef"
       },
       {
+        institutionId: institution._id,
         studentId: allStudents[1]._id,
         assignmentId: allFeeAssignments[5]._id,
         amount: 15000,
@@ -103,6 +120,7 @@ mongoose
         razorpaySignature: "signature_abcdef1234567890"
       },
       {
+        institutionId: institution._id,
         studentId: allStudents[2]._id,
         assignmentId: allFeeAssignments[10]._id,
         amount: 2000,
@@ -113,6 +131,7 @@ mongoose
         razorpaySignature: "signature_pending1234567890"
       },
       {
+        institutionId: institution._id,
         studentId: allStudents[3]._id,
         assignmentId: allFeeAssignments[15]._id,
         amount: 3000,
@@ -123,6 +142,7 @@ mongoose
         razorpaySignature: "signature_failed1234567890"
       },
       {
+        institutionId: institution._id,
         studentId: allStudents[4]._id,
         assignmentId: allFeeAssignments[20]._id,
         amount: 8000,
@@ -143,7 +163,7 @@ mongoose
       }
     }
 
-    console.log(`🌱 Seeded ${allStudents.length} students with ${allFees.length} fee types and ${samplePayments.length} sample payments.`);
+    console.log(`Seeded ${institution.name} (${institution.code}) with ${allStudents.length} students, ${allFees.length} fee types, and ${samplePayments.length} sample payments.`);
     mongoose.connection.close();
   })
   .catch((err) => console.error("❌ Seeding error:", err));

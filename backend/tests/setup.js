@@ -17,11 +17,9 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-// Clean up between tests
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+// Clean up between tests, including stale indexes from older schemas.
+beforeEach(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
   }
 });

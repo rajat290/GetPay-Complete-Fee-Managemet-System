@@ -1,4 +1,5 @@
 const Student = require("../models/Student");
+const Institution = require("../models/Institution");
 const jwt = require("jsonwebtoken");
 
 // Generate JWT
@@ -11,22 +12,47 @@ const generateToken = (id, role) => {
 // Register
 exports.registerStudent = async (req, res) => {
   try {
-    const { name, email, registrationNo, password, role } = req.body;
+    const { name, email, registrationNo, password, className, institutionCode } = req.body;
 
-    if (!name || !email || !registrationNo || !password) {
+    if (!name || !email || !registrationNo || !password || !className || !institutionCode) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    const userExists = await Student.findOne({ email });
+    const institution = await Institution.findOne({
+      code: institutionCode.toUpperCase(),
+      isActive: true
+    });
+
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const userExists = await Student.findOne({
+      institutionId: institution._id,
+      $or: [{ email: email.toLowerCase() }, { registrationNo }]
+    });
     if (userExists) return res.status(400).json({ error: "User already exists" });
 
-    const student = await Student.create({ name, email, registrationNo, password, role });
+    const student = await Student.create({
+      institutionId: institution._id,
+      name,
+      email,
+      registrationNo,
+      password,
+      className,
+      role: "student"
+    });
 
     res.status(201).json({
       _id: student._id,
       name: student.name,
       email: student.email,
       role: student.role,
+      institution: {
+        _id: institution._id,
+        name: institution.name,
+        code: institution.code
+      },
       token: generateToken(student._id, student.role),
     });
   } catch (err) {
@@ -37,15 +63,48 @@ exports.registerStudent = async (req, res) => {
 // Login
 exports.loginStudent = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, institutionCode } = req.body;
 
-    const student = await Student.findOne({ email });
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const query = { email: email?.toLowerCase() };
+
+    if (institutionCode) {
+      const institution = await Institution.findOne({
+        code: institutionCode.toUpperCase(),
+        isActive: true
+      });
+
+      if (!institution) {
+        return res.status(404).json({ error: "Institution not found" });
+      }
+
+      query.institutionId = institution._id;
+    }
+
+    const students = await Student.find(query).populate("institutionId", "name code isActive");
+    if (students.length > 1) {
+      return res.status(400).json({ error: "Institution code is required for this email" });
+    }
+
+    const student = students[0];
     if (student && (await student.matchPassword(password))) {
+      if (!student.institutionId || student.institutionId.isActive === false) {
+        return res.status(403).json({ error: "Institution is inactive" });
+      }
+
       res.json({
         _id: student._id,
         name: student.name,
         email: student.email,
         role: student.role,
+        institution: {
+          _id: student.institutionId._id,
+          name: student.institutionId.name,
+          code: student.institutionId.code
+        },
         token: generateToken(student._id, student.role),
       });
     } else {
@@ -59,7 +118,10 @@ exports.loginStudent = async (req, res) => {
 // Get Profile
 exports.getProfile = async (req, res) => {
   try {
-    const student = await Student.findById(req.user.id).select("-password");
+    const student = await Student.findOne({
+      _id: req.user._id,
+      institutionId: req.institutionId
+    }).select("-password");
     if (!student) return res.status(404).json({ error: "User not found" });
     res.json(student);
   } catch (err) {

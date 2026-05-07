@@ -1,9 +1,13 @@
-const crypto = require("crypto");
 const razorpayInstance = require("../config/razorpay");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
-const generateReceipt = require("../utils/receiptGenerator");
-const sendReceiptEmail = require("../utils/emailService");
+const {
+  verifyCheckoutSignature,
+  verifyWebhookSignature,
+  logPaymentEvent,
+  completePayment,
+  failPayment
+} = require("../services/paymentLifecycleService");
 
 // 1. Create Razorpay Order
 exports.createOrder = async (req, res) => {
@@ -42,7 +46,29 @@ exports.createOrder = async (req, res) => {
 
     const order = await razorpayInstance.orders.create(options);
 
+    const payment = await Payment.create({
+      institutionId: req.institutionId,
+      studentId: req.user._id,
+      assignmentId,
+      amount: payableAmount,
+      currency: order.currency,
+      mode: "online",
+      status: "pending",
+      gateway: "razorpay",
+      gatewayStatus: order.status,
+      razorpayOrderId: order.id
+    });
+
+    await logPaymentEvent({
+      payment,
+      eventType: "order.created",
+      razorpayOrderId: order.id,
+      payload: order,
+      source: "checkout_verify"
+    });
+
     res.json({
+      paymentId: payment._id,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
@@ -70,85 +96,117 @@ exports.verifyPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Fee assignment not found" });
     }
 
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
-      .digest("hex");
-
-    if (expectedSignature === razorpay_signature) {
-      // Update Payment in DB
-      const payment = await Payment.create({
-        institutionId: req.institutionId,
-        studentId: req.user._id,
-        assignmentId,
-        amount: assignment.feeId.amount,
-        mode: "online",
-        status: "completed",
-        razorpayPaymentId: razorpay_payment_id,
-        razorpayOrderId: razorpay_order_id,
-        razorpaySignature: razorpay_signature,
-      });
-
-      await FeeAssignment.findOneAndUpdate(
-        { _id: assignmentId, institutionId: req.institutionId, studentId: req.user._id },
-        { status: "paid" }
-      );
-
-      // Generate receipt and send email
-      try {
-        const filePath = await generateReceipt(req.user, assignmentId, payment);
-        await sendReceiptEmail(req.user, filePath);
-      } catch (receiptError) {
-        console.error("Receipt generation error:", receiptError);
-        // Don't fail the payment if receipt generation fails
-      }
-
-      // Create notification
-      try {
-        const Notification = require("../models/Notification");
-        await Notification.create({
-          institutionId: req.institutionId,
-          studentId: req.user._id,
-          title: "Payment Successful",
-          message: `Your payment of INR ${assignment.feeId.amount} has been processed successfully. Receipt has been sent to your email.`,
-          type: "success",
-          relatedPayment: payment._id
-        });
-      } catch (notificationError) {
-        console.error("Notification creation error:", notificationError);
-        // Don't fail the payment if notification creation fails
-      }
-
-      return res.json({ success: true, message: "Payment verified & receipt sent!" });
-    } else {
+    if (!verifyCheckoutSignature({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature
+    })) {
       return res.status(400).json({ success: false, message: "Payment verification failed" });
     }
+
+    let payment = await Payment.findOne({
+      institutionId: req.institutionId,
+      studentId: req.user._id,
+      assignmentId,
+      razorpayOrderId: razorpay_order_id
+    });
+
+    if (!payment) {
+      payment = await Payment.findOne({
+        razorpayPaymentId: razorpay_payment_id,
+        institutionId: req.institutionId,
+        studentId: req.user._id
+      });
+    }
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: "Payment order not found" });
+    }
+
+    if (payment.amount !== assignment.feeId.amount) {
+      return res.status(409).json({ success: false, message: "Payment amount mismatch" });
+    }
+
+    const result = await completePayment({
+      payment,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
+      razorpaySignature: razorpay_signature,
+      payload: req.body,
+      source: "checkout_verify"
+    });
+
+    return res.json({
+      success: true,
+      alreadyProcessed: result.alreadyProcessed,
+      message: result.alreadyProcessed ? "Payment already verified" : "Payment verified & receipt sent!"
+    });
   } catch (error) {
     console.error("Error verifying payment:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-// if (expectedSignature === razorpay_signature) {
-//   const payment = await Payment.create({
-//     studentId: req.user._id,
-//     assignmentId,
-//     amount: req.body.amount,
-//     mode: "online",
-//     status: "success",
-//     razorpayPaymentId: razorpay_payment_id,
-//     razorpayOrderId: razorpay_order_id,
-//     razorpaySignature: razorpay_signature,
-//   });
 
-//   await FeeAssignment.findByIdAndUpdate(assignmentId, { status: "paid" });
+exports.handleRazorpayWebhook = async (req, res) => {
+  try {
+    const signature = req.headers["x-razorpay-signature"];
+    const rawBody = req.body;
 
-//   const filePath = generateReceipt(req.user, assignmentId, payment);
-//   await sendReceiptEmail(req.user, filePath);
+    if (!verifyWebhookSignature({ rawBody, signature })) {
+      return res.status(400).json({ error: "Invalid webhook signature" });
+    }
 
-//   return res.json({ success: true, message: "Payment verified & receipt sent!" });
-// }
+    const event = JSON.parse(rawBody.toString("utf8"));
+    const paymentEntity = event.payload?.payment?.entity;
+
+    if (!paymentEntity?.order_id) {
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
+    const payment = await Payment.findOne({ razorpayOrderId: paymentEntity.order_id });
+
+    if (!payment) {
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
+    if (event.event === "payment.captured" || paymentEntity.status === "captured") {
+      await completePayment({
+        payment,
+        razorpayPaymentId: paymentEntity.id,
+        razorpayOrderId: paymentEntity.order_id,
+        gatewayStatus: paymentEntity.status,
+        payload: event,
+        source: "webhook",
+        gatewayEventId: event.id
+      });
+    } else if (event.event === "payment.failed" || paymentEntity.status === "failed") {
+      await failPayment({
+        payment,
+        razorpayPaymentId: paymentEntity.id,
+        razorpayOrderId: paymentEntity.order_id,
+        failureReason: paymentEntity.error_description || paymentEntity.error_reason,
+        payload: event,
+        source: "webhook",
+        gatewayEventId: event.id
+      });
+    } else {
+      await logPaymentEvent({
+        payment,
+        eventType: event.event || "payment.webhook.unhandled",
+        gatewayEventId: event.id,
+        razorpayOrderId: paymentEntity.order_id,
+        razorpayPaymentId: paymentEntity.id,
+        payload: event,
+        source: "webhook"
+      });
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Razorpay webhook error:", error);
+    return res.status(500).json({ error: "Webhook processing failed" });
+  }
+};
 
 // 3. Get Payment History for Student
 exports.getPaymentHistory = async (req, res) => {

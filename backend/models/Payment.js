@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const paymenrtSchema = new mongoose.Schema({
+const paymentSchema = new mongoose.Schema({
     institutionId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Institution',
@@ -21,6 +21,10 @@ const paymenrtSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    currency: {
+        type: String,
+        default: 'INR'
+    },
     mode: {
         type: String,
         enum: ['online', 'offline'],
@@ -31,13 +35,21 @@ const paymenrtSchema = new mongoose.Schema({
         enum: ['pending', 'completed', 'failed'],
         default: 'pending'
     },
+    gateway: {
+        type: String,
+        enum: ['razorpay', 'manual'],
+        default: 'razorpay'
+    },
+    gatewayStatus: { type: String },
+    failureReason: { type: String },
     razorpayPaymentId: { type: String },
     razorpayOrderId: { type: String },
     razorpaySignature: { type: String },
+    verifiedAt: { type: Date },
 }, { timestamps: true });
 
+paymentSchema.index({ institutionId: 1, assignmentId: 1, status: 1 });
+paymentSchema.index({ razorpayOrderId: 1 }, { unique: true, sparse: true });
+paymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
 
-
-module.exports = mongoose.model('Payment', paymenrtSchema);
-// This schema defines the structure for the Payment model, which includes fields for student ID, assignment ID, amount, mode of payment, status, and Razorpay transaction details. It establishes relationships with the Student and FeeAssignment models through ObjectId references. The timestamps option automatically adds createdAt and updatedAt fields to the schema.  
-// The status field can be 'pending', 'completed', or 'failed', indicating the payment status. Razorpay fields are included for integration with the Razorpay payment gateway.
+module.exports = mongoose.model('Payment', paymentSchema);

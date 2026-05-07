@@ -7,7 +7,8 @@ const {
   getClassNames, 
   getPaymentDetails,
   getRecentPayments,
-  recordOfflinePayment
+  recordOfflinePayment,
+  getPaymentReconciliation
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -31,6 +32,9 @@ router.get("/payments/stats", getPaymentStats);
 
 // GET /admin/payments/recent - Get recent payments for real-time updates
 router.get("/payments/recent", getRecentPayments);
+
+// GET /admin/payments/reconciliation - Get accounting reconciliation report
+router.get("/payments/reconciliation", getPaymentReconciliation);
 
 // POST /admin/payments/offline - Record manual/offline payment
 router.post("/payments/offline", validateRequest(recordOfflinePaymentSchema), recordOfflinePayment);

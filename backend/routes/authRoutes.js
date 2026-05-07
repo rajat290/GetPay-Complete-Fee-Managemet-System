@@ -1,10 +1,18 @@
 const express = require('express');
 const { registerStudent, loginStudent, getProfile } = require('../controllers/authController');
 const { protect} = require('../middleware/authMiddleware');
+const rateLimit = require('../middleware/rateLimitMiddleware');
 
 const router = express.Router();
-router.post('/register', registerStudent);
-router.post('/login', loginStudent);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  keyPrefix: 'auth'
+});
+
+router.post('/register', authLimiter, registerStudent);
+router.post('/login', authLimiter, loginStudent);
 router.get('/profile', protect, getProfile);
 module.exports = router;
 // This code sets up the authentication routes for student registration, login, and profile retrieval. It uses Express Router to define the routes and their corresponding controller functions.

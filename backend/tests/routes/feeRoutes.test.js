@@ -13,7 +13,9 @@ app.use("/api/fees", feeRoutes);
 describe("Fee Routes", () => {
   let institution;
   let admin;
+  let student;
   let token;
+  let studentToken;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
@@ -33,7 +35,18 @@ describe("Fee Routes", () => {
       role: "admin"
     });
 
+    student = await Student.create({
+      institutionId: institution._id,
+      name: "Student User",
+      email: "student@example.com",
+      password: "password",
+      registrationNo: "STD001",
+      className: "10A",
+      role: "student"
+    });
+
     token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET);
+    studentToken = jwt.sign({ id: student._id, role: student.role }, process.env.JWT_SECRET);
   });
 
   describe("GET /api/fees", () => {
@@ -80,6 +93,30 @@ describe("Fee Routes", () => {
         .send({});
 
       expect(response.status).toBe(400);
+    });
+
+    it("blocks students from creating fees", async () => {
+      const response = await request(app)
+        .post("/api/fees/create")
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send({
+          title: "Library Fee",
+          amount: 200,
+          category: "Other",
+          dueDate: "2026-12-31"
+        });
+
+      expect(response.status).toBe(403);
+    });
+  });
+
+  describe("GET /api/fees/my-fees", () => {
+    it("blocks admins from student fee endpoint", async () => {
+      const response = await request(app)
+        .get("/api/fees/my-fees")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
     });
   });
 });

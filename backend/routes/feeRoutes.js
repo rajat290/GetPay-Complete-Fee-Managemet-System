@@ -1,12 +1,14 @@
 const express = require("express");
 const { createFee, assignFee, getStudentFees, getAllFees, getAllFeeAssignments } = require("../controllers/feeController");
 const { protect, requireAdmin, requireStudent } = require("../middleware/authMiddleware");
+const validateRequest = require("../middleware/validateRequest");
+const { createFeeSchema, assignFeeSchema } = require("../validators/feeValidators");
 
 const router = express.Router();
 
 // Only admin can create or assign fees
-router.post("/create", protect, requireAdmin, createFee);
-router.post("/assign", protect, requireAdmin, assignFee);
+router.post("/create", protect, requireAdmin, validateRequest(createFeeSchema), createFee);
+router.post("/assign", protect, requireAdmin, validateRequest(assignFeeSchema), assignFee);
 
 // Students can view their fees
 router.get("/my-fees", protect, requireStudent, getStudentFees);

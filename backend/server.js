@@ -4,6 +4,7 @@ dotenv.config();
 const cors = require("cors");
 const connectDB = require("./config/db");
 const { applySecurityHeaders } = require("./middleware/securityMiddleware");
+const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 // Import Models (for test route)
 const Student = require("./models/Student");
@@ -63,10 +64,8 @@ app.get("/test", async (req, res) => {
   res.json({ message: "Models working!", totalStudents: studentCount });
 });
 
-// Catch-all for undefined routes
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

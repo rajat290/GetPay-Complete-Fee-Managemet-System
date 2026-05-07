@@ -48,7 +48,7 @@ tests/
 
 ## Test Database
 
-Tests use a separate MongoDB database (`getpay_test`) to avoid affecting production data. The database is cleaned between tests.
+Tests use `MONGODB_URI` or `mongodb://localhost:27017/getpay_test` by default and drop the database between tests. You can opt into `mongodb-memory-server` by setting `USE_MEMORY_MONGO=true`; this is useful in CI after the MongoDB binary cache is stable.
 
 ## Coverage
 
@@ -96,6 +96,9 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
+
+# Run tests in CI-style serial mode
+npm run test:ci
 
 # Run specific test file
 npm test -- authController.test.js

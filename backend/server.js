@@ -13,6 +13,7 @@ const Student = require("./models/Student");
 const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const { handleRazorpayWebhook } = require("./controllers/paymentController");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const receiptRoutes = require("./routes/receiptRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -41,6 +42,8 @@ app.use(cors({
   },
   credentials: true
 }));
+
+app.post("/api/payments/webhook", express.raw({ type: "application/json" }), handleRazorpayWebhook);
 app.use(express.json());
 
 // Routes

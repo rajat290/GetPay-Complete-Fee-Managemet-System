@@ -13,7 +13,7 @@ const paymentEventSchema = new mongoose.Schema({
   },
   gateway: {
     type: String,
-    enum: ["razorpay"],
+    enum: ["razorpay", "manual"],
     default: "razorpay"
   },
   eventType: {
@@ -37,7 +37,7 @@ const paymentEventSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ["checkout_verify", "webhook"],
+    enum: ["checkout_verify", "webhook", "admin_manual"],
     required: true
   },
   processedAt: {

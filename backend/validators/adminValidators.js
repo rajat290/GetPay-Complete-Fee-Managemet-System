@@ -13,4 +13,13 @@ const paymentDetailsSchema = {
   }
 };
 
-module.exports = { createStudentSchema, paymentDetailsSchema };
+const recordOfflinePaymentSchema = {
+  body: {
+    studentId: { required: true, type: "objectId" },
+    assignmentId: { required: true, type: "objectId" },
+    amount: { required: true, type: "number" },
+    mode: { required: true, enum: ["offline", "cash", "bank_transfer", "upi", "cheque"] }
+  }
+};
+
+module.exports = { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema };

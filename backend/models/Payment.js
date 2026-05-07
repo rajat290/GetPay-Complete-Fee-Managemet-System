@@ -27,7 +27,7 @@ const paymentSchema = new mongoose.Schema({
     },
     mode: {
         type: String,
-        enum: ['online', 'offline'],
+        enum: ['online', 'offline', 'cash', 'bank_transfer', 'upi', 'cheque'],
         required: true
     },
     status: {
@@ -42,6 +42,18 @@ const paymentSchema = new mongoose.Schema({
     },
     gatewayStatus: { type: String },
     failureReason: { type: String },
+    referenceNo: {
+        type: String,
+        trim: true
+    },
+    collectedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Student'
+    },
+    notes: {
+        type: String,
+        trim: true
+    },
     razorpayPaymentId: { type: String },
     razorpayOrderId: { type: String },
     razorpaySignature: { type: String },

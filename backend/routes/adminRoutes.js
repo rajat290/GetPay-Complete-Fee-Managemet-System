@@ -6,11 +6,12 @@ const {
   getPaymentStats, 
   getClassNames, 
   getPaymentDetails,
-  getRecentPayments
+  getRecentPayments,
+  recordOfflinePayment
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
-const { createStudentSchema, paymentDetailsSchema } = require("../validators/adminValidators");
+const { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema } = require("../validators/adminValidators");
 
 const router = express.Router();
 
@@ -30,6 +31,9 @@ router.get("/payments/stats", getPaymentStats);
 
 // GET /admin/payments/recent - Get recent payments for real-time updates
 router.get("/payments/recent", getRecentPayments);
+
+// POST /admin/payments/offline - Record manual/offline payment
+router.post("/payments/offline", validateRequest(recordOfflinePaymentSchema), recordOfflinePayment);
 
 // GET /admin/classes - Get all unique class names
 router.get("/classes", getClassNames);

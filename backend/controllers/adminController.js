@@ -2,6 +2,7 @@ const Student = require("../models/Student");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 const PaymentEvent = require("../models/PaymentEvent");
+const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -526,6 +527,29 @@ exports.recordOfflinePayment = async (req, res) => {
     });
   } catch (err) {
     console.error("Error recording offline payment:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get payment reconciliation report for accounting review
+exports.getPaymentReconciliation = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const report = await buildPaymentReconciliationReport({
+      institutionId: req.institutionId,
+      filters: {
+        className: req.query.className,
+        status: req.query.status,
+        mode: req.query.mode,
+        startDate: req.query.startDate,
+        endDate: req.query.endDate
+      }
+    });
+
+    res.json(report);
+  } catch (err) {
+    console.error("Error fetching payment reconciliation:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

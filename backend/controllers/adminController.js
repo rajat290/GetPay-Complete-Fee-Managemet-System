@@ -1,6 +1,7 @@
 const Student = require("../models/Student");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
+const PaymentEvent = require("../models/PaymentEvent");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -142,7 +143,9 @@ exports.getAllPayments = async (req, res) => {
       type: payment.assignmentId?.feeId?.title || 'Unknown',
       date: payment.createdAt,
       status: payment.status,
+      mode: payment.mode,
       razorpayTransactionId: payment.razorpayPaymentId || '-',
+      referenceNo: payment.referenceNo || '-',
       className: payment.studentId.className
     }));
     
@@ -377,6 +380,8 @@ exports.getPaymentDetails = async (req, res) => {
       amount: payment.amount,
       status: payment.status,
       mode: payment.mode,
+      referenceNo: payment.referenceNo,
+      notes: payment.notes,
       razorpayTransactionId: payment.razorpayPaymentId,
       razorpayOrderId: payment.razorpayOrderId,
       createdAt: payment.createdAt,
@@ -422,7 +427,9 @@ exports.getRecentPayments = async (req, res) => {
       type: payment.assignmentId?.feeId?.title || 'Unknown',
       date: payment.createdAt,
       status: payment.status,
+      mode: payment.mode,
       razorpayTransactionId: payment.razorpayPaymentId || '-',
+      referenceNo: payment.referenceNo || '-',
       className: payment.studentId.className,
       isNew: new Date(payment.createdAt) > new Date(Date.now() - 5 * 60 * 1000) // New if created in last 5 minutes
     }));
@@ -430,6 +437,95 @@ exports.getRecentPayments = async (req, res) => {
     res.json(formattedPayments);
   } catch (err) {
     console.error("Error fetching recent payments:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Record offline/manual payment for an assigned fee
+exports.recordOfflinePayment = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const { studentId, assignmentId, amount, mode, referenceNo, notes } = req.body;
+
+    const [student, assignment] = await Promise.all([
+      Student.findOne({ _id: studentId, institutionId: req.institutionId }),
+      FeeAssignment.findOne({
+        _id: assignmentId,
+        institutionId: req.institutionId,
+        studentId
+      }).populate("feeId", "amount title")
+    ]);
+
+    if (!student || !assignment || !assignment.feeId) {
+      return res.status(404).json({ error: "Student or fee assignment not found" });
+    }
+
+    if (assignment.status === "paid") {
+      return res.status(409).json({ error: "Fee assignment is already paid" });
+    }
+
+    if (Number(amount) !== assignment.feeId.amount) {
+      return res.status(400).json({ error: "Payment amount must match assigned fee amount" });
+    }
+
+    const existingCompleted = await Payment.findOne({
+      institutionId: req.institutionId,
+      assignmentId,
+      status: "completed"
+    });
+
+    if (existingCompleted) {
+      return res.status(409).json({ error: "Payment already recorded for this assignment" });
+    }
+
+    const payment = await Payment.create({
+      institutionId: req.institutionId,
+      studentId,
+      assignmentId,
+      amount: assignment.feeId.amount,
+      currency: "INR",
+      mode,
+      status: "completed",
+      gateway: "manual",
+      gatewayStatus: "recorded",
+      referenceNo,
+      notes,
+      collectedBy: req.user._id,
+      verifiedAt: new Date()
+    });
+
+    await FeeAssignment.findOneAndUpdate(
+      { _id: assignmentId, institutionId: req.institutionId, studentId },
+      { status: "paid" }
+    );
+
+    await PaymentEvent.create({
+      institutionId: req.institutionId,
+      paymentId: payment._id,
+      gateway: "manual",
+      eventType: "manual.payment.recorded",
+      payload: {
+        referenceNo,
+        notes,
+        recordedBy: req.user._id
+      },
+      source: "admin_manual"
+    });
+
+    res.status(201).json({
+      _id: payment._id,
+      paymentId: `PMT${payment._id.toString().slice(-6).toUpperCase()}`,
+      student: student.name,
+      amount: payment.amount,
+      mode: payment.mode,
+      status: payment.status,
+      referenceNo: payment.referenceNo,
+      feeTitle: assignment.feeId.title,
+      createdAt: payment.createdAt
+    });
+  } catch (err) {
+    console.error("Error recording offline payment:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

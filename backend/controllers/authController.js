@@ -3,6 +3,7 @@ const Institution = require("../models/Institution");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const emailService = require("../utils/emailService");
+const { assertCanAddStudent } = require("../services/subscriptionPlanService");
 
 const RESET_TOKEN_EXPIRES_MINUTES = 30;
 
@@ -37,6 +38,8 @@ exports.registerStudent = async (req, res) => {
     });
     if (userExists) return res.status(400).json({ error: "User already exists" });
 
+    await assertCanAddStudent(institution);
+
     const student = await Student.create({
       institutionId: institution._id,
       name,
@@ -60,6 +63,9 @@ exports.registerStudent = async (req, res) => {
       token: generateToken(student._id, student.role),
     });
   } catch (err) {
+    if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
+      return res.status(err.statusCode).json({ error: err.message, details: err.details });
+    }
     res.status(500).json({ error: "Server error" });
   }
 };

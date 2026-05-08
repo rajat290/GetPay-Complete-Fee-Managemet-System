@@ -4,6 +4,7 @@ const FeeAssignment = require("../models/FeeAssignment");
 const PaymentEvent = require("../models/PaymentEvent");
 const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
 const { buildStudentLedger } = require("../services/studentLedgerService");
+const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -572,6 +573,44 @@ exports.getStudentLedger = async (req, res) => {
     }
 
     console.error("Error fetching student ledger:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Refresh pending assignments that have crossed their due date
+exports.refreshOverdueDues = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const result = await refreshOverdueAssignments({
+      institutionId: req.institutionId,
+      asOfDate: req.body.asOfDate ? new Date(req.body.asOfDate) : new Date()
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error("Error refreshing overdue dues:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get pending and overdue dues report for admin/accounting review
+exports.getDuesReport = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const report = await buildDuesReport({
+      institutionId: req.institutionId,
+      filters: {
+        className: req.query.className,
+        status: req.query.status,
+        dueBefore: req.query.dueBefore
+      }
+    });
+
+    res.json(report);
+  } catch (err) {
+    console.error("Error fetching dues report:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

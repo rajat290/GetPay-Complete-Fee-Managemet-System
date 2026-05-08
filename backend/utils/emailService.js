@@ -59,7 +59,7 @@ sendReceiptEmail.sendFeeReminder = async ({ student, fee }) => {
   return sendReceiptEmail.sendEmail({
     to: student.email,
     subject: "Fee Reminder - GetPay",
-    text: `Hi ${student.name}, this is a reminder for ${fee.title}.`,
+    text: fee.message || `Hi ${student.name}, this is a reminder for ${fee.title}.`,
   });
 };
 

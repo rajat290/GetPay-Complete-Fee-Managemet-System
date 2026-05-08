@@ -28,4 +28,11 @@ const studentLedgerSchema = {
   }
 };
 
-module.exports = { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema };
+const sendDuesRemindersSchema = {
+  body: {
+    channel: { enum: ["notification", "email", "both"] },
+    status: { enum: ["pending", "overdue", "all"] }
+  }
+};
+
+module.exports = { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema };

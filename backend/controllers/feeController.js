@@ -2,6 +2,7 @@ const Fee = require("../models/Fee");
 const FeeAssignment = require("../models/FeeAssignment");
 const Student = require("../models/Student");
 const { buildStudentLedger } = require("../services/studentLedgerService");
+const { logAdminAction } = require("../services/auditLogService");
 
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
@@ -26,6 +27,22 @@ exports.createFee = async (req, res) => {
       category,
       dueDate
     });
+
+    await logAdminAction({
+      req,
+      action: "fee.created",
+      entityType: "Fee",
+      entityId: fee._id,
+      summary: `Created fee ${fee.title}`,
+      metadata: {
+        feeId: fee._id,
+        title,
+        amount,
+        category,
+        dueDate
+      }
+    });
+
     res.status(201).json(fee);
   } catch (err) {
     console.error("Error creating fee:", err);
@@ -65,6 +82,22 @@ exports.assignFee = async (req, res) => {
       dueDate,
       status: "pending"
     });
+
+    await logAdminAction({
+      req,
+      action: "fee.assigned",
+      entityType: "FeeAssignment",
+      entityId: assignment._id,
+      summary: `Assigned ${fee.title} to ${student.name}`,
+      metadata: {
+        assignmentId: assignment._id,
+        feeId,
+        studentId,
+        dueDate,
+        amount: fee.amount
+      }
+    });
+
     res.status(201).json(assignment);
   } catch (err) {
     console.error("Error assigning fee:", err);
@@ -199,6 +232,24 @@ exports.bulkAssignFee = async (req, res) => {
     const createdAssignments = assignmentsToCreate.length > 0
       ? await FeeAssignment.insertMany(assignmentsToCreate, { ordered: false })
       : [];
+
+    await logAdminAction({
+      req,
+      action: "fee.bulk_assigned",
+      entityType: "FeeAssignment",
+      entityId: fee._id,
+      summary: `Bulk assigned ${fee.title} to ${createdAssignments.length} students`,
+      metadata: {
+        feeId,
+        className: className || null,
+        requestedStudentIds: studentIds,
+        matchedStudents: students.length,
+        createdCount: createdAssignments.length,
+        skippedCount: existingAssignments.length,
+        createdAssignmentIds: createdAssignments.map((assignment) => assignment._id),
+        skippedStudentIds: Array.from(existingStudentIds)
+      }
+    });
 
     res.status(201).json({
       feeId,

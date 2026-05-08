@@ -11,7 +11,8 @@ const {
   getPaymentReconciliation,
   getStudentLedger,
   refreshOverdueDues,
-  getDuesReport
+  getDuesReport,
+  getAuditLogs
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -47,6 +48,9 @@ router.post("/payments/offline", validateRequest(recordOfflinePaymentSchema), re
 
 // GET /admin/classes - Get all unique class names
 router.get("/classes", getClassNames);
+
+// GET /admin/audit-logs - Get institution-scoped admin audit logs
+router.get("/audit-logs", getAuditLogs);
 
 // POST /admin/dues/refresh-overdue - Mark overdue dues based on due date
 router.post("/dues/refresh-overdue", refreshOverdueDues);

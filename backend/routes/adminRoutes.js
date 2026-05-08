@@ -8,11 +8,12 @@ const {
   getPaymentDetails,
   getRecentPayments,
   recordOfflinePayment,
-  getPaymentReconciliation
+  getPaymentReconciliation,
+  getStudentLedger
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
-const { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema } = require("../validators/adminValidators");
+const { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema } = require("../validators/adminValidators");
 
 const router = express.Router();
 
@@ -23,6 +24,9 @@ router.get("/students", getAllStudents);
 
 // POST /admin/students - Create a new student (admin only)
 router.post("/students", validateRequest(createStudentSchema), createStudent);
+
+// GET /admin/students/:studentId/ledger - Get student ledger
+router.get("/students/:studentId/ledger", validateRequest(studentLedgerSchema), getStudentLedger);
 
 // GET /admin/payments - Get all payments for admin dashboard
 router.get("/payments", getAllPayments);

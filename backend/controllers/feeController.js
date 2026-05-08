@@ -1,6 +1,7 @@
 const Fee = require("../models/Fee");
 const FeeAssignment = require("../models/FeeAssignment");
 const Student = require("../models/Student");
+const { buildStudentLedger } = require("../services/studentLedgerService");
 
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
@@ -136,5 +137,101 @@ exports.getAllFeeAssignments = async (req, res) => {
   } catch (err) {
     console.error('Error fetching fee assignments:', err);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Admin: Bulk assign a fee to selected students or an entire class
+exports.bulkAssignFee = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { feeId, dueDate, className, studentIds = [] } = req.body;
+
+    if (!className && (!Array.isArray(studentIds) || studentIds.length === 0)) {
+      return res.status(400).json({ message: "Provide className or studentIds" });
+    }
+
+    const fee = await Fee.findOne({ _id: feeId, institutionId: req.institutionId });
+    if (!fee) {
+      return res.status(404).json({ message: "Fee not found for this institution" });
+    }
+
+    const studentQuery = { institutionId: req.institutionId, role: "student" };
+
+    if (className) {
+      studentQuery.className = className;
+    }
+
+    if (Array.isArray(studentIds) && studentIds.length > 0) {
+      studentQuery._id = { $in: studentIds };
+    }
+
+    const students = await Student.find(studentQuery).select("_id name registrationNo className");
+
+    if (students.length === 0) {
+      return res.status(404).json({ message: "No matching students found" });
+    }
+
+    const existingAssignments = await FeeAssignment.find({
+      institutionId: req.institutionId,
+      feeId,
+      studentId: { $in: students.map((student) => student._id) }
+    }).select("studentId");
+
+    const existingStudentIds = new Set(existingAssignments.map((assignment) => assignment.studentId.toString()));
+    const assignmentsToCreate = students
+      .filter((student) => !existingStudentIds.has(student._id.toString()))
+      .map((student) => ({
+        institutionId: req.institutionId,
+        academicSessionId: fee.academicSessionId,
+        studentId: student._id,
+        feeId,
+        dueDate,
+        status: "pending"
+      }));
+
+    const createdAssignments = assignmentsToCreate.length > 0
+      ? await FeeAssignment.insertMany(assignmentsToCreate, { ordered: false })
+      : [];
+
+    res.status(201).json({
+      feeId,
+      matchedStudents: students.length,
+      createdCount: createdAssignments.length,
+      skippedCount: existingAssignments.length,
+      createdAssignmentIds: createdAssignments.map((assignment) => assignment._id),
+      skippedStudentIds: Array.from(existingStudentIds)
+    });
+  } catch (err) {
+    console.error("Error bulk assigning fee:", err);
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "Some fee assignments already exist" });
+    }
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Student: Get my complete fee ledger
+exports.getMyLedger = async (req, res) => {
+  try {
+    const ledger = await buildStudentLedger({
+      institutionId: req.institutionId,
+      studentId: req.user._id
+    });
+
+    res.json(ledger);
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
+
+    console.error("Error fetching student ledger:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };

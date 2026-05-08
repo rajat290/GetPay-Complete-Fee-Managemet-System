@@ -33,5 +33,7 @@ const feeAssignmentSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+feeAssignmentSchema.index({ institutionId: 1, studentId: 1, feeId: 1 }, { unique: true });
+
 module.exports = mongoose.model('FeeAssignment', feeAssignmentSchema);
 // This schema defines the structure for the FeeAssignment model, which links students to fees with a due date and status.

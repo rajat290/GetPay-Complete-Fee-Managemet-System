@@ -22,4 +22,10 @@ const recordOfflinePaymentSchema = {
   }
 };
 
-module.exports = { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema };
+const studentLedgerSchema = {
+  params: {
+    studentId: { required: true, type: "objectId" }
+  }
+};
+
+module.exports = { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema };

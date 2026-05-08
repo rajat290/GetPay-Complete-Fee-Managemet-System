@@ -12,11 +12,12 @@ const {
   getStudentLedger,
   refreshOverdueDues,
   getDuesReport,
-  getAuditLogs
+  getAuditLogs,
+  sendDuesReminders
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
-const { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema } = require("../validators/adminValidators");
+const { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema } = require("../validators/adminValidators");
 
 const router = express.Router();
 
@@ -57,6 +58,9 @@ router.post("/dues/refresh-overdue", refreshOverdueDues);
 
 // GET /admin/dues - Pending/overdue dues report
 router.get("/dues", getDuesReport);
+
+// POST /admin/dues/reminders - Preview/send due reminders
+router.post("/dues/reminders", validateRequest(sendDuesRemindersSchema), sendDuesReminders);
 
 // GET /admin/payments/:paymentId - Get payment details
 router.get("/payments/:paymentId", validateRequest(paymentDetailsSchema), getPaymentDetails);

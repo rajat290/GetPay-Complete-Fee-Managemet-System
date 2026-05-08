@@ -6,6 +6,7 @@ const { buildPaymentReconciliationReport } = require("../services/paymentReportS
 const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
+const { sendDueReminders } = require("../services/feeReminderService");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -680,6 +681,44 @@ exports.getDuesReport = async (req, res) => {
     res.json(report);
   } catch (err) {
     console.error("Error fetching dues report:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Send or preview reminders for pending/overdue dues
+exports.sendDuesReminders = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const result = await sendDueReminders({
+      institutionId: req.institutionId,
+      filters: {
+        className: req.body.className,
+        status: req.body.status,
+        dueBefore: req.body.dueBefore
+      },
+      channel: req.body.channel || "notification",
+      dryRun: Boolean(req.body.dryRun)
+    });
+
+    await logAdminAction({
+      req,
+      action: req.body.dryRun ? "dues.reminders_previewed" : "dues.reminders_sent",
+      entityType: "Notification",
+      summary: `${req.body.dryRun ? "Previewed" : "Sent"} due reminders to ${result.summary.matchedCount} students`,
+      metadata: {
+        filters: result.filters,
+        channel: result.channel,
+        matchedCount: result.summary.matchedCount,
+        notificationCount: result.summary.notificationCount,
+        emailAttemptCount: result.summary.emailAttemptCount,
+        dryRun: result.summary.dryRun
+      }
+    });
+
+    res.status(req.body.dryRun ? 200 : 201).json(result);
+  } catch (err) {
+    console.error("Error sending dues reminders:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

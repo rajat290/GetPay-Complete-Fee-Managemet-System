@@ -242,6 +242,7 @@ All main API routes are mounted under `/api`.
 - `GET /api/admin/audit-logs`
 - `POST /api/admin/dues/refresh-overdue`
 - `GET /api/admin/dues`
+- `POST /api/admin/dues/reminders`
 - `GET /api/admin/payments/:paymentId`
 
 ### Receipts and Notifications
@@ -320,11 +321,12 @@ Recommended production settings:
 - Student finance experience
 - Frontend and local demo quality gates
 - Enterprise repository readiness
+- Admin audit logging
+- Due and overdue reminder operations
 
 ### Next Priorities
 
 - Route-level frontend code splitting
-- Audit log for admin finance actions
 - Password reset and invite-based onboarding
 - Institution settings and branding
 - Receipt template customization

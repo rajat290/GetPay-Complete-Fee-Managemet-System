@@ -2,11 +2,15 @@ const Student = require("../models/Student");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 const PaymentEvent = require("../models/PaymentEvent");
+const crypto = require("crypto");
+const emailService = require("../utils/emailService");
 const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
 const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 const { sendDueReminders } = require("../services/feeReminderService");
+
+const INVITE_TOKEN_EXPIRES_MINUTES = 7 * 24 * 60;
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -635,6 +639,80 @@ exports.refreshOverdueDues = async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("Error refreshing overdue dues:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Invite a student to activate their own account
+exports.inviteStudent = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const { name, email, registrationNo, className } = req.body;
+
+    const studentExists = await Student.findOne({
+      institutionId: req.institutionId,
+      $or: [{ email: email.toLowerCase() }, { registrationNo }]
+    });
+    if (studentExists) {
+      return res.status(400).json({ error: "Student with this email or registration number already exists" });
+    }
+
+    const inviteToken = crypto.randomBytes(32).toString("hex");
+    const student = await Student.create({
+      institutionId: req.institutionId,
+      name,
+      email,
+      registrationNo,
+      className,
+      password: crypto.randomBytes(24).toString("hex"),
+      role: "student",
+      status: "inactive",
+      passwordResetToken: crypto.createHash("sha256").update(inviteToken).digest("hex"),
+      passwordResetExpires: new Date(Date.now() + INVITE_TOKEN_EXPIRES_MINUTES * 60 * 1000)
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
+    const institutionCode = req.user.institutionId?.code;
+    const inviteUrl = `${frontendUrl.replace(/\/$/, "")}/activate-account?token=${inviteToken}&institutionCode=${institutionCode || ""}`;
+
+    const emailResult = await emailService.sendAccountInvite({
+      user: student,
+      inviteUrl,
+      expiresInMinutes: INVITE_TOKEN_EXPIRES_MINUTES
+    });
+
+    await logAdminAction({
+      req,
+      action: "student.invited",
+      entityType: "Student",
+      entityId: student._id,
+      summary: `Invited student ${student.name} (${student.registrationNo})`,
+      metadata: {
+        studentId: student._id,
+        email: student.email,
+        registrationNo: student.registrationNo,
+        className: student.className
+      }
+    });
+
+    const studentObj = student.toObject();
+    delete studentObj.password;
+    delete studentObj.passwordResetToken;
+    delete studentObj.passwordResetExpires;
+
+    const response = { student: studentObj, message: "Student invitation created" };
+    if (emailResult?.skipped && process.env.NODE_ENV !== "production") {
+      response.inviteToken = inviteToken;
+      response.inviteUrl = inviteUrl;
+    }
+
+    res.status(201).json(response);
+  } catch (err) {
+    console.error("Error inviting student:", err);
+    if (err.code === 11000) {
+      return res.status(400).json({ error: "Student with this email or registration number already exists" });
+    }
     res.status(500).json({ error: "Server error" });
   }
 };

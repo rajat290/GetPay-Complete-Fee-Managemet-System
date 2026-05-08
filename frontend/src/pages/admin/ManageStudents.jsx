@@ -4,6 +4,8 @@ import api from "../../services/api";
 export default function ManageStudents() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [inviteMode, setInviteMode] = useState(true);
+  const [inviteUrl, setInviteUrl] = useState("");
   const [form, setForm] = useState({ 
     name: "", 
     email: "", 
@@ -38,10 +40,18 @@ export default function ManageStudents() {
   const handleAdd = async (e) => {
     e.preventDefault();
     setMessage("");
+    setInviteUrl("");
     try {
-      const res = await api.post("/admin/students", form);
-      setStudents([...students, res.data]);
-      setMessage("Student added successfully!");
+      const res = inviteMode
+        ? await api.post("/admin/students/invite", form)
+        : await api.post("/admin/students", form);
+
+      const student = inviteMode ? res.data.student : res.data;
+      setStudents([...students, student]);
+      setMessage(inviteMode ? "Student invited successfully!" : "Student added successfully!");
+      if (res.data.inviteUrl) {
+        setInviteUrl(res.data.inviteUrl);
+      }
       setForm({ name: "", email: "", registrationNo: "", className: "" });
     } catch (err) {
       setMessage(err.response?.data?.error || "Error adding student");
@@ -66,7 +76,33 @@ export default function ManageStudents() {
 
       {/* Add Student Form */}
       <form onSubmit={handleAdd} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-        <h2 className="text-lg font-bold mb-4">Add New Student</h2>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold">{inviteMode ? "Invite Student" : "Add New Student"}</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {inviteMode ? "Send an activation link so the student sets their own password." : "Create a student with registration number as default password."}
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={inviteMode}
+              onChange={(event) => setInviteMode(event.target.checked)}
+              className="h-4 w-4"
+            />
+            Invite mode
+          </label>
+        </div>
+
+        {inviteUrl && (
+          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <p className="font-semibold">Development invite link</p>
+            <a href={inviteUrl} className="mt-1 block break-all text-blue-700 underline">
+              {inviteUrl}
+            </a>
+          </div>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
@@ -126,7 +162,7 @@ export default function ManageStudents() {
         
         <div className="mt-4">
           <p className="text-sm text-gray-600">
-            * Default password will be set to the registration number. Student can change it after first login.
+            * {inviteMode ? "Student receives an activation link and sets their own password." : "Default password will be set to the registration number."}
           </p>
         </div>
         
@@ -134,7 +170,7 @@ export default function ManageStudents() {
           type="submit" 
           className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
         >
-          Add Student
+          {inviteMode ? "Invite Student" : "Add Student"}
         </button>
       </form>
 
@@ -173,8 +209,10 @@ export default function ManageStudents() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        Active
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        student.status === "inactive" ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"
+                      }`}>
+                        {student.status === "inactive" ? "Invited" : "Active"}
                       </span>
                     </td>
                   </tr>

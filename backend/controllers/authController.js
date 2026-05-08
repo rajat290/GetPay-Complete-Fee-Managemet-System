@@ -99,6 +99,10 @@ exports.loginStudent = async (req, res) => {
         return res.status(403).json({ error: "Institution is inactive" });
       }
 
+      if (student.status === "inactive") {
+        return res.status(403).json({ error: "Account is not activated" });
+      }
+
       res.json({
         _id: student._id,
         name: student.name,
@@ -135,7 +139,8 @@ exports.requestPasswordReset = async (req, res) => {
 
     const user = await Student.findOne({
       institutionId: institution._id,
-      email: email.toLowerCase()
+      email: email.toLowerCase(),
+      status: { $ne: "inactive" }
     });
 
     if (!user) {
@@ -202,6 +207,59 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: "Password reset successful" });
   } catch (err) {
     console.error("Password reset error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Activate invited account
+exports.activateAccount = async (req, res) => {
+  try {
+    const { token, institutionCode, password } = req.body;
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const institution = await Institution.findOne({
+      code: institutionCode.toUpperCase(),
+      isActive: true
+    });
+
+    if (!institution) {
+      return res.status(400).json({ error: "Invalid or expired invitation" });
+    }
+
+    const user = await Student.findOne({
+      institutionId: institution._id,
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() },
+      status: "inactive"
+    }).select("+passwordResetToken +passwordResetExpires");
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired invitation" });
+    }
+
+    user.password = password;
+    user.status = "active";
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    res.json({
+      message: "Account activated successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        institution: {
+          _id: institution._id,
+          name: institution.name,
+          code: institution.code
+        },
+        token: generateToken(user._id, user.role)
+      }
+    });
+  } catch (err) {
+    console.error("Account activation error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

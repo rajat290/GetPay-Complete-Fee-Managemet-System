@@ -3,9 +3,11 @@ import {
   FiAlertTriangle,
   FiCheckCircle,
   FiDownload,
+  FiMail,
   FiRefreshCw,
   FiSearch,
   FiSend,
+  FiShield,
   FiTrendingUp,
   FiUsers,
 } from "react-icons/fi";
@@ -55,6 +57,9 @@ export default function FinanceWorkspace() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderPreview, setReminderPreview] = useState(null);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [filters, setFilters] = useState({
     className: "",
     status: "all",
@@ -64,6 +69,12 @@ export default function FinanceWorkspace() {
     feeId: "",
     className: "",
     dueDate: today,
+  });
+  const [reminderForm, setReminderForm] = useState({
+    channel: "notification",
+    className: "",
+    status: "overdue",
+    dueBefore: "",
   });
 
   const queryString = useMemo(() => {
@@ -79,17 +90,19 @@ export default function FinanceWorkspace() {
     setMessage("");
     try {
       const suffix = queryString ? `?${queryString}` : "";
-      const [duesRes, reconciliationRes, classesRes, feesRes] = await Promise.all([
+      const [duesRes, reconciliationRes, classesRes, feesRes, auditRes] = await Promise.all([
         api.get(`/admin/dues${suffix}`),
         api.get("/admin/payments/reconciliation"),
         api.get("/admin/classes"),
         api.get("/fees/"),
+        api.get("/admin/audit-logs?limit=5"),
       ]);
 
       setDues(duesRes.data || emptyDues);
       setReconciliation(reconciliationRes.data || emptyReconciliation);
       setClasses(classesRes.data || []);
       setFees(feesRes.data || []);
+      setAuditLogs(auditRes.data?.rows || []);
     } catch (error) {
       setMessage(error.response?.data?.message || "Could not load finance workspace.");
     } finally {
@@ -126,6 +139,33 @@ export default function FinanceWorkspace() {
       await loadWorkspace();
     } catch (error) {
       setMessage(error.response?.data?.message || "Bulk fee assignment failed.");
+    }
+  };
+
+  const runReminderOperation = async (dryRun) => {
+    setReminderLoading(true);
+    setMessage("");
+    try {
+      const payload = {
+        channel: reminderForm.channel,
+        status: reminderForm.status,
+        className: reminderForm.className || undefined,
+        dueBefore: reminderForm.dueBefore || undefined,
+        dryRun,
+      };
+
+      const res = await api.post("/admin/dues/reminders", payload);
+      setReminderPreview(res.data);
+      setMessage(
+        dryRun
+          ? `${res.data.summary.matchedCount || 0} reminder recipients found.`
+          : `${res.data.summary.notificationCount || 0} notifications created and ${res.data.summary.emailAttemptCount || 0} emails attempted.`
+      );
+      await loadWorkspace();
+    } catch (error) {
+      setMessage(error.response?.data?.message || error.response?.data?.error || "Reminder operation failed.");
+    } finally {
+      setReminderLoading(false);
     }
   };
 
@@ -304,6 +344,94 @@ export default function FinanceWorkspace() {
 
           <div className="space-y-6">
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center gap-2">
+                <FiMail className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+                <h2 className="text-lg font-semibold">Due reminders</h2>
+              </div>
+              <div className="mt-4 space-y-4">
+                <select
+                  value={reminderForm.channel}
+                  onChange={(event) => setReminderForm({ ...reminderForm, channel: event.target.value })}
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
+                >
+                  <option value="notification">In-app notification</option>
+                  <option value="email">Email</option>
+                  <option value="both">Notification and email</option>
+                </select>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <select
+                    value={reminderForm.className}
+                    onChange={(event) => setReminderForm({ ...reminderForm, className: event.target.value })}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
+                  >
+                    <option value="">All classes</option>
+                    {classes.map((className) => (
+                      <option key={className} value={className}>
+                        {className}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={reminderForm.status}
+                    onChange={(event) => setReminderForm({ ...reminderForm, status: event.target.value })}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
+                  >
+                    <option value="overdue">Overdue only</option>
+                    <option value="pending">Pending only</option>
+                    <option value="all">Pending and overdue</option>
+                  </select>
+                </div>
+                <input
+                  type="date"
+                  value={reminderForm.dueBefore}
+                  onChange={(event) => setReminderForm({ ...reminderForm, dueBefore: event.target.value })}
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => runReminderOperation(true)}
+                    disabled={reminderLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-slate-100"
+                  >
+                    <FiSearch className="h-4 w-4" />
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => runReminderOperation(false)}
+                    disabled={reminderLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                  >
+                    <FiSend className="h-4 w-4" />
+                    Send reminders
+                  </button>
+                </div>
+              </div>
+
+              {reminderPreview && (
+                <div className="mt-5 rounded-md bg-slate-100 p-3 text-sm dark:bg-gray-950">
+                  <div className="grid grid-cols-3 gap-2">
+                    <MiniMetric label="Matched" value={reminderPreview.summary.matchedCount} />
+                    <MiniMetric label="Notified" value={reminderPreview.summary.notificationCount} />
+                    <MiniMetric label="Emails" value={reminderPreview.summary.emailAttemptCount} />
+                  </div>
+                  <div className="mt-3 max-h-40 space-y-2 overflow-y-auto">
+                    {reminderPreview.recipients.slice(0, 6).map((recipient) => (
+                      <div key={recipient.assignmentId} className="flex items-center justify-between rounded-md bg-white px-3 py-2 dark:bg-gray-900">
+                        <span className="truncate">{recipient.studentName}</span>
+                        <span className="font-semibold">{currency.format(recipient.dueAmount)}</span>
+                      </div>
+                    ))}
+                    {reminderPreview.recipients.length === 0 && (
+                      <p className="px-3 py-2 text-slate-500">No reminder recipients for the selected filters.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-lg font-semibold">Bulk fee assignment</h2>
               <form onSubmit={assignBulkFee} className="mt-4 space-y-4">
                 <select
@@ -368,6 +496,30 @@ export default function FinanceWorkspace() {
                 ) : (
                   <p className="rounded-md bg-slate-100 px-3 py-3 text-sm text-slate-500 dark:bg-gray-950">
                     No payment collections yet.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center gap-2">
+                <FiShield className="h-5 w-5 text-slate-500" />
+                <h2 className="text-lg font-semibold">Recent audit trail</h2>
+              </div>
+              <div className="mt-4 space-y-3">
+                {auditLogs.length > 0 ? (
+                  auditLogs.map((log) => (
+                    <div key={log._id} className="rounded-md bg-slate-100 px-3 py-2 text-sm dark:bg-gray-950">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">{log.action}</span>
+                        <span className="text-xs text-slate-500">{new Date(log.createdAt).toLocaleDateString("en-IN")}</span>
+                      </div>
+                      <p className="mt-1 text-slate-600 dark:text-slate-300">{log.summary}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-md bg-slate-100 px-3 py-3 text-sm text-slate-500 dark:bg-gray-950">
+                    No recent audit activity.
                   </p>
                 )}
               </div>

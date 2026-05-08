@@ -18,6 +18,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageStudents from "./pages/admin/ManageStudents";
 import ManageFees from "./pages/admin/ManageFees";
 import ManagePayments from "./pages/admin/ManagePayments";
+import FinanceWorkspace from "./pages/admin/FinanceWorkspace";
 import Analytics from "./pages/admin/Analytics";
 
 
@@ -63,6 +64,7 @@ function App() {
               <Route path="students" element={<ManageStudents />} />
               <Route path="fees" element={<ManageFees />} />
               <Route path="payments" element={<ManagePayments />} />
+              <Route path="finance" element={<FinanceWorkspace />} />
               <Route path="analytics" element={<Analytics />} />
             </Route>
           </Routes>

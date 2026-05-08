@@ -6,8 +6,9 @@ const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 const { applySecurityHeaders } = require("./middleware/securityMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+const { requestContext, requestLogger } = require("./middleware/requestContextMiddleware");
+const logger = require("./utils/logger");
 
-// Import Routes
 const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
@@ -16,9 +17,6 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 const receiptRoutes = require("./routes/receiptRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-
-
-
 
 connectDB();
 
@@ -31,6 +29,8 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
   .filter(Boolean);
 
 app.use(applySecurityHeaders);
+app.use(requestContext);
+app.use(requestLogger);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -60,13 +60,13 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.round(process.uptime()),
+    requestId: req.requestId,
     database: {
       state: databaseStates[mongoose.connection.readyState] || "unknown"
     }
   });
 });
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/fees", feeRoutes);
 app.use("/api/payments", paymentRoutes);
@@ -75,8 +75,6 @@ app.use("/api/receipts", receiptRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 
-
-// Default route
 app.get("/", (req, res) => {
   res.json({
     service: "GetPay Education API",
@@ -90,4 +88,4 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => logger.info("server_started", { port: PORT }));

@@ -15,4 +15,11 @@ const assignFeeSchema = {
   }
 };
 
-module.exports = { createFeeSchema, assignFeeSchema };
+const bulkAssignFeeSchema = {
+  body: {
+    feeId: { required: true, type: "objectId" },
+    dueDate: { required: true }
+  }
+};
+
+module.exports = { createFeeSchema, assignFeeSchema, bulkAssignFeeSchema };

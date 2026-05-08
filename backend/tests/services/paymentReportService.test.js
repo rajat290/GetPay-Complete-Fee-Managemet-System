@@ -37,32 +37,48 @@ describe("paymentReportService", () => {
       className: "11A"
     });
 
-    const fee = await Fee.create({
-      institutionId: institution._id,
-      title: "Tuition Fee",
-      amount: 1000,
-      category: "Tuition",
-      dueDate: new Date("2026-12-31")
-    });
+    const fees = await Fee.create([
+      {
+        institutionId: institution._id,
+        title: "Tuition Fee",
+        amount: 1000,
+        category: "Tuition",
+        dueDate: new Date("2026-12-31")
+      },
+      {
+        institutionId: institution._id,
+        title: "Exam Fee",
+        amount: 1000,
+        category: "Other",
+        dueDate: new Date("2026-12-31")
+      },
+      {
+        institutionId: institution._id,
+        title: "Transport Fee",
+        amount: 1000,
+        category: "Transport",
+        dueDate: new Date("2026-12-31")
+      }
+    ]);
 
     assignmentA = await FeeAssignment.create({
       institutionId: institution._id,
       studentId: studentA._id,
-      feeId: fee._id,
+      feeId: fees[0]._id,
       dueDate: new Date("2026-12-31")
     });
 
     assignmentB = await FeeAssignment.create({
       institutionId: institution._id,
       studentId: studentA._id,
-      feeId: fee._id,
+      feeId: fees[1]._id,
       dueDate: new Date("2026-12-31")
     });
 
     assignmentC = await FeeAssignment.create({
       institutionId: institution._id,
       studentId: studentB._id,
-      feeId: fee._id,
+      feeId: fees[2]._id,
       dueDate: new Date("2026-12-31")
     });
 

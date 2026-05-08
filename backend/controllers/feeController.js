@@ -1,6 +1,7 @@
 const Fee = require("../models/Fee");
 const FeeAssignment = require("../models/FeeAssignment");
 const Student = require("../models/Student");
+const { buildStudentLedger } = require("../services/studentLedgerService");
 
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
@@ -136,5 +137,24 @@ exports.getAllFeeAssignments = async (req, res) => {
   } catch (err) {
     console.error('Error fetching fee assignments:', err);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Student: Get my complete fee ledger
+exports.getMyLedger = async (req, res) => {
+  try {
+    const ledger = await buildStudentLedger({
+      institutionId: req.institutionId,
+      studentId: req.user._id
+    });
+
+    res.json(ledger);
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
+
+    console.error("Error fetching student ledger:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };

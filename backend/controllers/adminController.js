@@ -3,6 +3,7 @@ const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 const PaymentEvent = require("../models/PaymentEvent");
 const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
+const { buildStudentLedger } = require("../services/studentLedgerService");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -550,6 +551,27 @@ exports.getPaymentReconciliation = async (req, res) => {
     res.json(report);
   } catch (err) {
     console.error("Error fetching payment reconciliation:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get a student fee ledger for admin/accounting review
+exports.getStudentLedger = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const ledger = await buildStudentLedger({
+      institutionId: req.institutionId,
+      studentId: req.params.studentId
+    });
+
+    res.json(ledger);
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
+
+    console.error("Error fetching student ledger:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

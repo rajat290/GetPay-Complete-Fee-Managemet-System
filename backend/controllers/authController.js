@@ -1,6 +1,10 @@
 const Student = require("../models/Student");
 const Institution = require("../models/Institution");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const emailService = require("../utils/emailService");
+
+const RESET_TOKEN_EXPIRES_MINUTES = 30;
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -111,6 +115,93 @@ exports.loginStudent = async (req, res) => {
       res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Request password reset
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const { email, institutionCode } = req.body;
+
+    const institution = await Institution.findOne({
+      code: institutionCode.toUpperCase(),
+      isActive: true
+    });
+
+    if (!institution) {
+      return res.status(200).json({ message: "If the account exists, a reset link has been sent." });
+    }
+
+    const user = await Student.findOne({
+      institutionId: institution._id,
+      email: email.toLowerCase()
+    });
+
+    if (!user) {
+      return res.status(200).json({ message: "If the account exists, a reset link has been sent." });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    user.passwordResetExpires = new Date(Date.now() + RESET_TOKEN_EXPIRES_MINUTES * 60 * 1000);
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
+    const resetUrl = `${frontendUrl.replace(/\/$/, "")}/reset-password?token=${resetToken}&institutionCode=${institution.code}`;
+
+    const emailResult = await emailService.sendPasswordReset({
+      user,
+      resetUrl,
+      expiresInMinutes: RESET_TOKEN_EXPIRES_MINUTES
+    });
+
+    const response = { message: "If the account exists, a reset link has been sent." };
+    if (emailResult?.skipped && process.env.NODE_ENV !== "production") {
+      response.resetToken = resetToken;
+      response.resetUrl = resetUrl;
+    }
+
+    res.json(response);
+  } catch (err) {
+    console.error("Password reset request error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Confirm password reset
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, institutionCode, password } = req.body;
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const institution = await Institution.findOne({
+      code: institutionCode.toUpperCase(),
+      isActive: true
+    });
+
+    if (!institution) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    const user = await Student.findOne({
+      institutionId: institution._id,
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() }
+    }).select("+passwordResetToken +passwordResetExpires");
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error("Password reset error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

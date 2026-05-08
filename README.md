@@ -65,6 +65,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Rate limiting for auth and payment routes
 - Security headers for common browser protections
 - Institution-scoped database queries for core resources
+- Request IDs, structured request logs, and sanitized error logging
 - Backend test suite covering domain, payment lifecycle, ledgers, dues, and route behavior
 - Frontend lint and production build gates
 - GitHub Actions CI for backend tests, frontend lint, and frontend build
@@ -161,6 +162,8 @@ RAZORPAY_KEY_ID=rzp_test_replace_me
 RAZORPAY_KEY_SECRET=replace_me
 EMAIL_USER=notifications@example.com
 EMAIL_PASS=replace_me
+LOG_FORMAT=pretty
+LOG_LEVEL=info
 ```
 
 Frontend `.env`:
@@ -209,6 +212,8 @@ Frontend: http://localhost:5173
 Backend: http://localhost:5000
 API health: http://localhost:5000/api/health
 ```
+
+Production deployments can set `LOG_FORMAT=json` so API, database, request, and error events are emitted as structured JSON log lines.
 
 ## API Overview
 
@@ -350,10 +355,11 @@ Recommended production settings:
 - Dedicated audit trail UI
 - Route-level frontend code splitting
 - CI pipeline for backend tests, frontend lint, and frontend build
+- Request IDs and structured backend observability
 
 ### Next Priorities
 
-- Production observability, structured logs, and error tracking
+- Error tracking integration such as Sentry or OpenTelemetry
 
 ## Repository Status
 

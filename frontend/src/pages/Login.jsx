@@ -26,7 +26,7 @@ export default function Login() {
         navigate("/student/dashboard");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || err.response?.data?.error || "Login failed");
     }
   };
 

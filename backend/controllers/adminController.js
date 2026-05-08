@@ -11,6 +11,11 @@ const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 const { sendDueReminders, runReminderCampaign } = require("../services/feeReminderService");
+const {
+  buildSubscriptionSummary,
+  assertCanAddStudent,
+  assertCanAddReminderCampaign
+} = require("../services/subscriptionPlanService");
 
 const INVITE_TOKEN_EXPIRES_MINUTES = 7 * 24 * 60;
 
@@ -40,7 +45,11 @@ exports.getInstitutionSettings = async (req, res) => {
       return res.status(404).json({ error: "Institution not found" });
     }
 
-    res.json(institution);
+    const subscriptionSummary = await buildSubscriptionSummary(institution);
+    const institutionObj = institution.toObject();
+    institutionObj.subscriptionSummary = subscriptionSummary;
+
+    res.json(institutionObj);
   } catch (err) {
     console.error("Error fetching institution settings:", err);
     res.status(500).json({ error: "Server error" });
@@ -92,7 +101,11 @@ exports.updateInstitutionSettings = async (req, res) => {
       }
     });
 
-    res.json(institution);
+    const subscriptionSummary = await buildSubscriptionSummary(institution);
+    const institutionObj = institution.toObject();
+    institutionObj.subscriptionSummary = subscriptionSummary;
+
+    res.json(institutionObj);
   } catch (err) {
     console.error("Error updating institution settings:", err);
     res.status(500).json({ error: "Server error" });
@@ -132,6 +145,9 @@ exports.createStudent = async (req, res) => {
       return res.status(400).json({ error: "Student with this email or registration number already exists" });
     }
 
+    const institution = await Institution.findById(req.institutionId);
+    await assertCanAddStudent(institution);
+
     // Create new student
     const student = new Student({
       institutionId: req.institutionId,
@@ -165,6 +181,9 @@ exports.createStudent = async (req, res) => {
 
     res.status(201).json(studentObj);
   } catch (err) {
+    if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
+      return res.status(err.statusCode).json({ error: err.message, details: err.details });
+    }
     console.error("Error creating student:", err);
     // Handle duplicate key error (in case of race condition)
     if (err.code === 11000) {
@@ -737,6 +756,9 @@ exports.inviteStudent = async (req, res) => {
       return res.status(400).json({ error: "Student with this email or registration number already exists" });
     }
 
+    const institution = await Institution.findById(req.institutionId);
+    await assertCanAddStudent(institution);
+
     const inviteToken = crypto.randomBytes(32).toString("hex");
     const student = await Student.create({
       institutionId: req.institutionId,
@@ -788,6 +810,9 @@ exports.inviteStudent = async (req, res) => {
 
     res.status(201).json(response);
   } catch (err) {
+    if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
+      return res.status(err.statusCode).json({ error: err.message, details: err.details });
+    }
     console.error("Error inviting student:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Student with this email or registration number already exists" });
@@ -902,6 +927,9 @@ exports.createReminderCampaign = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
+    const institution = await Institution.findById(req.institutionId);
+    await assertCanAddReminderCampaign(institution);
+
     const campaign = await ReminderCampaign.create({
       institutionId: req.institutionId,
       name: req.body.name,
@@ -931,6 +959,9 @@ exports.createReminderCampaign = async (req, res) => {
 
     res.status(201).json(campaign);
   } catch (err) {
+    if (err.code === "PLAN_REMINDER_CAMPAIGN_LIMIT_REACHED") {
+      return res.status(err.statusCode).json({ error: err.message, details: err.details });
+    }
     console.error("Error creating reminder campaign:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Reminder campaign with this name already exists" });

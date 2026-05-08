@@ -20,6 +20,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 - Multi-tenant institution isolation through `institutionId`
 - Institution profile, billing contact, and branding configuration
+- SaaS plan metadata, subscription status, and institution usage limits
 - Admin and student role-based access control
 - Student onboarding and class-based organization
 - Fee template creation and student/class-level assignment
@@ -42,6 +43,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
+- Subscription summary with plan, status, usage, and limits
 - Dedicated audit trail and reminder campaign management screens
 - Finance workspace for dues, overdue refresh, bulk assignment, CSV export, and reconciliation snapshot
 - Payment management with filters, polling, detail modal, and export support
@@ -356,10 +358,13 @@ Recommended production settings:
 - Route-level frontend code splitting
 - CI pipeline for backend tests, frontend lint, and frontend build
 - Request IDs and structured backend observability
+- SaaS packaging baseline with Starter, Growth, and Enterprise plans
+- Student-seat and reminder-campaign limit enforcement
 
 ### Next Priorities
 
 - Error tracking integration such as Sentry or OpenTelemetry
+- Billing checkout and invoice lifecycle integration
 
 ## Repository Status
 

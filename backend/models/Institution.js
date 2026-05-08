@@ -61,6 +61,28 @@ const institutionSchema = new mongoose.Schema({
       trim: true,
     },
   },
+  subscription: {
+    plan: {
+      type: String,
+      enum: ["starter", "growth", "enterprise"],
+      default: "starter",
+    },
+    status: {
+      type: String,
+      enum: ["trialing", "active", "past_due", "paused", "cancelled"],
+      default: "trialing",
+    },
+    trialEndsAt: {
+      type: Date,
+    },
+    currentPeriodEndsAt: {
+      type: Date,
+    },
+    externalCustomerId: {
+      type: String,
+      trim: true,
+    },
+  },
   isActive: {
     type: Boolean,
     default: true,

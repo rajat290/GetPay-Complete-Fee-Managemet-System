@@ -31,6 +31,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Razorpay order creation and checkout verification
 - Webhook-aware payment lifecycle handling
 - Online and manual/offline payment recording
+- Branded PDF receipt generation using institution settings
 - Student fee ledger with assigned, paid, pending, and overdue balances
 - Admin dues and defaulters reporting
 - Reconciliation reports by status, gateway, and payment mode
@@ -50,6 +51,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Secure student login with institution code
 - Ledger-based fee payment screen
 - Payment history and receipt access
+- Branded PDF receipt downloads
 - Student profile, notifications, and dashboard views
 
 ### Security and Reliability
@@ -84,6 +86,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - JWT authentication
 - Razorpay integration
 - PDFKit receipt generation
+- Institution-branded receipt templates
 - Nodemailer email service
 - Jest, Supertest, and MongoDB Memory Server for tests
 
@@ -334,11 +337,11 @@ Recommended production settings:
 - Password reset flow
 - Invite-based student onboarding
 - Institution settings and branding
+- Receipt template customization
 
 ### Next Priorities
 
 - Route-level frontend code splitting
-- Receipt template customization
 - Automated reminder campaigns for due and overdue fees
 - Admin audit log UI for finance and student operations
 - CI pipeline for backend tests, frontend lint, and frontend build

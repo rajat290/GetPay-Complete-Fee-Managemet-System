@@ -1,7 +1,6 @@
-const Receipt = require("../models/Receipt");
 const Payment = require("../models/Payment");
 const fs = require("fs");
-const path = require("path");
+const generateReceipt = require("../utils/receiptGenerator");
 
 // Get all receipts for a student
 exports.getReceipts = async (req, res) => {
@@ -50,10 +49,10 @@ exports.downloadReceipt = async (req, res) => {
       return res.status(404).json({ message: "Receipt not found" });
     }
 
-    const filePath = path.join(__dirname, `../receipts/receipt_${paymentId}.pdf`);
+    let filePath = generateReceipt.getReceiptPath(paymentId);
     
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: "Receipt file not found" });
+      filePath = await generateReceipt(req.user, payment.assignmentId, payment);
     }
 
     res.setHeader('Content-Type', 'application/pdf');

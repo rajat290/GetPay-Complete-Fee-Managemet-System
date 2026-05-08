@@ -12,8 +12,8 @@ import {
   FiLogOut,
   FiSettings
 } from "react-icons/fi";
-import { AuthContext } from "../context/AuthContext";
-import { ThemeContext } from "../context/ThemeContext";
+import { AuthContext } from "../context/authContextValue";
+import { ThemeContext } from "../context/themeContextValue";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

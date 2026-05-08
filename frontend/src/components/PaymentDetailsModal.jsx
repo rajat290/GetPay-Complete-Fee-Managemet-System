@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiX, FiDownload, FiMail } from "react-icons/fi";
 import api from "../services/api";
 
@@ -6,13 +6,7 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }) {
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && paymentId) {
-      fetchPaymentDetails();
-    }
-  }, [isOpen, paymentId]);
-
-  const fetchPaymentDetails = async () => {
+  const fetchPaymentDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/admin/payments/${paymentId}`);
@@ -22,7 +16,13 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [paymentId]);
+
+  useEffect(() => {
+    if (isOpen && paymentId) {
+      fetchPaymentDetails();
+    }
+  }, [fetchPaymentDetails, isOpen, paymentId]);
 
   const handleDownloadReceipt = async () => {
     try {
@@ -36,6 +36,7 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading receipt:", error);
     }

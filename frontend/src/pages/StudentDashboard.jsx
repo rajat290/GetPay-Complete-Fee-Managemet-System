@@ -9,12 +9,11 @@ import {
   FiCreditCard,
   FiFileText,
   FiArrowRight,
-  FiDollarSign,
   FiTrendingUp,
   FiAlertCircle
 } from "react-icons/fi";
 import api from "../services/api";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/authContextValue";
 import StudentProfileModal from "../components/StudentProfileModal";
 
 export default function StudentDashboard() {
@@ -119,6 +118,14 @@ export default function StudentDashboard() {
             <FiUser className="h-4 w-4" />
             <span>View Profile</span>
           </button>
+          {unreadNotifications > 0 && (
+            <Link
+              to="/student/notifications"
+              className="rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 dark:bg-red-950 dark:text-red-200"
+            >
+              {unreadNotifications} new
+            </Link>
+          )}
         </div>
       </div>
 

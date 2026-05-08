@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import api from "../services/api";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/authContextValue";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,7 +26,7 @@ export default function Login() {
         navigate("/student/dashboard");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || err.response?.data?.error || "Login failed");
     }
   };
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { FiSearch, FiFilter, FiFileText, FiCalendar, FiDownload, FiBell, FiUser, FiChevronDown } from "react-icons/fi";
+import { useCallback, useEffect, useState } from "react";
+import { FiSearch, FiFileText, FiCalendar, FiDownload, FiBell, FiUser, FiChevronDown } from "react-icons/fi";
 import api from "../../services/api";
 import PaymentDetailsModal from "../../components/PaymentDetailsModal";
 import NewPaymentNotification from "../../components/NewPaymentNotification";
@@ -17,27 +17,13 @@ export default function ManagePayments() {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
-  const [showFilters, setShowFilters] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [newPaymentNotification, setNewPaymentNotification] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedClass, selectedStatus, dateRange]);
-
-  // Real-time updates - poll every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [selectedClass, selectedStatus, dateRange]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -55,17 +41,17 @@ export default function ManagePayments() {
         api.get('/admin/classes')
       ]);
       
-      // Check for new payments
-      const previousPaymentIds = new Set(payments.map(p => p._id));
-      const newPayments = paymentsRes.data.filter(p => !previousPaymentIds.has(p._id));
-      
-      if (newPayments.length > 0 && payments.length > 0) {
-        const latestNewPayment = newPayments[0];
-        setNewPaymentNotification(latestNewPayment);
-        setShowNotification(true);
-      }
-      
-      setPayments(paymentsRes.data);
+      setPayments((previousPayments) => {
+        const previousPaymentIds = new Set(previousPayments.map((payment) => payment._id));
+        const newPayments = paymentsRes.data.filter((payment) => !previousPaymentIds.has(payment._id));
+
+        if (newPayments.length > 0 && previousPayments.length > 0) {
+          setNewPaymentNotification(newPayments[0]);
+          setShowNotification(true);
+        }
+
+        return paymentsRes.data;
+      });
       setStats(statsRes.data);
       setClassNames(classesRes.data);
     } catch (err) {
@@ -73,7 +59,20 @@ export default function ManagePayments() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange.endDate, dateRange.startDate, searchTerm, selectedClass, selectedStatus]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Real-time updates - poll every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleSearch = (e) => {
     e.preventDefault();

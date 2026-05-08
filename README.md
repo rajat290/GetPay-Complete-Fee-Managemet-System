@@ -1,269 +1,348 @@
-# GetPay  - Payment Management System
+# GetPay Education
 
-A comprehensive payment management system for Colleges,educational institutions, Restaurents, Hotels, and every where you need to track you payment and provide a receipt to user 
-with real-time payment tracking, admin dashboard, and Razorpay integration.
+Enterprise-ready fee collection and payment operations platform for schools, colleges, coaching institutes, and education groups.
 
-## 📸 Dashboard Previews
+GetPay Education helps institutions manage student records, assign fees, collect online and offline payments, reconcile collections, track dues and defaulters, and issue receipts from a single role-based dashboard.
 
-### Admin Dashboard
-![Admin Dashboard](Admin%20Dashboard.png)
+## Repository Description
 
-### Student Dashboard  
-![Student Dashboard](Student%20Dashboard.png)
+GetPay Education is a multi-tenant SaaS foundation for institutional fee management. It combines a React admin/student portal with a Node.js, Express, MongoDB, and Razorpay backend. The product is currently focused on education institutions, with a backend architecture that can later support restaurants, hotels, and other payment-led businesses.
 
-## 🚀 Features
+Suggested GitHub topics:
 
-### Admin Payment Management Dashboard
-- **Real-time Payment Overview**: Live statistics showing total received, pending, and failed payments
-- **Payment Statistics**: Monthly trends and percentage changes
-- **Advanced Filtering**: Filter by class, status, date range, and search functionality
-- **Class-based Filtering**: View payments by specific student classes (e.g., 12thA, 11thB)
-- **Real-time Updates**: Automatic refresh every 30 seconds with new payment notifications
-- **Export Functionality**: Export payment data to CSV format
-- **Payment Details Modal**: Detailed view of each payment with Razorpay transaction IDs
-
-### Payment Tracking
-- **Razorpay Integration**: Complete payment gateway integration with transaction IDs
-- **Payment Status Tracking**: Real-time status updates (completed, pending, failed)
-- **Receipt Generation**: Automatic PDF receipt generation and email delivery
-- **Payment History**: Complete payment history for each student
-
-### Student Management
-- **Class-based Organization**: Students organized by classes (12thA, 12thB, etc.)
-- **Fee Assignment**: Assign different fee types to students
-- **Payment Notifications**: Email notifications for successful payments
-
-## 🛠️ Technology Stack
-
-### Backend
-- **Node.js** with Express.js
-- **MongoDB** with Mongoose ODM
-- **Razorpay** payment gateway integration
-- **JWT** authentication
-- **PDF generation** for receipts
-- **Email service** for notifications
-
-### Frontend
-- **React.js** with Vite
-- **Tailwind CSS** for styling
-- **React Icons** for UI icons
-- **Real-time updates** with polling
-- **Responsive design** for all devices
-
-## 📋 Prerequisites
-
-- Node.js (v16 or higher)
-- MongoDB
-- Razorpay account
-- SMTP email service
-
-## 🚀 Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd GetPay
-   ```
-
-2. **Install backend dependencies**
-   ```bash
-   cd backend
-   npm install
-   ```
-
-3. **Install frontend dependencies**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. **Environment Setup**
-   
-   Create `.env` file in the backend directory:
-   ```env
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   RAZORPAY_KEY_ID=your_razorpay_key_id
-   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-   EMAIL_USER=your_email
-   EMAIL_PASS=your_email_password
-   PORT=5000
-   ```
-
-5. **Seed the database**
-   ```bash
-   cd backend
-   node seed.js
-   ```
-
-6. **Start the servers**
-   
-   Backend:
-   ```bash
-   cd backend
-   npm start
-   ```
-   
-   Frontend:
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
-## 📊 Database Schema
-
-### Student Model
-```javascript
-{
-  name: String,
-  email: String,
-  registrationNo: String,
-  password: String,
-  role: String,
-  className: String
-}
+```text
+saas, fee-management, education-technology, edtech, payments, razorpay, mern, react, nodejs, express, mongodb, multi-tenant, student-fees, receipts, reconciliation
 ```
 
-### Payment Model
-```javascript
-{
-  studentId: ObjectId,
-  assignmentId: ObjectId,
-  amount: Number,
-  mode: String,
-  status: String,
-  razorpayPaymentId: String,
-  razorpayOrderId: String,
-  razorpaySignature: String
-}
-```
+## Product Capabilities
 
-### Fee Model
-```javascript
-{
-  title: String,
-  amount: Number,
-  category: String,
-  dueDate: Date
-}
-```
+### Institution Operations
 
-## 🔌 API Endpoints
+- Multi-tenant institution isolation through `institutionId`
+- Admin and student role-based access control
+- Student onboarding and class-based organization
+- Fee template creation and student/class-level assignment
+- Bulk fee assignment with duplicate protection
+- Academic domain models for branches, sessions, and class groups
 
-### Admin Payment Management
-- `GET /api/admin/payments` - Get all payments with filters
-- `GET /api/admin/payments/stats` - Get payment statistics
-- `GET /api/admin/payments/:id` - Get payment details
-- `GET /api/admin/payments/recent` - Get recent payments
-- `GET /api/admin/classes` - Get all class names
+### Payment and Finance
 
-### Payment Processing
-- `POST /api/payments/create-order` - Create Razorpay order
-- `POST /api/payments/verify` - Verify payment
-- `GET /api/payments/history` - Get payment history
+- Razorpay order creation and checkout verification
+- Webhook-aware payment lifecycle handling
+- Online and manual/offline payment recording
+- Student fee ledger with assigned, paid, pending, and overdue balances
+- Admin dues and defaulters reporting
+- Reconciliation reports by status, gateway, and payment mode
+- Receipt generation and receipt download flow
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+### Admin Experience
 
-## 🎯 Key Features Implementation
+- Admin dashboard for institutional overview
+- Finance workspace for dues, overdue refresh, bulk assignment, CSV export, and reconciliation snapshot
+- Payment management with filters, polling, detail modal, and export support
+- Student management and fee management screens
+- Analytics views for institution-level reporting
 
-### 1. Real-time Payment Updates
-- Polling mechanism updates payment data every 30 seconds
-- New payment notifications appear automatically
-- Live statistics updates
+### Student Experience
 
-### 2. Class-based Filtering
-- Dropdown to select specific classes (12thA, 12thB, etc.)
-- Filtered view shows only payments from selected class
-- Statistics update based on selected filters
+- Secure student login with institution code
+- Ledger-based fee payment screen
+- Payment history and receipt access
+- Student profile, notifications, and dashboard views
 
-### 3. Razorpay Transaction Tracking
-- Complete Razorpay integration
-- Transaction IDs stored and displayed
-- Payment verification with signature validation
-
-### 4. Advanced Search & Filtering
-- Search by student name, registration number, or transaction ID
-- Filter by payment status (completed, pending, failed)
-- Date range filtering
-- Multiple filter combinations
-
-### 5. Export Functionality
-- Export filtered payment data to CSV
-- Includes all payment details and transaction IDs
-- Downloadable reports for accounting
-
-## 🎨 UI/UX Features
-
-### Payment Overview Cards
-- **Total Received**: Green gradient with percentage change
-- **Pending**: Yellow gradient with payment count
-- **Failed**: Red gradient with payment count
-
-### Interactive Table
-- Sortable columns
-- Hover effects
-- Status indicators with colored dots
-- Clickable payment IDs for details
-
-### Responsive Design
-- Mobile-friendly interface
-- Adaptive layouts
-- Touch-friendly controls
-
-## 🔒 Security Features
+### Security and Reliability
 
 - JWT authentication
 - Password hashing with bcrypt
-- Protected admin routes
-- Input validation and sanitization
-- Secure payment verification
+- Admin/student authorization middleware
+- Request validation middleware
+- Rate limiting for auth and payment routes
+- Security headers for common browser protections
+- Institution-scoped database queries for core resources
+- Backend test suite covering domain, payment lifecycle, ledgers, dues, and route behavior
+- Frontend lint and production build gates
 
-## 📱 Usage
+## Tech Stack
 
-### Admin Login
-1. Navigate to the admin panel
-2. Login with admin credentials
-3. Access the payment management dashboard
+### Frontend
 
-### Viewing Payments
-1. All payments are displayed in the main table
-2. Use filters to narrow down results
-3. Click "Details" to view complete payment information
-4. Export data using the export button
+- React 19
+- Vite
+- Tailwind CSS
+- React Router
+- React Icons and Lucide React
+- Chart.js and Recharts
+- Axios API client
 
-### Real-time Monitoring
-1. Dashboard automatically updates every 30 seconds
-2. New payments trigger notifications
-3. Statistics update in real-time
-4. Payment status changes are reflected immediately
+### Backend
 
-## 🧪 Testing
+- Node.js
+- Express 5
+- MongoDB with Mongoose
+- JWT authentication
+- Razorpay integration
+- PDFKit receipt generation
+- Nodemailer email service
+- Jest, Supertest, and MongoDB Memory Server for tests
 
-Run the test suite:
-```bash
-cd backend
-npm test
+## Project Structure
+
+```text
+GetPay/
+  backend/
+    controllers/       Request handlers
+    middleware/        Auth, validation, rate limit, security, error handling
+    models/            Mongoose domain models
+    routes/            Express route modules
+    services/          Payment, ledger, dues, and reporting services
+    tests/             Backend unit and route tests
+    utils/             Receipt and email utilities
+    validators/        Request schemas
+    seedDemo.js        Safe demo data upsert script
+    server.js          API entrypoint
+  frontend/
+    src/
+      components/      Shared UI components
+      context/         Auth and theme providers/context values
+      layouts/         Admin and student shell layouts
+      pages/           Admin and student screens
+      services/        Axios API client
+  render.yaml          Render deployment blueprint
 ```
 
-## 📝 License
+## Local Development
 
-This project is licensed under the MIT License.
+### Prerequisites
 
-## 🤝 Contributing
+- Node.js 18 or newer
+- MongoDB Atlas or local MongoDB
+- Razorpay test credentials
+- Optional SMTP credentials for email delivery
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+### 1. Install Dependencies
 
-## 📞 Support
+From the repository root:
 
-For support and questions, please contact to rajatsinghtomarofficial@gmail.com.
+```bash
+npm install
+cd backend
+npm install
+cd ../frontend
+npm install
+```
 
----
+### 2. Configure Environment
 
-**GetPay** - Streamlining payment management for educational institutions, Restaurants, Hotels, and for Commercials usage. 
-looking for peoples who can suggest me to improve UI/UX 
+Create backend and frontend environment files from the examples:
+
+```bash
+copy backend\.env.example backend\.env
+copy frontend\.env.example frontend\.env
+```
+
+Backend `.env`:
+
+```env
+PORT=5000
+NODE_ENV=development
+MONGO_URI=mongodb://127.0.0.1:27017/getpay
+JWT_SECRET=replace_with_a_long_random_secret
+CORS_ORIGIN=http://localhost:5173
+RAZORPAY_KEY_ID=rzp_test_replace_me
+RAZORPAY_KEY_SECRET=replace_me
+EMAIL_USER=notifications@example.com
+EMAIL_PASS=replace_me
+```
+
+Frontend `.env`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+### 3. Seed Demo Data
+
+Use the safe demo seed. It upserts demo data and does not wipe the database:
+
+```bash
+cd backend
+npm run seed:demo
+```
+
+Demo credentials:
+
+```text
+Institution: GETPAY-DEMO
+Admin: admin@example.com / admin123
+Student: student1_1@example.com / 123456
+```
+
+### 4. Start the App
+
+Backend:
+
+```bash
+cd backend
+npm run dev
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Default local URLs:
+
+```text
+Frontend: http://localhost:5173
+Backend: http://localhost:5000
+API health: http://localhost:5000/api/health
+```
+
+## API Overview
+
+All main API routes are mounted under `/api`.
+
+### Authentication
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/profile`
+
+### Fees and Student Ledger
+
+- `POST /api/fees/create`
+- `POST /api/fees/assign`
+- `POST /api/fees/assign-bulk`
+- `GET /api/fees`
+- `GET /api/fees/assignments`
+- `GET /api/fees/my-fees`
+- `GET /api/fees/my-ledger`
+
+### Payments
+
+- `POST /api/payments/create-order`
+- `POST /api/payments/verify`
+- `POST /api/payments/webhook`
+- `GET /api/payments/history`
+
+### Admin Finance
+
+- `GET /api/admin/students`
+- `POST /api/admin/students`
+- `GET /api/admin/students/:studentId/ledger`
+- `GET /api/admin/payments`
+- `GET /api/admin/payments/stats`
+- `GET /api/admin/payments/recent`
+- `GET /api/admin/payments/reconciliation`
+- `POST /api/admin/payments/offline`
+- `GET /api/admin/classes`
+- `POST /api/admin/dues/refresh-overdue`
+- `GET /api/admin/dues`
+- `GET /api/admin/payments/:paymentId`
+
+### Receipts and Notifications
+
+- `GET /api/receipts`
+- `GET /api/receipts/download/:paymentId`
+- `GET /api/notifications`
+- `GET /api/notifications/unread-count`
+
+### Operations
+
+- `GET /api/health`
+
+## Quality Gates
+
+Backend tests:
+
+```bash
+cd backend
+npm test -- --runInBand
+```
+
+Frontend lint:
+
+```bash
+cd frontend
+npm run lint
+```
+
+Frontend production build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Current baseline:
+
+- Backend test suites cover domain models, validation, auth, payment lifecycle, offline payments, reconciliation, bulk fee assignment, dues reports, and student ledgers.
+- Frontend lint passes after context/provider cleanup.
+- Vite build passes. A large chunk warning may appear until route-level code splitting is added.
+
+## Deployment Notes
+
+The repository includes `render.yaml` as a starting point for Render deployment.
+
+Recommended production settings:
+
+- Set `NODE_ENV=production`
+- Use a strong `JWT_SECRET`
+- Restrict `CORS_ORIGIN` to the deployed frontend URL
+- Use Razorpay live keys only in production secrets
+- Use a dedicated production MongoDB database
+- Configure SMTP/app-password credentials for receipt email delivery
+- Monitor `/api/health` from the hosting platform
+
+## Roadmap Toward Sellable SaaS
+
+### Phase 1: Foundation
+
+- Multi-tenancy and institution scoping
+- RBAC and security middleware
+- Education domain models
+- Validation and error handling
+- Test quality gate
+
+### Phase 2: Payments and Finance Operations
+
+- Payment lifecycle hardening
+- Offline/manual payment support
+- Reconciliation reports
+- Student fee ledger
+- Bulk fee assignment
+- Dues and defaulters reports
+- Admin finance workspace
+- Student finance experience
+- Frontend and local demo quality gates
+- Enterprise repository readiness
+
+### Next Priorities
+
+- Route-level frontend code splitting
+- Audit log for admin finance actions
+- Password reset and invite-based onboarding
+- Institution settings and branding
+- Receipt template customization
+- Automated reminder campaigns for due and overdue fees
+- CI pipeline for backend tests, frontend lint, and frontend build
+- Production observability, structured logs, and error tracking
+
+## Repository Status
+
+GetPay Education is moving from prototype to SaaS product foundation. The current focus is education institutions first: schools, colleges, and coaching institutes with online/offline fee collection and finance operations needs.
+
+## License
+
+MIT License.
+
+## Contact
+
+For product, implementation, or partnership discussions:
+
+```text
+rajatsinghtomarofficial@gmail.com
+```

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiBook } from "react-icons/fi";
 import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/authContextValue";
 
 export default function StudentProfileModal({ isOpen, onClose }) {
   const { user } = useContext(AuthContext);

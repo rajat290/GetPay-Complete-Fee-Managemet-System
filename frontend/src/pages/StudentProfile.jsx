@@ -1,9 +1,7 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import api from "../services/api";
-import { AuthContext } from "../context/AuthContext";
 
 export default function StudentProfile() {
-  const { user } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 

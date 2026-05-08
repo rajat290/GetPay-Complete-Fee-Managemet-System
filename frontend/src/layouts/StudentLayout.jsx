@@ -11,8 +11,8 @@ import {
   FiBell,
   FiLogOut
 } from "react-icons/fi";
-import { AuthContext } from "../context/AuthContext";
-import { ThemeContext } from "../context/ThemeContext";
+import { AuthContext } from "../context/authContextValue";
+import { ThemeContext } from "../context/themeContextValue";
 
 export default function StudentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

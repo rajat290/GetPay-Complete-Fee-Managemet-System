@@ -2,12 +2,10 @@ const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config();
 const cors = require("cors");
+const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 const { applySecurityHeaders } = require("./middleware/securityMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
-
-// Import Models (for test route)
-const Student = require("./models/Student");
 
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
@@ -25,6 +23,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 connectDB();
 
 const app = express();
+const packageInfo = require("./package.json");
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
   .split(",")
@@ -46,6 +45,27 @@ app.use(cors({
 app.post("/api/payments/webhook", express.raw({ type: "application/json" }), handleRazorpayWebhook);
 app.use(express.json());
 
+app.get("/api/health", (req, res) => {
+  const databaseStates = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting"
+  };
+
+  res.json({
+    service: "getpay-backend",
+    version: packageInfo.version,
+    environment: process.env.NODE_ENV || "development",
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    database: {
+      state: databaseStates[mongoose.connection.readyState] || "unknown"
+    }
+  });
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/fees", feeRoutes);
@@ -58,13 +78,12 @@ app.use("/api/notifications", notificationRoutes);
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("GetPay Backend Running...");
-});
-
-// Test route (just for debugging)
-app.get("/test", async (req, res) => {
-  const studentCount = await Student.countDocuments();
-  res.json({ message: "Models working!", totalStudents: studentCount });
+  res.json({
+    service: "GetPay Education API",
+    status: "running",
+    health: "/api/health",
+    apiBasePath: "/api"
+  });
 });
 
 app.use(notFound);

@@ -19,6 +19,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 ### Institution Operations
 
 - Multi-tenant institution isolation through `institutionId`
+- Institution profile, billing contact, and branding configuration
 - Admin and student role-based access control
 - Student onboarding and class-based organization
 - Fee template creation and student/class-level assignment
@@ -38,6 +39,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 ### Admin Experience
 
 - Admin dashboard for institutional overview
+- Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
 - Finance workspace for dues, overdue refresh, bulk assignment, CSV export, and reconciliation snapshot
 - Payment management with filters, polling, detail modal, and export support
 - Student management and fee management screens
@@ -234,6 +236,8 @@ All main API routes are mounted under `/api`.
 ### Admin Finance
 
 - `GET /api/admin/students`
+- `GET /api/admin/institution`
+- `PATCH /api/admin/institution`
 - `POST /api/admin/students`
 - `POST /api/admin/students/invite`
 - `GET /api/admin/students/:studentId/ledger`
@@ -329,11 +333,11 @@ Recommended production settings:
 - Due and overdue reminder operations
 - Password reset flow
 - Invite-based student onboarding
+- Institution settings and branding
 
 ### Next Priorities
 
 - Route-level frontend code splitting
-- Institution settings and branding
 - Receipt template customization
 - Automated reminder campaigns for due and overdue fees
 - Admin audit log UI for finance and student operations

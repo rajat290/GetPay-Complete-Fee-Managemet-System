@@ -44,4 +44,19 @@ const sendDuesRemindersSchema = {
   }
 };
 
-module.exports = { createStudentSchema, inviteStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema };
+const updateInstitutionSettingsSchema = {
+  body: {
+    type: { enum: ["school", "college", "coaching", "other"] },
+    email: { type: "email" }
+  }
+};
+
+module.exports = {
+  createStudentSchema,
+  inviteStudentSchema,
+  paymentDetailsSchema,
+  recordOfflinePaymentSchema,
+  studentLedgerSchema,
+  sendDuesRemindersSchema,
+  updateInstitutionSettingsSchema
+};

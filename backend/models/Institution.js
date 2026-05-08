@@ -31,6 +31,36 @@ const institutionSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  branding: {
+    logoUrl: {
+      type: String,
+      trim: true,
+    },
+    primaryColor: {
+      type: String,
+      trim: true,
+      default: "#2563eb",
+    },
+    receiptFooter: {
+      type: String,
+      trim: true,
+    },
+  },
+  billingContact: {
+    name: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+  },
   isActive: {
     type: Boolean,
     default: true,

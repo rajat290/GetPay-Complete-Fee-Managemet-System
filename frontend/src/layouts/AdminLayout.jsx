@@ -45,6 +45,7 @@ export default function AdminLayout() {
     { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2 },
     { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase },
     { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp },
+    { name: 'Settings', href: '/admin/settings', icon: FiSettings },
   ];
 
   const isActive = (href) => location.pathname === href;

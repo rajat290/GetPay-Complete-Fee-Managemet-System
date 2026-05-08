@@ -67,6 +67,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Institution-scoped database queries for core resources
 - Backend test suite covering domain, payment lifecycle, ledgers, dues, and route behavior
 - Frontend lint and production build gates
+- GitHub Actions CI for backend tests, frontend lint, and frontend build
 
 ## Tech Stack
 
@@ -79,6 +80,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - React Icons and Lucide React
 - Chart.js and Recharts
 - Axios API client
+- Route-level lazy loading for production bundle splitting
 
 ### Backend
 
@@ -112,7 +114,7 @@ GetPay/
       components/      Shared UI components
       context/         Auth and theme providers/context values
       layouts/         Admin and student shell layouts
-      pages/           Admin and student screens
+    pages/           Admin and student screens loaded through route-level chunks
       services/        Axios API client
   render.yaml          Render deployment blueprint
 ```
@@ -346,11 +348,11 @@ Recommended production settings:
 - Receipt template customization
 - Saved reminder campaigns
 - Dedicated audit trail UI
+- Route-level frontend code splitting
+- CI pipeline for backend tests, frontend lint, and frontend build
 
 ### Next Priorities
 
-- Route-level frontend code splitting
-- CI pipeline for backend tests, frontend lint, and frontend build
 - Production observability, structured logs, and error tracking
 
 ## Repository Status

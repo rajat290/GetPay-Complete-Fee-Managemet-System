@@ -8,6 +8,7 @@ import {
   FiCreditCard, 
   FiBarChart2, 
   FiTrendingUp,
+  FiBriefcase,
   FiLogOut,
   FiSettings
 } from "react-icons/fi";
@@ -42,6 +43,7 @@ export default function AdminLayout() {
     { name: 'Manage Students', href: '/admin/students', icon: FiUsers },
     { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard },
     { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2 },
+    { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase },
     { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp },
   ];
 

@@ -5,6 +5,7 @@ const PaymentEvent = require("../models/PaymentEvent");
 const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
 const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
+const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -63,6 +64,20 @@ exports.createStudent = async (req, res) => {
     // Remove password from response
     const studentObj = student.toObject();
     delete studentObj.password;
+
+    await logAdminAction({
+      req,
+      action: "student.created",
+      entityType: "Student",
+      entityId: student._id,
+      summary: `Created student ${student.name} (${student.registrationNo})`,
+      metadata: {
+        studentId: student._id,
+        email: student.email,
+        registrationNo: student.registrationNo,
+        className: student.className
+      }
+    });
 
     res.status(201).json(studentObj);
   } catch (err) {
@@ -516,6 +531,23 @@ exports.recordOfflinePayment = async (req, res) => {
       source: "admin_manual"
     });
 
+    await logAdminAction({
+      req,
+      action: "payment.offline_recorded",
+      entityType: "Payment",
+      entityId: payment._id,
+      summary: `Recorded ${mode} payment for ${student.name}`,
+      metadata: {
+        paymentId: payment._id,
+        studentId,
+        assignmentId,
+        amount: payment.amount,
+        mode,
+        referenceNo,
+        feeTitle: assignment.feeId.title
+      }
+    });
+
     res.status(201).json({
       _id: payment._id,
       paymentId: `PMT${payment._id.toString().slice(-6).toUpperCase()}`,
@@ -587,9 +619,46 @@ exports.refreshOverdueDues = async (req, res) => {
       asOfDate: req.body.asOfDate ? new Date(req.body.asOfDate) : new Date()
     });
 
+    await logAdminAction({
+      req,
+      action: "dues.overdue_refreshed",
+      entityType: "FeeAssignment",
+      summary: `Refreshed overdue dues and updated ${result.modifiedCount} assignments`,
+      metadata: {
+        asOfDate: req.body.asOfDate || null,
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount
+      }
+    });
+
     res.json(result);
   } catch (err) {
     console.error("Error refreshing overdue dues:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get institution audit logs for admin review
+exports.getAuditLogs = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const logs = await listAuditLogs({
+      institutionId: req.institutionId,
+      filters: {
+        action: req.query.action,
+        entityType: req.query.entityType,
+        actorId: req.query.actorId,
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+        page: req.query.page,
+        limit: req.query.limit
+      }
+    });
+
+    res.json(logs);
+  } catch (err) {
+    console.error("Error fetching audit logs:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

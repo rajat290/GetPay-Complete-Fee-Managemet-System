@@ -239,6 +239,7 @@ All main API routes are mounted under `/api`.
 - `GET /api/admin/payments/reconciliation`
 - `POST /api/admin/payments/offline`
 - `GET /api/admin/classes`
+- `GET /api/admin/audit-logs`
 - `POST /api/admin/dues/refresh-overdue`
 - `GET /api/admin/dues`
 - `GET /api/admin/payments/:paymentId`
@@ -328,6 +329,7 @@ Recommended production settings:
 - Institution settings and branding
 - Receipt template customization
 - Automated reminder campaigns for due and overdue fees
+- Admin audit log UI for finance and student operations
 - CI pipeline for backend tests, frontend lint, and frontend build
 - Production observability, structured logs, and error tracking
 

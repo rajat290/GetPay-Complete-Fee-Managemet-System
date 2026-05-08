@@ -211,6 +211,7 @@ All main API routes are mounted under `/api`.
 - `POST /api/auth/login`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
+- `POST /api/auth/activate-account`
 - `GET /api/auth/profile`
 
 ### Fees and Student Ledger
@@ -234,6 +235,7 @@ All main API routes are mounted under `/api`.
 
 - `GET /api/admin/students`
 - `POST /api/admin/students`
+- `POST /api/admin/students/invite`
 - `GET /api/admin/students/:studentId/ledger`
 - `GET /api/admin/payments`
 - `GET /api/admin/payments/stats`
@@ -326,11 +328,11 @@ Recommended production settings:
 - Admin audit logging
 - Due and overdue reminder operations
 - Password reset flow
+- Invite-based student onboarding
 
 ### Next Priorities
 
 - Route-level frontend code splitting
-- Invite-based onboarding
 - Institution settings and branding
 - Receipt template customization
 - Automated reminder campaigns for due and overdue fees

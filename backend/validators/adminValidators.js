@@ -28,6 +28,15 @@ const studentLedgerSchema = {
   }
 };
 
+const inviteStudentSchema = {
+  body: {
+    name: { required: true },
+    email: { required: true, type: "email" },
+    registrationNo: { required: true },
+    className: { required: true }
+  }
+};
+
 const sendDuesRemindersSchema = {
   body: {
     channel: { enum: ["notification", "email", "both"] },
@@ -35,4 +44,4 @@ const sendDuesRemindersSchema = {
   }
 };
 
-module.exports = { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema };
+module.exports = { createStudentSchema, inviteStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema };

@@ -2,6 +2,7 @@ const express = require("express");
 const { 
   getAllStudents, 
   createStudent, 
+  inviteStudent,
   getAllPayments, 
   getPaymentStats, 
   getClassNames, 
@@ -17,7 +18,7 @@ const {
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
-const { createStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema } = require("../validators/adminValidators");
+const { createStudentSchema, inviteStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema } = require("../validators/adminValidators");
 
 const router = express.Router();
 
@@ -28,6 +29,9 @@ router.get("/students", getAllStudents);
 
 // POST /admin/students - Create a new student (admin only)
 router.post("/students", validateRequest(createStudentSchema), createStudent);
+
+// POST /admin/students/invite - Invite a student to activate their account
+router.post("/students/invite", validateRequest(inviteStudentSchema), inviteStudent);
 
 // GET /admin/students/:studentId/ledger - Get student ledger
 router.get("/students/:studentId/ledger", validateRequest(studentLedgerSchema), getStudentLedger);

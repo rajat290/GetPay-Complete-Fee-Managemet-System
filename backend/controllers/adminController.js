@@ -2,6 +2,7 @@ const Student = require("../models/Student");
 const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 const PaymentEvent = require("../models/PaymentEvent");
+const Institution = require("../models/Institution");
 const crypto = require("crypto");
 const emailService = require("../utils/emailService");
 const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
@@ -18,6 +19,83 @@ const requireAdmin = (req, res) => {
     return false;
   }
   return true;
+};
+
+const applyAllowedFields = (target, source, fields) => {
+  fields.forEach((field) => {
+    if (source[field] !== undefined) {
+      target[field] = source[field];
+    }
+  });
+};
+
+// Get editable institution settings for the current admin tenant
+exports.getInstitutionSettings = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const institution = await Institution.findById(req.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    res.json(institution);
+  } catch (err) {
+    console.error("Error fetching institution settings:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Update editable institution profile, branding, and billing contact settings
+exports.updateInstitutionSettings = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const institution = await Institution.findById(req.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const updatedFields = [];
+
+    ["name", "type", "email", "phone", "address"].forEach((field) => {
+      if (req.body[field] !== undefined) {
+        institution[field] = req.body[field];
+        updatedFields.push(field);
+      }
+    });
+
+    if (req.body.branding && typeof req.body.branding === "object") {
+      institution.branding = institution.branding || {};
+      applyAllowedFields(institution.branding, req.body.branding, ["logoUrl", "primaryColor", "receiptFooter"]);
+      updatedFields.push("branding");
+    }
+
+    if (req.body.billingContact && typeof req.body.billingContact === "object") {
+      institution.billingContact = institution.billingContact || {};
+      applyAllowedFields(institution.billingContact, req.body.billingContact, ["name", "email", "phone"]);
+      updatedFields.push("billingContact");
+    }
+
+    await institution.save();
+
+    await logAdminAction({
+      req,
+      action: "institution.settings_updated",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Updated institution settings for ${institution.name}`,
+      metadata: {
+        institutionId: institution._id,
+        updatedFields: [...new Set(updatedFields)]
+      }
+    });
+
+    res.json(institution);
+  } catch (err) {
+    console.error("Error updating institution settings:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 };
 
 // Get all students (admin only)

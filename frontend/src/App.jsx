@@ -23,6 +23,7 @@ import ManageFees from "./pages/admin/ManageFees";
 import ManagePayments from "./pages/admin/ManagePayments";
 import FinanceWorkspace from "./pages/admin/FinanceWorkspace";
 import Analytics from "./pages/admin/Analytics";
+import InstitutionSettings from "./pages/admin/InstitutionSettings";
 
 
 
@@ -72,6 +73,7 @@ function App() {
               <Route path="payments" element={<ManagePayments />} />
               <Route path="finance" element={<FinanceWorkspace />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<InstitutionSettings />} />
             </Route>
           </Routes>
         </Router>

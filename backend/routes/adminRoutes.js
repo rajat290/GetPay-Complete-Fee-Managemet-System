@@ -14,15 +14,31 @@ const {
   refreshOverdueDues,
   getDuesReport,
   getAuditLogs,
-  sendDuesReminders
+  sendDuesReminders,
+  getInstitutionSettings,
+  updateInstitutionSettings
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
-const { createStudentSchema, inviteStudentSchema, paymentDetailsSchema, recordOfflinePaymentSchema, studentLedgerSchema, sendDuesRemindersSchema } = require("../validators/adminValidators");
+const {
+  createStudentSchema,
+  inviteStudentSchema,
+  paymentDetailsSchema,
+  recordOfflinePaymentSchema,
+  studentLedgerSchema,
+  sendDuesRemindersSchema,
+  updateInstitutionSettingsSchema
+} = require("../validators/adminValidators");
 
 const router = express.Router();
 
 router.use(protect, requireAdmin);
+
+// GET /admin/institution - Get institution profile and branding settings
+router.get("/institution", getInstitutionSettings);
+
+// PATCH /admin/institution - Update institution profile and branding settings
+router.patch("/institution", validateRequest(updateInstitutionSettingsSchema), updateInstitutionSettings);
 
 // GET /admin/students - Get all students (admin only)
 router.get("/students", getAllStudents);

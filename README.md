@@ -209,6 +209,8 @@ All main API routes are mounted under `/api`.
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 - `GET /api/auth/profile`
 
 ### Fees and Student Ledger
@@ -323,11 +325,12 @@ Recommended production settings:
 - Enterprise repository readiness
 - Admin audit logging
 - Due and overdue reminder operations
+- Password reset flow
 
 ### Next Priorities
 
 - Route-level frontend code splitting
-- Password reset and invite-based onboarding
+- Invite-based onboarding
 - Institution settings and branding
 - Receipt template customization
 - Automated reminder campaigns for due and overdue fees

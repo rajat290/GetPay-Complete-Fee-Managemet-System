@@ -8,6 +8,8 @@ const app = express();
 app.use(express.json());
 app.post("/api/auth/register", authController.registerStudent);
 app.post("/api/auth/login", authController.loginStudent);
+app.post("/api/auth/forgot-password", authController.requestPasswordReset);
+app.post("/api/auth/reset-password", authController.resetPassword);
 
 describe("Auth Controller", () => {
   let institution;
@@ -89,5 +91,81 @@ describe("Auth Controller", () => {
       });
 
     expect(response.status).toBe(401);
+  });
+
+  it("requests and completes a password reset", async () => {
+    await Student.create({
+      institutionId: institution._id,
+      name: "Reset Student",
+      email: "reset@example.com",
+      password: "oldpassword",
+      registrationNo: "RESET001",
+      className: "10A"
+    });
+
+    const requestResponse = await request(app)
+      .post("/api/auth/forgot-password")
+      .send({
+        institutionCode: institution.code,
+        email: "reset@example.com"
+      });
+
+    expect(requestResponse.status).toBe(200);
+    expect(requestResponse.body).toHaveProperty("resetToken");
+
+    const resetResponse = await request(app)
+      .post("/api/auth/reset-password")
+      .send({
+        institutionCode: institution.code,
+        token: requestResponse.body.resetToken,
+        password: "newpassword"
+      });
+
+    expect(resetResponse.status).toBe(200);
+
+    const oldLogin = await request(app)
+      .post("/api/auth/login")
+      .send({
+        institutionCode: institution.code,
+        email: "reset@example.com",
+        password: "oldpassword"
+      });
+
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await request(app)
+      .post("/api/auth/login")
+      .send({
+        institutionCode: institution.code,
+        email: "reset@example.com",
+        password: "newpassword"
+      });
+
+    expect(newLogin.status).toBe(200);
+  });
+
+  it("rejects expired reset tokens", async () => {
+    const student = await Student.create({
+      institutionId: institution._id,
+      name: "Expired Student",
+      email: "expired@example.com",
+      password: "password",
+      registrationNo: "EXP001",
+      className: "10A"
+    });
+
+    student.passwordResetToken = "expired-token";
+    student.passwordResetExpires = new Date(Date.now() - 60 * 1000);
+    await student.save();
+
+    const response = await request(app)
+      .post("/api/auth/reset-password")
+      .send({
+        institutionCode: institution.code,
+        token: "expired-token",
+        password: "newpassword"
+      });
+
+    expect(response.status).toBe(400);
   });
 });

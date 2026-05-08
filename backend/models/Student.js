@@ -62,6 +62,14 @@ const studentSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'alumni'],
         default: 'active'
     },
+    passwordResetToken: {
+        type: String,
+        select: false
+    },
+    passwordResetExpires: {
+        type: Date,
+        select: false
+    },
 
 }, { timestamps: true });
 

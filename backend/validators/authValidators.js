@@ -16,4 +16,19 @@ const loginSchema = {
   }
 };
 
-module.exports = { registerStudentSchema, loginSchema };
+const requestPasswordResetSchema = {
+  body: {
+    institutionCode: { required: true },
+    email: { required: true, type: "email" }
+  }
+};
+
+const resetPasswordSchema = {
+  body: {
+    institutionCode: { required: true },
+    token: { required: true },
+    password: { required: true }
+  }
+};
+
+module.exports = { registerStudentSchema, loginSchema, requestPasswordResetSchema, resetPasswordSchema };

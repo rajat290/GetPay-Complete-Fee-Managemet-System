@@ -51,6 +51,26 @@ const updateInstitutionSettingsSchema = {
   }
 };
 
+const reminderCampaignSchema = {
+  body: {
+    name: { required: true },
+    channel: { enum: ["notification", "email", "both"] },
+    status: { enum: ["pending", "overdue", "all"] },
+    dueBeforeDays: { type: "number" }
+  }
+};
+
+const reminderCampaignParamsSchema = {
+  params: {
+    campaignId: { required: true, type: "objectId" }
+  },
+  body: {
+    channel: { enum: ["notification", "email", "both"] },
+    status: { enum: ["pending", "overdue", "all"] },
+    dueBeforeDays: { type: "number" }
+  }
+};
+
 module.exports = {
   createStudentSchema,
   inviteStudentSchema,
@@ -58,5 +78,7 @@ module.exports = {
   recordOfflinePaymentSchema,
   studentLedgerSchema,
   sendDuesRemindersSchema,
-  updateInstitutionSettingsSchema
+  updateInstitutionSettingsSchema,
+  reminderCampaignSchema,
+  reminderCampaignParamsSchema
 };

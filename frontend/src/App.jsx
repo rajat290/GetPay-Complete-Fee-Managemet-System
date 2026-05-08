@@ -24,6 +24,8 @@ import ManagePayments from "./pages/admin/ManagePayments";
 import FinanceWorkspace from "./pages/admin/FinanceWorkspace";
 import Analytics from "./pages/admin/Analytics";
 import InstitutionSettings from "./pages/admin/InstitutionSettings";
+import AuditTrail from "./pages/admin/AuditTrail";
+import ReminderCampaigns from "./pages/admin/ReminderCampaigns";
 
 
 
@@ -72,6 +74,8 @@ function App() {
               <Route path="fees" element={<ManageFees />} />
               <Route path="payments" element={<ManagePayments />} />
               <Route path="finance" element={<FinanceWorkspace />} />
+              <Route path="reminder-campaigns" element={<ReminderCampaigns />} />
+              <Route path="audit-trail" element={<AuditTrail />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<InstitutionSettings />} />
             </Route>

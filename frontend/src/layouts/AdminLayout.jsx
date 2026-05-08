@@ -9,7 +9,9 @@ import {
   FiBarChart2, 
   FiTrendingUp,
   FiBriefcase,
+  FiClock,
   FiLogOut,
+  FiShield,
   FiSettings
 } from "react-icons/fi";
 import { AuthContext } from "../context/authContextValue";
@@ -44,6 +46,8 @@ export default function AdminLayout() {
     { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard },
     { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2 },
     { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase },
+    { name: 'Reminder Campaigns', href: '/admin/reminder-campaigns', icon: FiClock },
+    { name: 'Audit Trail', href: '/admin/audit-trail', icon: FiShield },
     { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp },
     { name: 'Settings', href: '/admin/settings', icon: FiSettings },
   ];

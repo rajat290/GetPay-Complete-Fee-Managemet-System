@@ -16,7 +16,11 @@ const {
   getAuditLogs,
   sendDuesReminders,
   getInstitutionSettings,
-  updateInstitutionSettings
+  updateInstitutionSettings,
+  getReminderCampaigns,
+  createReminderCampaign,
+  updateReminderCampaign,
+  runSavedReminderCampaign
 } = require("../controllers/adminController");
 const { protect, requireAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -27,7 +31,9 @@ const {
   recordOfflinePaymentSchema,
   studentLedgerSchema,
   sendDuesRemindersSchema,
-  updateInstitutionSettingsSchema
+  updateInstitutionSettingsSchema,
+  reminderCampaignSchema,
+  reminderCampaignParamsSchema
 } = require("../validators/adminValidators");
 
 const router = express.Router();
@@ -81,6 +87,18 @@ router.get("/dues", getDuesReport);
 
 // POST /admin/dues/reminders - Preview/send due reminders
 router.post("/dues/reminders", validateRequest(sendDuesRemindersSchema), sendDuesReminders);
+
+// GET /admin/reminder-campaigns - List reusable due reminder campaigns
+router.get("/reminder-campaigns", getReminderCampaigns);
+
+// POST /admin/reminder-campaigns - Create reusable due reminder campaign
+router.post("/reminder-campaigns", validateRequest(reminderCampaignSchema), createReminderCampaign);
+
+// PATCH /admin/reminder-campaigns/:campaignId - Update reusable due reminder campaign
+router.patch("/reminder-campaigns/:campaignId", validateRequest(reminderCampaignParamsSchema), updateReminderCampaign);
+
+// POST /admin/reminder-campaigns/:campaignId/run - Preview/run reusable due reminder campaign
+router.post("/reminder-campaigns/:campaignId/run", validateRequest(reminderCampaignParamsSchema), runSavedReminderCampaign);
 
 // GET /admin/payments/:paymentId - Get payment details
 router.get("/payments/:paymentId", validateRequest(paymentDetailsSchema), getPaymentDetails);

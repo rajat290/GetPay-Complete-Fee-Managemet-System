@@ -34,6 +34,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Branded PDF receipt generation using institution settings
 - Student fee ledger with assigned, paid, pending, and overdue balances
 - Admin dues and defaulters reporting
+- Saved reminder campaigns for recurring due follow-up operations
 - Reconciliation reports by status, gateway, and payment mode
 - Receipt generation and receipt download flow
 
@@ -41,6 +42,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
+- Dedicated audit trail and reminder campaign management screens
 - Finance workspace for dues, overdue refresh, bulk assignment, CSV export, and reconciliation snapshot
 - Payment management with filters, polling, detail modal, and export support
 - Student management and fee management screens
@@ -254,6 +256,10 @@ All main API routes are mounted under `/api`.
 - `POST /api/admin/dues/refresh-overdue`
 - `GET /api/admin/dues`
 - `POST /api/admin/dues/reminders`
+- `GET /api/admin/reminder-campaigns`
+- `POST /api/admin/reminder-campaigns`
+- `PATCH /api/admin/reminder-campaigns/:campaignId`
+- `POST /api/admin/reminder-campaigns/:campaignId/run`
 - `GET /api/admin/payments/:paymentId`
 
 ### Receipts and Notifications
@@ -338,12 +344,12 @@ Recommended production settings:
 - Invite-based student onboarding
 - Institution settings and branding
 - Receipt template customization
+- Saved reminder campaigns
+- Dedicated audit trail UI
 
 ### Next Priorities
 
 - Route-level frontend code splitting
-- Automated reminder campaigns for due and overdue fees
-- Admin audit log UI for finance and student operations
 - CI pipeline for backend tests, frontend lint, and frontend build
 - Production observability, structured logs, and error tracking
 

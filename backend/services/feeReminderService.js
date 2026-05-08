@@ -1,4 +1,5 @@
 const Notification = require("../models/Notification");
+const ReminderCampaign = require("../models/ReminderCampaign");
 const emailService = require("../utils/emailService");
 const { buildDuesReport } = require("./duesReportService");
 
@@ -87,6 +88,62 @@ const sendDueReminders = async ({
   };
 };
 
+const buildCampaignFilters = (campaign) => {
+  const filters = {
+    status: campaign.filters?.status || "overdue"
+  };
+
+  if (campaign.filters?.className) {
+    filters.className = campaign.filters.className;
+  }
+
+  if (Number(campaign.filters?.dueBeforeDays) > 0) {
+    const dueBefore = new Date();
+    dueBefore.setDate(dueBefore.getDate() + Number(campaign.filters.dueBeforeDays));
+    filters.dueBefore = dueBefore.toISOString().slice(0, 10);
+  }
+
+  return filters;
+};
+
+const runReminderCampaign = async ({ institutionId, campaignId, dryRun = false }) => {
+  const campaign = await ReminderCampaign.findOne({
+    _id: campaignId,
+    institutionId
+  });
+
+  if (!campaign) {
+    const error = new Error("Reminder campaign not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!campaign.isActive && !dryRun) {
+    const error = new Error("Reminder campaign is inactive");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const result = await sendDueReminders({
+    institutionId,
+    filters: buildCampaignFilters(campaign),
+    channel: campaign.channel,
+    dryRun
+  });
+
+  if (!dryRun) {
+    campaign.lastRunAt = new Date();
+    campaign.runCount += 1;
+    await campaign.save();
+  }
+
+  return {
+    campaign,
+    result
+  };
+};
+
 module.exports = {
-  sendDueReminders
+  sendDueReminders,
+  runReminderCampaign
 };

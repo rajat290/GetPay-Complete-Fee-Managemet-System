@@ -3,13 +3,14 @@ const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 const PaymentEvent = require("../models/PaymentEvent");
 const Institution = require("../models/Institution");
+const ReminderCampaign = require("../models/ReminderCampaign");
 const crypto = require("crypto");
 const emailService = require("../utils/emailService");
 const { buildPaymentReconciliationReport } = require("../services/paymentReportService");
 const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
-const { sendDueReminders } = require("../services/feeReminderService");
+const { sendDueReminders, runReminderCampaign } = require("../services/feeReminderService");
 
 const INVITE_TOKEN_EXPIRES_MINUTES = 7 * 24 * 60;
 
@@ -875,6 +876,158 @@ exports.sendDuesReminders = async (req, res) => {
     res.status(req.body.dryRun ? 200 : 201).json(result);
   } catch (err) {
     console.error("Error sending dues reminders:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// List saved due reminder campaigns for an institution
+exports.getReminderCampaigns = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const campaigns = await ReminderCampaign.find({ institutionId: req.institutionId })
+      .sort({ updatedAt: -1 })
+      .populate("createdBy", "name email")
+      .populate("updatedBy", "name email");
+
+    res.json(campaigns);
+  } catch (err) {
+    console.error("Error fetching reminder campaigns:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Create a reusable due reminder campaign
+exports.createReminderCampaign = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const campaign = await ReminderCampaign.create({
+      institutionId: req.institutionId,
+      name: req.body.name,
+      channel: req.body.channel || "notification",
+      filters: {
+        className: req.body.className || "",
+        status: req.body.status || "overdue",
+        dueBeforeDays: Number(req.body.dueBeforeDays || 0)
+      },
+      isActive: req.body.isActive !== false,
+      createdBy: req.user._id,
+      updatedBy: req.user._id
+    });
+
+    await logAdminAction({
+      req,
+      action: "reminder_campaign.created",
+      entityType: "ReminderCampaign",
+      entityId: campaign._id,
+      summary: `Created reminder campaign ${campaign.name}`,
+      metadata: {
+        campaignId: campaign._id,
+        channel: campaign.channel,
+        filters: campaign.filters
+      }
+    });
+
+    res.status(201).json(campaign);
+  } catch (err) {
+    console.error("Error creating reminder campaign:", err);
+    if (err.code === 11000) {
+      return res.status(400).json({ error: "Reminder campaign with this name already exists" });
+    }
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Update a reusable due reminder campaign
+exports.updateReminderCampaign = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const campaign = await ReminderCampaign.findOne({
+      _id: req.params.campaignId,
+      institutionId: req.institutionId
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: "Reminder campaign not found" });
+    }
+
+    ["name", "channel", "isActive"].forEach((field) => {
+      if (req.body[field] !== undefined) {
+        campaign[field] = req.body[field];
+      }
+    });
+
+    ["className", "status", "dueBeforeDays"].forEach((field) => {
+      if (req.body[field] !== undefined) {
+        campaign.filters[field] = field === "dueBeforeDays" ? Number(req.body[field]) : req.body[field];
+      }
+    });
+
+    campaign.updatedBy = req.user._id;
+    await campaign.save();
+
+    await logAdminAction({
+      req,
+      action: "reminder_campaign.updated",
+      entityType: "ReminderCampaign",
+      entityId: campaign._id,
+      summary: `Updated reminder campaign ${campaign.name}`,
+      metadata: {
+        campaignId: campaign._id,
+        channel: campaign.channel,
+        filters: campaign.filters,
+        isActive: campaign.isActive
+      }
+    });
+
+    res.json(campaign);
+  } catch (err) {
+    console.error("Error updating reminder campaign:", err);
+    if (err.code === 11000) {
+      return res.status(400).json({ error: "Reminder campaign with this name already exists" });
+    }
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Preview or run a saved reminder campaign
+exports.runSavedReminderCampaign = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const { campaign, result } = await runReminderCampaign({
+      institutionId: req.institutionId,
+      campaignId: req.params.campaignId,
+      dryRun: Boolean(req.body.dryRun)
+    });
+
+    await logAdminAction({
+      req,
+      action: req.body.dryRun ? "reminder_campaign.previewed" : "reminder_campaign.ran",
+      entityType: "ReminderCampaign",
+      entityId: campaign._id,
+      summary: `${req.body.dryRun ? "Previewed" : "Ran"} reminder campaign ${campaign.name}`,
+      metadata: {
+        campaignId: campaign._id,
+        matchedCount: result.summary.matchedCount,
+        notificationCount: result.summary.notificationCount,
+        emailAttemptCount: result.summary.emailAttemptCount,
+        dryRun: result.summary.dryRun
+      }
+    });
+
+    res.status(req.body.dryRun ? 200 : 201).json({
+      campaign,
+      ...result
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
+
+    console.error("Error running reminder campaign:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

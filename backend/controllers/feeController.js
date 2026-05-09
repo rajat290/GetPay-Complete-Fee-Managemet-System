@@ -4,6 +4,8 @@ const Student = require("../models/Student");
 const { buildStudentLedger } = require("../services/studentLedgerService");
 const { logAdminAction } = require("../services/auditLogService");
 
+const isAdminOrStaff = (user) => ["admin", "staff"].includes(user?.role);
+
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
   try {
@@ -11,7 +13,7 @@ exports.createFee = async (req, res) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
-    if (req.user.role !== "admin") {
+    if (!isAdminOrStaff(req.user)) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -57,7 +59,7 @@ exports.assignFee = async (req, res) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
-    if (req.user.role !== "admin") {
+    if (!isAdminOrStaff(req.user)) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -134,7 +136,7 @@ exports.getStudentFees = async (req, res) => {
 // Admin: View All Fees
 exports.getAllFees = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!isAdminOrStaff(req.user)) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -149,7 +151,7 @@ exports.getAllFees = async (req, res) => {
 // Admin: Get all fee assignments with student and fee info
 exports.getAllFeeAssignments = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!isAdminOrStaff(req.user)) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -180,7 +182,7 @@ exports.bulkAssignFee = async (req, res) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    if (req.user.role !== "admin") {
+    if (!isAdminOrStaff(req.user)) {
       return res.status(403).json({ message: "Access denied" });
     }
 

@@ -71,6 +71,32 @@ const reminderCampaignParamsSchema = {
   }
 };
 
+const roleSchema = {
+  body: {
+    name: { required: true }
+  }
+};
+
+const roleParamsSchema = {
+  params: {
+    roleId: { required: true, type: "objectId" }
+  }
+};
+
+const createStaffSchema = {
+  body: {
+    name: { required: true },
+    email: { required: true, type: "email" },
+    employeeCode: { required: true }
+  }
+};
+
+const staffParamsSchema = {
+  params: {
+    staffId: { required: true, type: "objectId" }
+  }
+};
+
 module.exports = {
   createStudentSchema,
   inviteStudentSchema,
@@ -80,5 +106,9 @@ module.exports = {
   sendDuesRemindersSchema,
   updateInstitutionSettingsSchema,
   reminderCampaignSchema,
-  reminderCampaignParamsSchema
+  reminderCampaignParamsSchema,
+  roleSchema,
+  roleParamsSchema,
+  createStaffSchema,
+  staffParamsSchema
 };

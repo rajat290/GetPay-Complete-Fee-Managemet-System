@@ -12,6 +12,7 @@ const { refreshOverdueAssignments, buildDuesReport } = require("../services/dues
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 const { sendDueReminders, runReminderCampaign } = require("../services/feeReminderService");
 const { getEnabledModules } = require("../services/moduleAccessService");
+const { getUserPermissions } = require("../middleware/permissionMiddleware");
 const {
   buildSubscriptionSummary,
   assertCanAddStudent,
@@ -21,7 +22,7 @@ const {
 const INVITE_TOKEN_EXPIRES_MINUTES = 7 * 24 * 60;
 
 const requireAdmin = (req, res) => {
-  if (req.user.role !== "admin") {
+  if (!["admin", "staff"].includes(req.user.role)) {
     res.status(403).json({ error: "Access denied" });
     return false;
   }
@@ -50,6 +51,7 @@ exports.getInstitutionSettings = async (req, res) => {
     const institutionObj = institution.toObject();
     institutionObj.subscriptionSummary = subscriptionSummary;
     institutionObj.enabledModules = getEnabledModules(institution);
+    institutionObj.userPermissions = getUserPermissions(req.user);
 
     res.json(institutionObj);
   } catch (err) {
@@ -107,6 +109,7 @@ exports.updateInstitutionSettings = async (req, res) => {
     const institutionObj = institution.toObject();
     institutionObj.subscriptionSummary = subscriptionSummary;
     institutionObj.enabledModules = getEnabledModules(institution);
+    institutionObj.userPermissions = getUserPermissions(req.user);
 
     res.json(institutionObj);
   } catch (err) {

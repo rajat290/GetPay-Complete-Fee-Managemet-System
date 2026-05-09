@@ -12,6 +12,7 @@ import {
   FiClock,
   FiLogOut,
   FiShield,
+  FiUserCheck,
   FiSettings
 } from "react-icons/fi";
 import { AuthContext } from "../context/authContextValue";
@@ -21,6 +22,7 @@ import api from "../services/api";
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [enabledModules, setEnabledModules] = useState([]);
+  const [userPermissions, setUserPermissions] = useState([]);
   const { user, logout } = useContext(AuthContext);
   const { theme, toggleTheme } = useContext(ThemeContext);
   const location = useLocation();
@@ -47,8 +49,10 @@ export default function AdminLayout() {
       try {
         const res = await api.get("/admin/institution");
         setEnabledModules(res.data.enabledModules || []);
+        setUserPermissions(res.data.userPermissions || []);
       } catch {
         setEnabledModules([]);
+        setUserPermissions([]);
       }
     };
 
@@ -57,15 +61,20 @@ export default function AdminLayout() {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: FiHome },
-    { name: 'Manage Students', href: '/admin/students', icon: FiUsers, module: 'student_management' },
-    { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard, module: 'fee_management' },
-    { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2, module: 'finance_operations' },
-    { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase, module: 'finance_operations' },
-    { name: 'Reminder Campaigns', href: '/admin/reminder-campaigns', icon: FiClock, module: 'finance_operations' },
-    { name: 'Audit Trail', href: '/admin/audit-trail', icon: FiShield, module: 'audit_trail' },
-    { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp, module: 'analytics' },
-    { name: 'Settings', href: '/admin/settings', icon: FiSettings, module: 'settings' },
-  ].filter((item) => !item.module || enabledModules.length === 0 || enabledModules.includes(item.module));
+    { name: 'Manage Students', href: '/admin/students', icon: FiUsers, module: 'student_management', permission: 'student.view' },
+    { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard, module: 'fee_management', permission: 'fee.view' },
+    { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2, module: 'finance_operations', permission: 'fee.collect' },
+    { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase, module: 'finance_operations', permission: 'fee.collect' },
+    { name: 'Reminder Campaigns', href: '/admin/reminder-campaigns', icon: FiClock, module: 'finance_operations', permission: 'fee.collect' },
+    { name: 'Audit Trail', href: '/admin/audit-trail', icon: FiShield, module: 'audit_trail', permission: 'settings.manage' },
+    { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp, module: 'analytics', permission: 'analytics.view' },
+    { name: 'Staff & Roles', href: '/admin/staff', icon: FiUserCheck, module: 'settings', permission: 'staff.manage' },
+    { name: 'Settings', href: '/admin/settings', icon: FiSettings, module: 'settings', permission: 'settings.manage' },
+  ].filter((item) => {
+    const moduleAllowed = !item.module || enabledModules.length === 0 || enabledModules.includes(item.module);
+    const permissionAllowed = user?.role === 'admin' || userPermissions.includes('*') || !item.permission || userPermissions.includes(item.permission);
+    return moduleAllowed && permissionAllowed;
+  });
 
   const isActive = (href) => location.pathname === href;
 
@@ -132,7 +141,7 @@ export default function AdminLayout() {
                 {user?.name || 'Administrator'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                System Administrator
+                {user?.role === 'staff' ? 'Staff User' : 'System Administrator'}
               </p>
             </div>
           </div>

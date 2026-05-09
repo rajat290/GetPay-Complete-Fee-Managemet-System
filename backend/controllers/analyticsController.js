@@ -5,7 +5,7 @@ const Fee = require("../models/Fee");
 
 exports.getAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -48,7 +48,7 @@ exports.getAnalytics = async (req, res) => {
 // Get comprehensive analytics dashboard data
 exports.getDashboardAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -157,7 +157,7 @@ exports.getDashboardAnalytics = async (req, res) => {
 // Generate class-wise collection report
 exports.getClassWiseReport = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -293,7 +293,7 @@ exports.getClassWiseReport = async (req, res) => {
 // Get monthly revenue trends
 exports.getMonthlyRevenueTrends = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -331,7 +331,7 @@ exports.getMonthlyRevenueTrends = async (req, res) => {
 // Get payment status distribution
 exports.getPaymentStatusDistribution = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -362,7 +362,7 @@ exports.getPaymentStatusDistribution = async (req, res) => {
 
 exports.getFeeAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -395,7 +395,7 @@ exports.getFeeAnalytics = async (req, res) => {
 
 exports.getPaymentAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!(["admin", "staff"].includes(req.user.role))) {
       return res.status(403).json({ message: "Access denied" });
     }
 

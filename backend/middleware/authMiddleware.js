@@ -8,10 +8,16 @@ exports.protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await Student.findById(decoded.id).select("-password").populate("institutionId", "name code type isActive");
+      const user = await Student.findById(decoded.id).select("-password").populate("institutionId", "name code type isActive subscription");
       
       if (!user) {
         return res.status(401).json({ error: "User not found" });
+      }
+
+      if (user.role === "super_admin") {
+        req.user = user;
+        req.institutionId = null;
+        return next();
       }
 
       if (!user.institutionId || user.institutionId.isActive === false) {
@@ -46,3 +52,4 @@ exports.requireRole = (...allowedRoles) => {
 
 exports.requireAdmin = exports.requireRole("admin");
 exports.requireStudent = exports.requireRole("student");
+exports.requireSuperAdmin = exports.requireRole("super_admin");

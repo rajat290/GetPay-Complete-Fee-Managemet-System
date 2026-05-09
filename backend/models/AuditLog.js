@@ -4,7 +4,6 @@ const auditLogSchema = new mongoose.Schema({
   institutionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Institution",
-    required: true,
     index: true
   },
   actorId: {
@@ -15,7 +14,7 @@ const auditLogSchema = new mongoose.Schema({
   },
   actorRole: {
     type: String,
-    enum: ["admin", "student"],
+    enum: ["admin", "student", "super_admin"],
     required: true
   },
   action: {

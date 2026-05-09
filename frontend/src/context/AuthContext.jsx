@@ -19,14 +19,38 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
   };
 
+  const startImpersonation = (userData, token) => {
+    const currentUser = localStorage.getItem("user");
+    const currentToken = localStorage.getItem("token");
+    if (currentUser && currentToken) {
+      localStorage.setItem("supportOriginalUser", currentUser);
+      localStorage.setItem("supportOriginalToken", currentToken);
+    }
+    login(userData, token);
+  };
+
+  const stopImpersonation = () => {
+    const originalUser = localStorage.getItem("supportOriginalUser");
+    const originalToken = localStorage.getItem("supportOriginalToken");
+    if (originalUser && originalToken) {
+      setUser(JSON.parse(originalUser));
+      localStorage.setItem("user", originalUser);
+      localStorage.setItem("token", originalToken);
+    }
+    localStorage.removeItem("supportOriginalUser");
+    localStorage.removeItem("supportOriginalToken");
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    localStorage.removeItem("supportOriginalUser");
+    localStorage.removeItem("supportOriginalToken");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, startImpersonation, stopImpersonation }}>
       {children}
     </AuthContext.Provider>
   );

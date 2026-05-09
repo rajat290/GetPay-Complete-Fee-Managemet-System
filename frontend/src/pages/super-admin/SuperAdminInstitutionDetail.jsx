@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { FiArrowLeft, FiRefreshCw, FiSave, FiShield } from "react-icons/fi";
+import { AuthContext } from "../../context/authContextValue";
 import api from "../../services/api";
 
 const blankLimitOverrides = {
@@ -11,6 +12,8 @@ const blankLimitOverrides = {
 
 export default function SuperAdminInstitutionDetail() {
   const { institutionId } = useParams();
+  const navigate = useNavigate();
+  const { startImpersonation } = useContext(AuthContext);
   const [institution, setInstitution] = useState(null);
   const [modules, setModules] = useState([]);
   const [admins, setAdmins] = useState([]);
@@ -28,6 +31,7 @@ export default function SuperAdminInstitutionDetail() {
   });
   const [limitOverrides, setLimitOverrides] = useState(blankLimitOverrides);
   const [recoveryReason, setRecoveryReason] = useState("");
+  const [impersonationReason, setImpersonationReason] = useState("");
   const [temporaryPassword, setTemporaryPassword] = useState("");
 
   const load = useCallback(async () => {
@@ -133,6 +137,20 @@ export default function SuperAdminInstitutionDetail() {
       await load();
     } catch (error) {
       setMessage(error.response?.data?.error || "Could not recover admin.");
+    }
+  };
+
+  const impersonateAdmin = async (admin) => {
+    setMessage("");
+    setTemporaryPassword("");
+    try {
+      const res = await api.post(`/super-admin/institutions/${institutionId}/admins/${admin._id}/impersonate`, {
+        reason: impersonationReason || "Support investigation approved by institution"
+      });
+      startImpersonation(res.data.user, res.data.token);
+      navigate("/admin/dashboard");
+    } catch (error) {
+      setMessage(error.response?.data?.error || "Could not start support mode.");
     }
   };
 
@@ -320,6 +338,7 @@ export default function SuperAdminInstitutionDetail() {
 
         <Card title="Organization Admin Recovery">
           <Input label="Recovery reason" value={recoveryReason} onChange={setRecoveryReason} />
+          <Input label="Support mode reason" value={impersonationReason} onChange={setImpersonationReason} />
           <div className="space-y-3">
             {admins.length === 0 ? (
               <p className="text-sm text-slate-500">No organization admins found.</p>
@@ -333,6 +352,9 @@ export default function SuperAdminInstitutionDetail() {
                   </button>
                   <button onClick={() => recoverAdmin(admin, "temporary_password_reset")} className="rounded-md bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-800">
                     Reset Temporary Password
+                  </button>
+                  <button onClick={() => impersonateAdmin(admin)} className="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700">
+                    Login as Admin
                   </button>
                 </div>
               </div>

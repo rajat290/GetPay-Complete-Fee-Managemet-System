@@ -45,6 +45,7 @@ exports.protect = async (req, res, next) => {
       }
       
       req.user = user;
+      req.impersonation = decoded.impersonation || null;
       req.institutionId = user.institutionId._id || user.institutionId;
       next();
     } catch (error) {

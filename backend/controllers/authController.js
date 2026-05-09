@@ -79,6 +79,21 @@ exports.loginStudent = async (req, res) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
+    const superAdmin = await Student.findOne({
+      email: email.toLowerCase(),
+      role: "super_admin"
+    });
+
+    if (superAdmin && (await superAdmin.matchPassword(password))) {
+      return res.json({
+        _id: superAdmin._id,
+        name: superAdmin.name,
+        email: superAdmin.email,
+        role: superAdmin.role,
+        token: generateToken(superAdmin._id, superAdmin.role),
+      });
+    }
+
     const query = { email: email?.toLowerCase() };
 
     if (institutionCode) {

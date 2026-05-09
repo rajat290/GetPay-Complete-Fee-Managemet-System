@@ -18,6 +18,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 ### Institution Operations
 
+- Super Admin platform control for institution creation, suspension, and plan assignment
 - Multi-tenant institution isolation through `institutionId`
 - Institution profile, billing contact, and branding configuration
 - SaaS plan metadata, subscription status, and institution usage limits
@@ -41,6 +42,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 ### Admin Experience
 
+- Super Admin dashboard and organization control screen
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
 - Subscription summary with plan, status, usage, and limits
@@ -62,7 +64,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 - JWT authentication
 - Password hashing with bcrypt
-- Admin/student authorization middleware
+- Super Admin/admin/student authorization middleware
 - Request validation middleware
 - Rate limiting for auth and payment routes
 - Security headers for common browser protections
@@ -271,6 +273,15 @@ All main API routes are mounted under `/api`.
 - `POST /api/admin/reminder-campaigns/:campaignId/run`
 - `GET /api/admin/payments/:paymentId`
 
+### Super Admin Platform
+
+- `GET /api/super-admin/overview`
+- `GET /api/super-admin/institutions`
+- `POST /api/super-admin/institutions`
+- `GET /api/super-admin/institutions/:institutionId`
+- `PATCH /api/super-admin/institutions/:institutionId`
+- `PATCH /api/super-admin/institutions/:institutionId/subscription`
+
 ### Receipts and Notifications
 
 - `GET /api/receipts`
@@ -360,9 +371,11 @@ Recommended production settings:
 - Request IDs and structured backend observability
 - SaaS packaging baseline with Starter, Growth, and Enterprise plans
 - Student-seat and reminder-campaign limit enforcement
+- Super Admin platform control
 
 ### Next Priorities
 
+- Organization module access toggles
 - Error tracking integration such as Sentry or OpenTelemetry
 - Billing checkout and invoice lifecycle integration
 

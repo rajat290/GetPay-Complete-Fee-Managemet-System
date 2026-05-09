@@ -5,7 +5,9 @@ const studentSchema = new mongoose.Schema({
     institutionId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Institution',
-        required: true,
+        required: function () {
+            return this.role !== 'super_admin';
+        },
         index: true
     },
     branchId: {
@@ -35,7 +37,9 @@ const studentSchema = new mongoose.Schema({
     },
     registrationNo: {
         type: String,
-        required: true,
+        required: function () {
+            return this.role !== 'super_admin';
+        },
         trim: true
     },
     password: {
@@ -44,13 +48,15 @@ const studentSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['student', 'admin'],
+        enum: ['student', 'admin', 'super_admin'],
         default: 'student'
     },
 
     className: {
         type: String,
-        required: true,
+        required: function () {
+            return this.role !== 'super_admin';
+        },
     },
     guardian: {
         name: { type: String, trim: true },
@@ -73,8 +79,14 @@ const studentSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-studentSchema.index({ institutionId: 1, email: 1 }, { unique: true });
-studentSchema.index({ institutionId: 1, registrationNo: 1 }, { unique: true });
+studentSchema.index(
+    { institutionId: 1, email: 1 },
+    { unique: true, partialFilterExpression: { institutionId: { $exists: true } } }
+);
+studentSchema.index(
+    { institutionId: 1, registrationNo: 1 },
+    { unique: true, partialFilterExpression: { institutionId: { $exists: true } } }
+);
 
 
 // courses: [{type: mongoose.Schema.Types.ObjectId, ref: 'Course'}]// this is for one to many relationship

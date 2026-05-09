@@ -27,6 +27,9 @@ const ReminderCampaigns = lazy(() => import("./pages/admin/ReminderCampaigns"));
 const AuditTrail = lazy(() => import("./pages/admin/AuditTrail"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const InstitutionSettings = lazy(() => import("./pages/admin/InstitutionSettings"));
+const SuperAdminLayout = lazy(() => import("./layouts/SuperAdminLayout"));
+const SuperAdminDashboard = lazy(() => import("./pages/super-admin/SuperAdminDashboard"));
+const SuperAdminInstitutions = lazy(() => import("./pages/super-admin/SuperAdminInstitutions"));
 
 function RouteLoader() {
   return (
@@ -82,6 +85,18 @@ function App() {
                 <Route path="audit-trail" element={<AuditTrail />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings" element={<InstitutionSettings />} />
+              </Route>
+
+              <Route
+                path="/super-admin"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <SuperAdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="dashboard" element={<SuperAdminDashboard />} />
+                <Route path="institutions" element={<SuperAdminInstitutions />} />
               </Route>
             </Routes>
           </Suspense>

@@ -29,6 +29,34 @@ const logAdminAction = async ({
   }
 };
 
+const logPlatformAction = async ({
+  req,
+  action,
+  entityType,
+  entityId,
+  summary,
+  metadata = {}
+}) => {
+  try {
+    if (!req?.user || req.user.role !== "super_admin") return null;
+
+    return await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action,
+      entityType,
+      entityId,
+      summary,
+      metadata,
+      ipAddress: req.ip,
+      userAgent: req.get?.("user-agent")
+    });
+  } catch (error) {
+    console.error("Platform audit log write failed:", error);
+    return null;
+  }
+};
+
 const buildAuditLogQuery = ({ institutionId, filters = {} }) => {
   const query = { institutionId };
 
@@ -104,5 +132,6 @@ const listAuditLogs = async ({ institutionId, filters = {} }) => {
 
 module.exports = {
   logAdminAction,
+  logPlatformAction,
   listAuditLogs
 };

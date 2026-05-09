@@ -16,6 +16,7 @@ const { handleRazorpayWebhook } = require("./controllers/paymentController");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const receiptRoutes = require("./routes/receiptRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const superAdminRoutes = require("./routes/superAdminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 
 connectDB();
@@ -73,6 +74,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {

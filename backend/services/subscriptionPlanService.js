@@ -92,7 +92,9 @@ const buildSubscriptionSummary = async (institution) => {
     utilization: {
       students: plan.limits.students ? Math.round((usage.students / plan.limits.students) * 100) : null,
       admins: plan.limits.admins ? Math.round((usage.admins / plan.limits.admins) * 100) : null,
-      reminderCampaigns: plan.limits.reminderCampaigns ? Math.round((usage.reminderCampaigns / plan.limits.reminderCampaigns) * 100) : null
+      reminderCampaigns: plan.limits.reminderCampaigns
+        ? Math.round((usage.reminderCampaigns / plan.limits.reminderCampaigns) * 100)
+        : null
     },
     features: plan.features
   };

@@ -20,6 +20,7 @@ const superAdminRoutes = require("./routes/superAdminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const publicRoutes = require("./routes/publicRoutes");
 const { startOverdueSyncJob } = require("./services/overdueSyncService");
+const { startBillingSyncJob } = require("./services/billingLifecycleService");
 
 connectDB();
 
@@ -96,4 +97,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   logger.info("server_started", { port: PORT });
   startOverdueSyncJob();
+  startBillingSyncJob();
 });

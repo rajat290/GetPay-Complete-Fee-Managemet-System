@@ -139,7 +139,7 @@ export default function ManageStudents() {
     },
     {
       header: "Actions",
-      render: (row) => (
+      render: () => (
         <Button variant="ghost" size="sm">Edit</Button>
       )
     }
@@ -246,8 +246,6 @@ export default function ManageStudents() {
             </Button>
           </div>
         </form>
-      </Card>
-
       </Card>
 
       {/* CSV Import Card */}

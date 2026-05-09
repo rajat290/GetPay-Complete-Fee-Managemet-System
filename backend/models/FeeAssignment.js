@@ -24,7 +24,8 @@ const feeAssignmentSchema = new mongoose.Schema({
     },
     feeTitle: {
         type: String,
-        required: true
+        trim: true,
+        default: 'Fee'
     },
     amount: {
         type: Number,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { 
   BarChart, 
   Bar, 
@@ -34,7 +34,7 @@ import Card from "../../components/common/Card";
 const COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 export default function Reports() {
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [collectionData, setCollectionData] = useState([]);
   const [classData, setClassData] = useState([]);
   const [modeData, setModeData] = useState([]);
@@ -48,21 +48,16 @@ export default function Reports() {
   const [studentLedger, setStudentLedger] = useState(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
 
-  useEffect(() => {
-    fetchReportData();
-    fetchClasses();
-  }, [dateRange, selectedClass]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const res = await api.get("/admin/classes");
       setClasses(res.data);
     } catch (err) {
       console.error("Failed to fetch classes", err);
     }
-  };
+  }, []);
 
-  const fetchReportData = async () => {
+  const fetchReportData = useCallback(async () => {
     setLoading(true);
     try {
       const [collRes, classRes, modeRes, defRes, recRes] = await Promise.all([
@@ -83,14 +78,20 @@ export default function Reports() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, selectedClass]);
+
+  useEffect(() => {
+    fetchReportData();
+    fetchClasses();
+  }, [fetchReportData, fetchClasses]);
 
   const fetchStudentLedger = async (regNo) => {
     if (!regNo) return;
     setLedgerLoading(true);
     try {
       const studentsRes = await api.get(`/admin/students?search=${regNo}`);
-      const student = studentsRes.data.data.find(s => s.registrationNo === regNo);
+      const students = Array.isArray(studentsRes.data) ? studentsRes.data : studentsRes.data.data || [];
+      const student = students.find(s => s.registrationNo === regNo);
       
       if (!student) {
         alert("Student not found");

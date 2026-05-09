@@ -122,6 +122,33 @@ const assertCanAddStudent = async (institution) => {
   };
 };
 
+const assertCanAddStudents = async (institution, additionalStudents = 1) => {
+  const plan = getPlan(institution?.subscription?.plan);
+  const usage = await getInstitutionUsage(institution._id);
+  const requested = Math.max(Number(additionalStudents) || 0, 0);
+  const projected = usage.students + requested;
+
+  if (Number.isFinite(plan.limits.students) && projected > plan.limits.students) {
+    const error = new Error(`Student limit reached for ${plan.name} plan`);
+    error.statusCode = 402;
+    error.code = "PLAN_STUDENT_LIMIT_REACHED";
+    error.details = {
+      plan: plan.key,
+      limit: plan.limits.students,
+      used: usage.students,
+      requested,
+      projected
+    };
+    throw error;
+  }
+
+  return {
+    plan,
+    usage,
+    projected
+  };
+};
+
 const assertCanAddReminderCampaign = async (institution) => {
   const plan = getPlan(institution?.subscription?.plan);
   const usage = await getInstitutionUsage(institution._id);
@@ -150,5 +177,6 @@ module.exports = {
   getInstitutionUsage,
   buildSubscriptionSummary,
   assertCanAddStudent,
+  assertCanAddStudents,
   assertCanAddReminderCampaign
 };

@@ -114,6 +114,16 @@ export default function AuditTrail() {
         </div>
       </div>
 
+      {message && (
+        <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+          message.type === "error"
+            ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+            : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200"
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       {/* Filters Card */}
       <Card title="Activity Filters" icon={Filter}>
         <div className="grid gap-4 md:grid-cols-4 mt-4">

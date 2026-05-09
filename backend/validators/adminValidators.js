@@ -40,14 +40,22 @@ const inviteStudentSchema = {
 const sendDuesRemindersSchema = {
   body: {
     channel: { enum: ["notification", "email", "both"] },
-    status: { enum: ["pending", "overdue", "all"] }
+    status: { enum: ["pending", "overdue", "all"] },
+    className: { maxLength: 80 },
+    dueBeforeDays: { type: "number", min: 0, max: 365 },
+    dryRun: { type: "boolean" }
   }
 };
 
 const updateInstitutionSettingsSchema = {
   body: {
+    name: { minLength: 2, maxLength: 160 },
     type: { enum: ["school", "college", "coaching", "other"] },
-    email: { type: "email" }
+    email: { type: "email" },
+    phone: { maxLength: 30 },
+    address: { maxLength: 500 },
+    branding: { type: "object" },
+    billingContact: { type: "object" }
   }
 };
 
@@ -56,7 +64,8 @@ const reminderCampaignSchema = {
     name: { required: true },
     channel: { enum: ["notification", "email", "both"] },
     status: { enum: ["pending", "overdue", "all"] },
-    dueBeforeDays: { type: "number" }
+    className: { maxLength: 80 },
+    dueBeforeDays: { type: "number", min: 0, max: 365 }
   }
 };
 
@@ -67,13 +76,18 @@ const reminderCampaignParamsSchema = {
   body: {
     channel: { enum: ["notification", "email", "both"] },
     status: { enum: ["pending", "overdue", "all"] },
-    dueBeforeDays: { type: "number" }
+    className: { maxLength: 80 },
+    dueBeforeDays: { type: "number", min: 0, max: 365 },
+    dryRun: { type: "boolean" }
   }
 };
 
 const roleSchema = {
   body: {
-    name: { required: true }
+    name: { required: true, minLength: 2, maxLength: 80 },
+    description: { maxLength: 300 },
+    permissions: { type: "array" },
+    isActive: { type: "boolean" }
   }
 };
 
@@ -85,9 +99,11 @@ const roleParamsSchema = {
 
 const createStaffSchema = {
   body: {
-    name: { required: true },
+    name: { required: true, minLength: 2, maxLength: 120 },
     email: { required: true, type: "email" },
-    employeeCode: { required: true }
+    employeeCode: { required: true, minLength: 1, maxLength: 60 },
+    roleIds: { type: "array" },
+    password: { minLength: 8, maxLength: 128 }
   }
 };
 

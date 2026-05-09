@@ -170,15 +170,18 @@ Backend `.env`:
 ```env
 PORT=5000
 NODE_ENV=development
-MONGO_URI=mongodb://127.0.0.1:27017/getpay
+MONGODB_URI=mongodb://127.0.0.1:27017/getpay
+# MONGO_URI is still supported as a legacy alias.
 JWT_SECRET=replace_with_a_long_random_secret
 CORS_ORIGIN=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
 RAZORPAY_KEY_ID=rzp_test_replace_me
 RAZORPAY_KEY_SECRET=replace_me
 EMAIL_USER=notifications@example.com
 EMAIL_PASS=replace_me
 LOG_FORMAT=pretty
 LOG_LEVEL=info
+PUBLIC_STUDENT_REGISTRATION_ENABLED=false
 ```
 
 Frontend `.env`:
@@ -236,7 +239,7 @@ All main API routes are mounted under `/api`.
 
 ### Authentication
 
-- `POST /api/auth/register`
+- `POST /api/auth/register` (disabled by default; set `PUBLIC_STUDENT_REGISTRATION_ENABLED=true` only for controlled use)
 - `POST /api/auth/login`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`

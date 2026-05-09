@@ -1,4 +1,5 @@
 const FeeAssignment = require("../models/FeeAssignment");
+const logger = require("../utils/logger");
 
 /**
  * Service to synchronize fee assignment statuses.
@@ -19,10 +20,10 @@ const syncOverdueStatuses = async (institutionId = null) => {
       $set: { status: "overdue" }
     });
 
-    console.log(`[OverdueSync] Marked ${result.modifiedCount} assignments as overdue.`);
+    logger.info("overdue_sync_completed", { modifiedCount: result.modifiedCount });
     return result.modifiedCount;
   } catch (err) {
-    console.error("[OverdueSync] Error during status sync:", err);
+    logger.error("overdue_sync_failed", { error: err });
     throw err;
   }
 };
@@ -33,14 +34,14 @@ const syncOverdueStatuses = async (institutionId = null) => {
  * For this implementation, we'll run it every 12 hours.
  */
 const startOverdueSyncJob = () => {
-  console.log("[OverdueSync] Starting periodic status sync job (12h interval).");
+  logger.info("overdue_sync_job_started", { intervalHours: 12 });
   
   // Run once on startup
-  syncOverdueStatuses().catch(console.error);
+  syncOverdueStatuses().catch((error) => logger.error("overdue_sync_startup_failed", { error }));
 
   // Then every 12 hours
   setInterval(() => {
-    syncOverdueStatuses().catch(console.error);
+    syncOverdueStatuses().catch((error) => logger.error("overdue_sync_interval_failed", { error }));
   }, 12 * 60 * 60 * 1000);
 };
 

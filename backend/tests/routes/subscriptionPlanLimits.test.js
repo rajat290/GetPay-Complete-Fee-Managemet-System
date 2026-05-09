@@ -21,6 +21,7 @@ describe("subscription plan limits", () => {
   let token;
 
   beforeEach(async () => {
+    process.env.PUBLIC_STUDENT_REGISTRATION_ENABLED = "true";
     institution = await Institution.create({
       name: "Plan Limited College",
       code: "PLANLIMIT",

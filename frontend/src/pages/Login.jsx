@@ -222,7 +222,7 @@ export default function Login() {
           <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
               Don’t have an account?{" "}
-              <Link to="/register" className="text-primary font-bold hover:underline transition-premium ml-1">
+              <Link to="/trial" className="text-primary font-bold hover:underline transition-premium ml-1">
                 Contact Administration
               </Link>
             </p>

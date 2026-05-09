@@ -1,13 +1,22 @@
 const jwt = require("jsonwebtoken");
 const Student = require("../models/Student");
+const logger = require("../utils/logger");
 require("../models/Role");
+
+const getCookieToken = (req) => {
+  const cookieHeader = req.headers.cookie || "";
+  const match = cookieHeader.split(";").map((part) => part.trim()).find((part) => part.startsWith("getpay_token="));
+  return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : null;
+};
 
 exports.protect = async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+  if ((req.headers.authorization && req.headers.authorization.startsWith("Bearer")) || getCookieToken(req)) {
     try {
-      token = req.headers.authorization.split(" ")[1];
+      token = req.headers.authorization?.startsWith("Bearer")
+        ? req.headers.authorization.split(" ")[1]
+        : getCookieToken(req);
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await Student.findById(decoded.id)
         .select("-password")
@@ -49,7 +58,7 @@ exports.protect = async (req, res, next) => {
       req.institutionId = user.institutionId._id || user.institutionId;
       next();
     } catch (error) {
-      console.error("Token verification error:", error);
+      logger.error("token_verification_failed", { error });
       return res.status(401).json({ error: "Not authorized, token failed" });
     }
   } else {

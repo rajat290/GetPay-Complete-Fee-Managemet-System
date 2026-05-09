@@ -16,11 +16,33 @@ describe("Auth Controller", () => {
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
+    process.env.PUBLIC_STUDENT_REGISTRATION_ENABLED = "true";
 
     institution = await Institution.create({
       name: "Test Institution",
       code: "TEST-INST"
     });
+  });
+
+  afterEach(() => {
+    delete process.env.PUBLIC_STUDENT_REGISTRATION_ENABLED;
+  });
+
+  it("blocks public student registration unless explicitly enabled", async () => {
+    delete process.env.PUBLIC_STUDENT_REGISTRATION_ENABLED;
+
+    const response = await request(app)
+      .post("/api/auth/register")
+      .send({
+        institutionCode: institution.code,
+        name: "Blocked Student",
+        email: "blocked@example.com",
+        password: "password123",
+        registrationNo: "BLOCK001",
+        className: "10A"
+      });
+
+    expect(response.status).toBe(403);
   });
 
   it("registers a student inside an institution", async () => {

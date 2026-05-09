@@ -4,8 +4,10 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const emailService = require("../utils/emailService");
 const { assertCanAddStudent } = require("../services/subscriptionPlanService");
+const logger = require("../utils/logger");
 
 const RESET_TOKEN_EXPIRES_MINUTES = 30;
+const AUTH_COOKIE_NAME = "getpay_token";
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -14,9 +16,34 @@ const generateToken = (id, role) => {
   });
 };
 
+const setAuthCookie = (res, token) => {
+  res.cookie(AUTH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/"
+  });
+};
+
+const clearAuthCookie = (res) => {
+  res.clearCookie(AUTH_COOKIE_NAME, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/"
+  });
+};
+
 // Register
 exports.registerStudent = async (req, res) => {
   try {
+    if (process.env.PUBLIC_STUDENT_REGISTRATION_ENABLED !== "true") {
+      return res.status(403).json({
+        error: "Public student registration is disabled. Please contact your institution administrator for an invite."
+      });
+    }
+
     const { name, email, registrationNo, password, className, institutionCode } = req.body;
 
     if (!name || !email || !registrationNo || !password || !className || !institutionCode) {
@@ -50,6 +77,9 @@ exports.registerStudent = async (req, res) => {
       role: "student"
     });
 
+    const token = generateToken(student._id, student.role);
+    setAuthCookie(res, token);
+
     res.status(201).json({
       _id: student._id,
       name: student.name,
@@ -60,12 +90,13 @@ exports.registerStudent = async (req, res) => {
         name: institution.name,
         code: institution.code
       },
-      token: generateToken(student._id, student.role),
+      token,
     });
   } catch (err) {
     if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
       return res.status(err.statusCode).json({ error: err.message, details: err.details });
     }
+    logger.error("student_registration_failed", { error: err });
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -85,12 +116,14 @@ exports.loginStudent = async (req, res) => {
     });
 
     if (superAdmin && (await superAdmin.matchPassword(password))) {
+      const token = generateToken(superAdmin._id, superAdmin.role);
+      setAuthCookie(res, token);
       return res.json({
         _id: superAdmin._id,
         name: superAdmin.name,
         email: superAdmin.email,
         role: superAdmin.role,
-        token: generateToken(superAdmin._id, superAdmin.role),
+        token,
       });
     }
 
@@ -124,6 +157,9 @@ exports.loginStudent = async (req, res) => {
         return res.status(403).json({ error: "Account is not activated" });
       }
 
+      const token = generateToken(student._id, student.role);
+      setAuthCookie(res, token);
+
       res.json({
         _id: student._id,
         name: student.name,
@@ -135,12 +171,13 @@ exports.loginStudent = async (req, res) => {
           name: student.institutionId.name,
           code: student.institutionId.code
         },
-        token: generateToken(student._id, student.role),
+        token,
       });
     } else {
       res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (err) {
+    logger.error("login_failed", { error: err });
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -191,7 +228,7 @@ exports.requestPasswordReset = async (req, res) => {
 
     res.json(response);
   } catch (err) {
-    console.error("Password reset request error:", err);
+    logger.error("password_reset_request_failed", { error: err });
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -229,7 +266,7 @@ exports.resetPassword = async (req, res) => {
 
     res.json({ message: "Password reset successful" });
   } catch (err) {
-    console.error("Password reset error:", err);
+    logger.error("password_reset_failed", { error: err });
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -237,8 +274,8 @@ exports.resetPassword = async (req, res) => {
 // Activate invited account
 exports.activateAccount = async (req, res) => {
   try {
-    const { token, institutionCode, password } = req.body;
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const { token: inviteToken, institutionCode, password } = req.body;
+    const hashedToken = crypto.createHash("sha256").update(inviteToken).digest("hex");
 
     const institution = await Institution.findOne({
       code: institutionCode.toUpperCase(),
@@ -267,6 +304,9 @@ exports.activateAccount = async (req, res) => {
     user.passwordResetExpires = undefined;
     await user.save();
 
+    const token = generateToken(user._id, user.role);
+    setAuthCookie(res, token);
+
     res.json({
       message: "Account activated successfully",
       user: {
@@ -279,11 +319,11 @@ exports.activateAccount = async (req, res) => {
           name: institution.name,
           code: institution.code
         },
-        token: generateToken(user._id, user.role)
+        token
       }
     });
   } catch (err) {
-    console.error("Account activation error:", err);
+    logger.error("account_activation_failed", { error: err });
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -328,7 +368,7 @@ exports.changePassword = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Change password error:", err);
+    logger.error("change_password_failed", { error: err });
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -343,6 +383,12 @@ exports.getProfile = async (req, res) => {
     if (!student) return res.status(404).json({ error: "User not found" });
     res.json(student);
   } catch (err) {
+    logger.error("profile_fetch_failed", { error: err, actorId: req.user?._id, institutionId: req.institutionId });
     res.status(500).json({ error: "Server error" });
   }
+};
+
+exports.logout = async (req, res) => {
+  clearAuthCookie(res);
+  res.json({ message: "Logged out" });
 };

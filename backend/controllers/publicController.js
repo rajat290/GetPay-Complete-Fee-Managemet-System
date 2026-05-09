@@ -9,6 +9,7 @@ const institutionTypes = ["school", "college", "coaching", "other"];
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const generateInstitutionCode = (name) => {
+const logger = require("../utils/logger");
   const base = name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "ORG";
   return `${base}${Math.floor(1000 + Math.random() * 9000)}`;
 };
@@ -155,7 +156,7 @@ exports.registerTrial = async (req, res) => {
       adminId: admin._id
     });
   } catch (err) {
-    console.error("Public Trial Registration Error:", err);
+    logger.error("Public Trial Registration Error:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Institution code or admin email already exists" });
     }
@@ -215,7 +216,7 @@ exports.captureLead = async (req, res) => {
       leadId: lead._id
     });
   } catch (err) {
-    console.error("Public Lead Capture Error:", err);
+    logger.error("Public Lead Capture Error:", err);
     res.status(500).json({ error: "Server error while capturing query" });
   }
 };
@@ -230,7 +231,7 @@ exports.getWebsiteContent = async (req, res) => {
 
     res.json(content);
   } catch (err) {
-    console.error("Public Website Content Error:", err);
+    logger.error("Public Website Content Error:", err);
     res.status(500).json({ error: "Server error while loading website content" });
   }
 };
@@ -254,7 +255,7 @@ exports.getLegalPage = async (req, res) => {
 
     res.json(page);
   } catch (err) {
-    console.error("Public Legal Page Error:", err);
+    logger.error("Public Legal Page Error:", err);
     res.status(500).json({ error: "Server error while loading legal page" });
   }
 };

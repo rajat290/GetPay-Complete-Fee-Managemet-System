@@ -20,6 +20,7 @@ const {
   assertCanAddStudents,
   assertCanAddReminderCampaign
 } = require("../services/subscriptionPlanService");
+const logger = require("../utils/logger");
 
 const INVITE_TOKEN_EXPIRES_MINUTES = 7 * 24 * 60;
 
@@ -57,7 +58,7 @@ exports.getInstitutionSettings = async (req, res) => {
 
     res.json(institutionObj);
   } catch (err) {
-    console.error("Error fetching institution settings:", err);
+    logger.error("Error fetching institution settings:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -115,7 +116,7 @@ exports.updateInstitutionSettings = async (req, res) => {
 
     res.json(institutionObj);
   } catch (err) {
-    console.error("Error updating institution settings:", err);
+    logger.error("Error updating institution settings:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -161,7 +162,7 @@ exports.getAllStudents = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error fetching students:", err);
+    logger.error("Error fetching students:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -226,7 +227,7 @@ exports.createStudent = async (req, res) => {
     if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
       return res.status(err.statusCode).json({ error: err.message, details: err.details });
     }
-    console.error("Error creating student:", err);
+    logger.error("Error creating student:", err);
     // Handle duplicate key error (in case of race condition)
     if (err.code === 11000) {
       return res.status(400).json({ error: "Student with this email or registration number already exists" });
@@ -329,7 +330,7 @@ exports.getAllPayments = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error fetching payments:", err);
+    logger.error("Error fetching payments:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -501,7 +502,7 @@ exports.getPaymentStats = async (req, res) => {
     
     res.json(stats);
   } catch (err) {
-    console.error("Error fetching payment stats:", err);
+    logger.error("Error fetching payment stats:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -514,7 +515,7 @@ exports.getClassNames = async (req, res) => {
     const classNames = await Student.distinct('className', { institutionId: req.institutionId });
     res.json(classNames);
   } catch (err) {
-    console.error("Error fetching class names:", err);
+    logger.error("Error fetching class names:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -569,7 +570,7 @@ exports.getPaymentDetails = async (req, res) => {
     
     res.json(formattedPayment);
   } catch (err) {
-    console.error("Error fetching payment details:", err);
+    logger.error("Error fetching payment details:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -615,7 +616,7 @@ exports.getRecentPayments = async (req, res) => {
     
     res.json(formattedPayments);
   } catch (err) {
-    console.error("Error fetching recent payments:", err);
+    logger.error("Error fetching recent payments:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -721,7 +722,7 @@ exports.recordOfflinePayment = async (req, res) => {
       createdAt: payment.createdAt
     });
   } catch (err) {
-    console.error("Error recording offline payment:", err);
+    logger.error("Error recording offline payment:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -744,7 +745,7 @@ exports.getPaymentReconciliation = async (req, res) => {
 
     res.json(report);
   } catch (err) {
-    console.error("Error fetching payment reconciliation:", err);
+    logger.error("Error fetching payment reconciliation:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -765,7 +766,7 @@ exports.getStudentLedger = async (req, res) => {
       return res.status(err.statusCode).json({ error: err.message });
     }
 
-    console.error("Error fetching student ledger:", err);
+    logger.error("Error fetching student ledger:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -794,7 +795,7 @@ exports.refreshOverdueDues = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("Error refreshing overdue dues:", err);
+    logger.error("Error refreshing overdue dues:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -871,7 +872,7 @@ exports.inviteStudent = async (req, res) => {
     if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
       return res.status(err.statusCode).json({ error: err.message, details: err.details });
     }
-    console.error("Error inviting student:", err);
+    logger.error("Error inviting student:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Student with this email or registration number already exists" });
     }
@@ -899,7 +900,7 @@ exports.getAuditLogs = async (req, res) => {
 
     res.json(logs);
   } catch (err) {
-    console.error("Error fetching audit logs:", err);
+    logger.error("Error fetching audit logs:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -920,7 +921,7 @@ exports.getDuesReport = async (req, res) => {
 
     res.json(report);
   } catch (err) {
-    console.error("Error fetching dues report:", err);
+    logger.error("Error fetching dues report:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -958,7 +959,7 @@ exports.sendDuesReminders = async (req, res) => {
 
     res.status(req.body.dryRun ? 200 : 201).json(result);
   } catch (err) {
-    console.error("Error sending dues reminders:", err);
+    logger.error("Error sending dues reminders:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -975,7 +976,7 @@ exports.getReminderCampaigns = async (req, res) => {
 
     res.json(campaigns);
   } catch (err) {
-    console.error("Error fetching reminder campaigns:", err);
+    logger.error("Error fetching reminder campaigns:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1020,7 +1021,7 @@ exports.createReminderCampaign = async (req, res) => {
     if (err.code === "PLAN_REMINDER_CAMPAIGN_LIMIT_REACHED") {
       return res.status(err.statusCode).json({ error: err.message, details: err.details });
     }
-    console.error("Error creating reminder campaign:", err);
+    logger.error("Error creating reminder campaign:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Reminder campaign with this name already exists" });
     }
@@ -1073,7 +1074,7 @@ exports.updateReminderCampaign = async (req, res) => {
 
     res.json(campaign);
   } catch (err) {
-    console.error("Error updating reminder campaign:", err);
+    logger.error("Error updating reminder campaign:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Reminder campaign with this name already exists" });
     }
@@ -1116,7 +1117,7 @@ exports.runSavedReminderCampaign = async (req, res) => {
       return res.status(err.statusCode).json({ error: err.message });
     }
 
-    console.error("Error running reminder campaign:", err);
+    logger.error("Error running reminder campaign:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1224,7 +1225,7 @@ exports.importStudents = async (req, res) => {
       }
       return res.status(err.statusCode).json({ error: err.message, details: err.details });
     }
-    console.error("Error importing students:", err);
+    logger.error("Error importing students:", err);
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
@@ -1278,7 +1279,7 @@ exports.exportDailySummary = async (req, res) => {
 
     return res.status(200).send(csvContent);
   } catch (err) {
-    console.error("Error generating daily summary:", err);
+    logger.error("Error generating daily summary:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

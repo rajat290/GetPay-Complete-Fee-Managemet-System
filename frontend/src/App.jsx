@@ -11,7 +11,6 @@ const Contact = lazy(() => import("./pages/Contact"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const TrialSignup = lazy(() => import("./pages/TrialSignup"));
 const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
@@ -67,7 +66,6 @@ function App() {
               <Route path="/support" element={<LegalPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/trial" element={<TrialSignup />} />
-              <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/activate-account" element={<ActivateAccount />} />

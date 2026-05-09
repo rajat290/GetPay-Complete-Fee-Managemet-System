@@ -1,4 +1,5 @@
 const Notification = require("../models/Notification");
+const logger = require("../utils/logger");
 
 // Get all notifications for a student
 exports.getNotifications = async (req, res) => {
@@ -12,7 +13,7 @@ exports.getNotifications = async (req, res) => {
     
     res.json(notifications);
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    logger.error("Error fetching notifications:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -38,7 +39,7 @@ exports.markAsRead = async (req, res) => {
     
     res.json({ message: "Notification marked as read" });
   } catch (error) {
-    console.error("Error marking notification as read:", error);
+    logger.error("Error marking notification as read:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -53,7 +54,7 @@ exports.markAllAsRead = async (req, res) => {
     
     res.json({ message: "All notifications marked as read" });
   } catch (error) {
-    console.error("Error marking all notifications as read:", error);
+    logger.error("Error marking all notifications as read:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -69,7 +70,7 @@ exports.getUnreadCount = async (req, res) => {
     
     res.json({ count });
   } catch (error) {
-    console.error("Error getting unread count:", error);
+    logger.error("Error getting unread count:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

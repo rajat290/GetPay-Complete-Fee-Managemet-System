@@ -28,9 +28,6 @@ function Navbar() {
                 <Link to="/" className="hover:bg-blue-800 px-3 py-2 rounded">
                   Login
                 </Link>
-                <Link to="/register" className="hover:bg-blue-800 px-3 py-2 rounded">
-                  Register
-                </Link>
               </>
             )}
 
@@ -99,9 +96,6 @@ function Navbar() {
             <>
               <Link to="/" className="block hover:bg-blue-800 px-3 py-2 rounded">
                 Login
-              </Link>
-              <Link to="/register" className="block hover:bg-blue-800 px-3 py-2 rounded">
-                Register
               </Link>
             </>
           )}

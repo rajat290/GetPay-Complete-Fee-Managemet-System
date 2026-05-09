@@ -60,7 +60,13 @@ const paymentSchema = new mongoose.Schema({
     verifiedAt: { type: Date },
 }, { timestamps: true });
 
-paymentSchema.index({ institutionId: 1, assignmentId: 1, status: 1 });
+paymentSchema.index(
+    { institutionId: 1, assignmentId: 1, status: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { status: "completed" }
+    }
+);
 paymentSchema.index({ razorpayOrderId: 1 }, { unique: true, sparse: true });
 paymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
 

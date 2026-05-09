@@ -1,6 +1,7 @@
 const Payment = require("../models/Payment");
 const fs = require("fs");
 const generateReceipt = require("../utils/receiptGenerator");
+const logger = require("../utils/logger");
 
 // Get all receipts for a student
 exports.getReceipts = async (req, res) => {
@@ -27,7 +28,7 @@ exports.getReceipts = async (req, res) => {
 
     res.json(receipts);
   } catch (error) {
-    console.error("Error fetching receipts:", error);
+    logger.error("Error fetching receipts:", error);
     res.status(500).json({ message: "Error fetching receipts" });
   }
 };
@@ -61,7 +62,7 @@ exports.downloadReceipt = async (req, res) => {
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } catch (error) {
-    console.error("Error downloading receipt:", error);
+    logger.error("Error downloading receipt:", error);
     res.status(500).json({ message: "Error downloading receipt" });
   }
 };

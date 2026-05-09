@@ -4,10 +4,12 @@ const FeeAssignment = require("../models/FeeAssignment");
 const {
   verifyCheckoutSignature,
   verifyWebhookSignature,
+  hasProcessedGatewayEvent,
   logPaymentEvent,
   completePayment,
   failPayment
 } = require("../services/paymentLifecycleService");
+const logger = require("../utils/logger");
 
 // 1. Create Razorpay Order
 exports.createOrder = async (req, res) => {
@@ -32,11 +34,42 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "Fee assignment is already paid" });
     }
 
+    const existingCompleted = await Payment.findOne({
+      institutionId: req.institutionId,
+      studentId: req.user._id,
+      assignmentId,
+      status: "completed"
+    });
+
+    if (existingCompleted) {
+      return res.status(409).json({ message: "Fee assignment already has a completed payment" });
+    }
+
     // Support new amount field on assignment (for installments), fallback to fee template
     const payableAmount = assignment.amount || assignment.feeId?.amount || 0;
 
     if (amount && Number(amount) !== payableAmount) {
       return res.status(400).json({ message: "Payment amount does not match assigned fee" });
+    }
+
+    const existingPending = await Payment.findOne({
+      institutionId: req.institutionId,
+      studentId: req.user._id,
+      assignmentId,
+      status: "pending",
+      gateway: "razorpay"
+    }).sort({ createdAt: -1 });
+
+    if (existingPending?.razorpayOrderId && existingPending.amount === payableAmount) {
+      return res.json({
+        paymentId: existingPending._id,
+        orderId: existingPending.razorpayOrderId,
+        amount: payableAmount * 100,
+        currency: existingPending.currency || "INR",
+        key: process.env.RAZORPAY_KEY_ID,
+        assignmentId,
+        reused: true
+      });
     }
 
     const options = {
@@ -77,7 +110,7 @@ exports.createOrder = async (req, res) => {
       assignmentId,
     });
   } catch (error) {
-    console.error("Error creating order:", error);
+    logger.error("payment_order_creation_failed", { error, actorId: req.user?._id, institutionId: req.institutionId });
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -124,6 +157,10 @@ exports.verifyPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Payment order not found" });
     }
 
+    if (assignment.status === "paid" && payment.status !== "completed") {
+      return res.status(409).json({ success: false, message: "Fee assignment already has a completed payment" });
+    }
+
     const payableAmount = assignment.amount || assignment.feeId?.amount || 0;
     if (payment.amount !== payableAmount) {
       return res.status(409).json({ success: false, message: "Payment amount mismatch" });
@@ -144,7 +181,7 @@ exports.verifyPayment = async (req, res) => {
       message: result.alreadyProcessed ? "Payment already verified" : "Payment verified & receipt sent!"
     });
   } catch (error) {
-    console.error("Error verifying payment:", error);
+    logger.error("payment_verification_failed", { error, actorId: req.user?._id, institutionId: req.institutionId });
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -159,6 +196,10 @@ exports.handleRazorpayWebhook = async (req, res) => {
     }
 
     const event = JSON.parse(rawBody.toString("utf8"));
+    if (await hasProcessedGatewayEvent({ gatewayEventId: event.id, source: "webhook" })) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
     const paymentEntity = event.payload?.payment?.entity;
 
     if (!paymentEntity?.order_id) {
@@ -205,7 +246,7 @@ exports.handleRazorpayWebhook = async (req, res) => {
 
     return res.status(200).json({ received: true });
   } catch (error) {
-    console.error("Razorpay webhook error:", error);
+    logger.error("razorpay_webhook_failed", { error });
     return res.status(500).json({ error: "Webhook processing failed" });
   }
 };
@@ -241,7 +282,7 @@ exports.getPaymentHistory = async (req, res) => {
     });
     res.json(formatted);
   } catch (err) {
-    console.error("Error fetching payment history:", err);
+    logger.error("payment_history_fetch_failed", { error: err, actorId: req.user?._id, institutionId: req.institutionId });
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -24,13 +24,13 @@ src/
   context/
   services/
 🔹 Phase‑2: Authentication (Login & Register)
-Goal: Student & Admin login/register ka flow
+Goal: Student, Admin, and Super Admin login flow
 
 Create Login.jsx & Register.jsx pages
 
-Use backend APIs (/api/auth/login, /api/auth/register)
+Use backend APIs such as `/api/auth/login`, `/api/auth/profile`, and invite/trial flows.
 
-Save token + user info in localStorage
+Auth now uses httpOnly backend cookies with a short-lived sessionStorage fallback for current-tab UX.
 
 Create AuthContext for global auth state
 
@@ -55,7 +55,7 @@ Routes:
 
 /login
 
-/register
+/trial
 
 /admin
 

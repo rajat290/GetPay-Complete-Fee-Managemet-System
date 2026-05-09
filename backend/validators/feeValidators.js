@@ -17,7 +17,11 @@ const assignFeeSchema = {
 
 const bulkAssignFeeSchema = {
   body: {
-    feeId: { required: true, type: "objectId" }
+    feeId: { required: true, type: "objectId" },
+    dueDate: { type: "date" },
+    className: { maxLength: 80 },
+    studentIds: { type: "array" },
+    installments: { type: "array" }
   }
 };
 

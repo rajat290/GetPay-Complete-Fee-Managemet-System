@@ -6,6 +6,7 @@ const Student = require("../models/Student");
 const Notification = require("../models/Notification");
 const generateReceipt = require("../utils/receiptGenerator");
 const sendReceiptEmail = require("../utils/emailService");
+const logger = require("../utils/logger");
 
 const verifyCheckoutSignature = ({ orderId, paymentId, signature }) => {
   const expectedSignature = crypto
@@ -59,6 +60,11 @@ const logPaymentEvent = async ({
   }
 };
 
+const hasProcessedGatewayEvent = async ({ gatewayEventId, source = "webhook" }) => {
+  if (!gatewayEventId) return false;
+  return Boolean(await PaymentEvent.exists({ gatewayEventId, source }));
+};
+
 const markAssignmentPaid = async (payment) => {
   await FeeAssignment.findOneAndUpdate(
     {
@@ -82,7 +88,7 @@ const sendSuccessSideEffects = async (payment) => {
     const filePath = await generateReceipt(student, payment.assignmentId, payment);
     await sendReceiptEmail(student, filePath);
   } catch (error) {
-    console.error("Receipt generation error:", error);
+    logger.error("receipt_generation_failed", { error, paymentId: payment._id, institutionId: payment.institutionId });
   }
 
   try {
@@ -95,7 +101,7 @@ const sendSuccessSideEffects = async (payment) => {
       relatedPayment: payment._id
     });
   } catch (error) {
-    console.error("Notification creation error:", error);
+    logger.error("payment_notification_creation_failed", { error, paymentId: payment._id, institutionId: payment.institutionId });
   }
 };
 
@@ -182,6 +188,7 @@ module.exports = {
   verifyCheckoutSignature,
   verifyWebhookSignature,
   logPaymentEvent,
+  hasProcessedGatewayEvent,
   completePayment,
   failPayment
 };

@@ -1,4 +1,5 @@
 const AuditLog = require("../models/AuditLog");
+const logger = require("../utils/logger");
 
 const logAdminAction = async ({
   req,
@@ -24,7 +25,7 @@ const logAdminAction = async ({
       userAgent: req.get?.("user-agent")
     });
   } catch (error) {
-    console.error("Audit log write failed:", error);
+    logger.error("Audit log write failed:", error);
     return null;
   }
 };
@@ -52,7 +53,7 @@ const logPlatformAction = async ({
       userAgent: req.get?.("user-agent")
     });
   } catch (error) {
-    console.error("Platform audit log write failed:", error);
+    logger.error("Platform audit log write failed:", error);
     return null;
   }
 };

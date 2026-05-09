@@ -5,6 +5,7 @@ const { buildStudentLedger } = require("../services/studentLedgerService");
 const { logAdminAction } = require("../services/auditLogService");
 
 const isAdminOrStaff = (user) => ["admin", "staff"].includes(user?.role);
+const logger = require("../utils/logger");
 
 // Admin: Create a new Fee
 exports.createFee = async (req, res) => {
@@ -47,7 +48,7 @@ exports.createFee = async (req, res) => {
 
     res.status(201).json(fee);
   } catch (err) {
-    console.error("Error creating fee:", err);
+    logger.error("Error creating fee:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -109,7 +110,7 @@ exports.assignFee = async (req, res) => {
     if (err.code === 11000) {
       return res.status(409).json({ message: "This fee/installment is already assigned to this student" });
     }
-    console.error("Error assigning fee:", err);
+    logger.error("Error assigning fee:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -136,7 +137,7 @@ exports.getStudentFees = async (req, res) => {
     }));
     res.json(formatted);
   } catch (err) {
-    console.error("Error fetching student fees:", err);
+    logger.error("Error fetching student fees:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -151,7 +152,7 @@ exports.getAllFees = async (req, res) => {
     const fees = await Fee.find({ institutionId: req.institutionId });
     res.json(fees);
   } catch (err) {
-    console.error("Error fetching fees:", err);
+    logger.error("Error fetching fees:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -179,7 +180,7 @@ exports.getAllFeeAssignments = async (req, res) => {
     }));
     res.json(formatted);
   } catch (err) {
-    console.error('Error fetching fee assignments:', err);
+    logger.error('Error fetching fee assignments:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -290,7 +291,7 @@ exports.bulkAssignFee = async (req, res) => {
       skippedStudentIds: existingAssignments.map((assignment) => assignment.studentId.toString())
     });
   } catch (err) {
-    console.error("Error bulk assigning fee:", err);
+    logger.error("Error bulk assigning fee:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -309,7 +310,7 @@ exports.getMyLedger = async (req, res) => {
       return res.status(err.statusCode).json({ error: err.message });
     }
 
-    console.error("Error fetching student ledger:", err);
+    logger.error("Error fetching student ledger:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

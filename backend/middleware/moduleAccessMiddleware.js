@@ -1,6 +1,7 @@
 const { loadInstitutionForModuleCheck, institutionHasModule } = require("../services/moduleAccessService");
 
 const requireModule = (moduleKey) => {
+const logger = require("../utils/logger");
   return async (req, res, next) => {
     try {
       if (req.user?.role === "super_admin") {
@@ -25,7 +26,7 @@ const requireModule = (moduleKey) => {
 
       next();
     } catch (error) {
-      console.error("Module access check failed:", error);
+      logger.error("Module access check failed:", error);
       res.status(500).json({ error: "Server error" });
     }
   };

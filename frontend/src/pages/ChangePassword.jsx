@@ -27,7 +27,7 @@ export default function ChangePassword() {
         currentPassword,
         newPassword
       });
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const updatedUser = {
         ...user,
         ...(res.data.user || {}),

@@ -2,6 +2,7 @@ const Payment = require("../models/Payment");
 const FeeAssignment = require("../models/FeeAssignment");
 const Student = require("../models/Student");
 const Fee = require("../models/Fee");
+const logger = require("../utils/logger");
 
 exports.getAnalytics = async (req, res) => {
   try {
@@ -40,7 +41,7 @@ exports.getAnalytics = async (req, res) => {
       defaulters,
     });
   } catch (error) {
-    console.error("Error fetching analytics:", error);
+    logger.error("Error fetching analytics:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -149,7 +150,7 @@ exports.getDashboardAnalytics = async (req, res) => {
       classWiseData
     });
   } catch (error) {
-    console.error("Error fetching dashboard analytics:", error);
+    logger.error("Error fetching dashboard analytics:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -285,7 +286,7 @@ exports.getClassWiseReport = async (req, res) => {
       filters: { startDate, endDate, className }
     });
   } catch (error) {
-    console.error("Error generating class-wise report:", error);
+    logger.error("Error generating class-wise report:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -323,7 +324,7 @@ exports.getMonthlyRevenueTrends = async (req, res) => {
 
     res.json(formattedData);
   } catch (error) {
-    console.error("Error fetching monthly revenue trends:", error);
+    logger.error("Error fetching monthly revenue trends:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -355,7 +356,7 @@ exports.getPaymentStatusDistribution = async (req, res) => {
 
     res.json(statusDistribution);
   } catch (error) {
-    console.error("Error fetching payment status distribution:", error);
+    logger.error("Error fetching payment status distribution:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -388,7 +389,7 @@ exports.getFeeAnalytics = async (req, res) => {
 
     res.json(feeStats);
   } catch (error) {
-    console.error("Error fetching fee analytics:", error);
+    logger.error("Error fetching fee analytics:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -414,7 +415,7 @@ exports.getPaymentAnalytics = async (req, res) => {
 
     res.json(paymentStats);
   } catch (error) {
-    console.error("Error fetching payment analytics:", error);
+    logger.error("Error fetching payment analytics:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -456,7 +457,7 @@ exports.getClassAnalytics = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("Error in class analytics:", err);
+    logger.error("Error in class analytics:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

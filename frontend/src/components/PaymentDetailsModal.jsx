@@ -26,7 +26,7 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }) {
 
   const handleDownloadReceipt = async () => {
     try {
-      const response = await api.get(`/payments/receipt/${paymentId}`, {
+      const response = await api.get(`/receipts/download/${paymentId}`, {
         responseType: "blob",
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));

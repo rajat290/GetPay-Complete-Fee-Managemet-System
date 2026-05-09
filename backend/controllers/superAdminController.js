@@ -21,6 +21,18 @@ const institutionTypes = ["school", "college", "coaching", "other"];
 const subscriptionPlans = ["starter", "growth", "enterprise"];
 const subscriptionStatuses = ["trialing", "active", "past_due", "paused", "cancelled"];
 const leadStatuses = ["new", "contacted", "demo_scheduled", "trial_active", "converted", "lost"];
+const AUTH_COOKIE_NAME = "getpay_token";
+
+const setAuthCookie = (res, token) => {
+const logger = require("../utils/logger");
+  res.cookie(AUTH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 30 * 60 * 1000,
+    path: "/"
+  });
+};
 
 const generateTemporaryPassword = () => {
   const random = Math.random().toString(36).slice(2, 8);
@@ -179,7 +191,7 @@ exports.getPlatformOverview = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error fetching platform overview:", err);
+    logger.error("Error fetching platform overview:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -194,7 +206,7 @@ exports.listLeads = async (req, res) => {
     const leads = await Lead.find(filter).sort({ createdAt: -1 }).limit(200);
     res.json(leads);
   } catch (err) {
-    console.error("Error listing leads:", err);
+    logger.error("Error listing leads:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -241,7 +253,7 @@ exports.updateLead = async (req, res) => {
 
     res.json(lead);
   } catch (err) {
-    console.error("Error updating lead:", err);
+    logger.error("Error updating lead:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -255,7 +267,7 @@ exports.getWebsiteContent = async (req, res) => {
     );
     res.json(content);
   } catch (err) {
-    console.error("Error fetching website content:", err);
+    logger.error("Error fetching website content:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -287,7 +299,7 @@ exports.updateWebsiteContent = async (req, res) => {
 
     res.json(content);
   } catch (err) {
-    console.error("Error updating website content:", err);
+    logger.error("Error updating website content:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -297,7 +309,7 @@ exports.listLegalPages = async (req, res) => {
     const pages = await LegalPage.find().sort({ slug: 1 });
     res.json(pages);
   } catch (err) {
-    console.error("Error listing legal pages:", err);
+    logger.error("Error listing legal pages:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -333,7 +345,7 @@ exports.upsertLegalPage = async (req, res) => {
 
     res.json(page);
   } catch (err) {
-    console.error("Error updating legal page:", err);
+    logger.error("Error updating legal page:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -343,7 +355,7 @@ exports.listAnnouncements = async (req, res) => {
     const announcements = await PlatformAnnouncement.find().sort({ createdAt: -1 }).limit(100);
     res.json(announcements);
   } catch (err) {
-    console.error("Error listing announcements:", err);
+    logger.error("Error listing announcements:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -391,7 +403,7 @@ exports.createAnnouncement = async (req, res) => {
 
     res.status(201).json(announcement);
   } catch (err) {
-    console.error("Error creating announcement:", err);
+    logger.error("Error creating announcement:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -409,7 +421,7 @@ exports.listInstitutions = async (req, res) => {
     const rows = await Promise.all(institutions.map(serializeInstitution));
     res.json(rows);
   } catch (err) {
-    console.error("Error listing institutions:", err);
+    logger.error("Error listing institutions:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -423,7 +435,7 @@ exports.getInstitution = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error fetching institution:", err);
+    logger.error("Error fetching institution:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -502,7 +514,7 @@ exports.createInstitution = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error creating institution:", err);
+    logger.error("Error creating institution:", err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Institution or admin already exists" });
     }
@@ -534,7 +546,7 @@ exports.updateInstitutionModules = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error updating institution modules:", err);
+    logger.error("Error updating institution modules:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -586,7 +598,7 @@ exports.updateInstitution = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error updating institution:", err);
+    logger.error("Error updating institution:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -626,7 +638,7 @@ exports.archiveInstitution = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error archiving institution:", err);
+    logger.error("Error archiving institution:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -658,7 +670,7 @@ exports.restoreInstitution = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error restoring institution:", err);
+    logger.error("Error restoring institution:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -701,7 +713,7 @@ exports.updateInstitutionRiskControls = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error updating risk controls:", err);
+    logger.error("Error updating risk controls:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -759,7 +771,7 @@ exports.updateInstitutionSubscription = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error updating institution subscription:", err);
+    logger.error("Error updating institution subscription:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -798,7 +810,7 @@ exports.extendInstitutionTrial = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error extending trial:", err);
+    logger.error("Error extending trial:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -845,7 +857,7 @@ exports.convertInstitutionTrial = async (req, res) => {
 
     res.json(await serializeInstitution(institution));
   } catch (err) {
-    console.error("Error converting trial:", err);
+    logger.error("Error converting trial:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -863,7 +875,7 @@ exports.listOrganizationAdmins = async (req, res) => {
 
     res.json(admins);
   } catch (err) {
-    console.error("Error listing organization admins:", err);
+    logger.error("Error listing organization admins:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -934,7 +946,7 @@ exports.recoverOrganizationAdmin = async (req, res) => {
       temporaryPassword
     });
   } catch (err) {
-    console.error("Error recovering organization admin:", err);
+    logger.error("Error recovering organization admin:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -954,7 +966,7 @@ exports.listAdminRecoveryLogs = async (req, res) => {
 
     res.json(logs);
   } catch (err) {
-    console.error("Error listing admin recovery logs:", err);
+    logger.error("Error listing admin recovery logs:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1004,6 +1016,7 @@ exports.startAdminImpersonation = async (req, res) => {
       reason,
       logId: impersonationLog._id
     });
+    setAuthCookie(res, token);
 
     await logPlatformAction({
       req,
@@ -1043,7 +1056,7 @@ exports.startAdminImpersonation = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error starting impersonation:", err);
+    logger.error("Error starting impersonation:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1063,7 +1076,7 @@ exports.listImpersonationLogs = async (req, res) => {
 
     res.json(logs);
   } catch (err) {
-    console.error("Error listing impersonation logs:", err);
+    logger.error("Error listing impersonation logs:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1078,7 +1091,7 @@ exports.listInstitutionInvoices = async (req, res) => {
     const invoices = await Invoice.find({ institutionId: institution._id }).sort({ createdAt: -1 });
     res.json(invoices);
   } catch (err) {
-    console.error("Error listing invoices:", err);
+    logger.error("Error listing invoices:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1120,7 +1133,7 @@ exports.createInstitutionInvoice = async (req, res) => {
 
     res.status(201).json(invoice);
   } catch (err) {
-    console.error("Error creating invoice:", err);
+    logger.error("Error creating invoice:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1153,7 +1166,7 @@ exports.markInstitutionInvoicePaid = async (req, res) => {
 
     res.json(invoice);
   } catch (err) {
-    console.error("Error marking invoice paid:", err);
+    logger.error("Error marking invoice paid:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -1172,7 +1185,7 @@ exports.runBillingLifecycleRefresh = async (req, res) => {
 
     res.json({ updated: results.length, results });
   } catch (err) {
-    console.error("Error refreshing billing lifecycle:", err);
+    logger.error("Error refreshing billing lifecycle:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

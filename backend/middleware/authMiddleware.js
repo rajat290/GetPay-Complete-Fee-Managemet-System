@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Student = require("../models/Student");
+require("../models/Role");
 
 exports.protect = async (req, res, next) => {
   let token;
@@ -8,7 +9,10 @@ exports.protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await Student.findById(decoded.id).select("-password").populate("institutionId", "name code type isActive subscription enabledModules");
+      const user = await Student.findById(decoded.id)
+        .select("-password")
+        .populate("institutionId", "name code type isActive subscription enabledModules")
+        .populate("roleIds", "name permissions isActive");
       
       if (!user) {
         return res.status(401).json({ error: "User not found" });
@@ -51,5 +55,6 @@ exports.requireRole = (...allowedRoles) => {
 };
 
 exports.requireAdmin = exports.requireRole("admin");
+exports.requireAdminOrStaff = exports.requireRole("admin", "staff");
 exports.requireStudent = exports.requireRole("student");
 exports.requireSuperAdmin = exports.requireRole("super_admin");

@@ -48,14 +48,22 @@ const studentSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['student', 'admin', 'super_admin'],
+        enum: ['student', 'admin', 'staff', 'super_admin'],
         default: 'student'
+    },
+    roleIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role'
+    }],
+    mustChangePassword: {
+        type: Boolean,
+        default: false
     },
 
     className: {
         type: String,
         required: function () {
-            return this.role !== 'super_admin';
+            return !['super_admin', 'staff'].includes(this.role);
         },
     },
     guardian: {

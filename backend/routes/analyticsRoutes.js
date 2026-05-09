@@ -9,13 +9,15 @@ const {
   getFeeAnalytics,
   getPaymentAnalytics
 } = require("../controllers/analyticsController");
-const { protect, requireAdmin } = require("../middleware/authMiddleware");
+const { protect, requireAdminOrStaff } = require("../middleware/authMiddleware");
 const { requireModule } = require("../middleware/moduleAccessMiddleware");
+const { requirePermission } = require("../middleware/permissionMiddleware");
 
 const router = express.Router();
 
-router.use(protect, requireAdmin);
+router.use(protect, requireAdminOrStaff);
 router.use(requireModule("analytics"));
+router.use(requirePermission("analytics.view"));
 
 // Total summary (collected, pending, defaulters)
 router.get("/", getAnalytics);

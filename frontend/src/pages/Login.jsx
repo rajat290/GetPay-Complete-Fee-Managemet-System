@@ -22,7 +22,7 @@ export default function Login() {
 
       if (res.data.role === "super_admin") {
         navigate("/super-admin/dashboard");
-      } else if (res.data.role === "admin") {
+      } else if (res.data.role === "admin" || res.data.role === "staff") {
         navigate("/admin/dashboard");
       } else {
         navigate("/student/dashboard");

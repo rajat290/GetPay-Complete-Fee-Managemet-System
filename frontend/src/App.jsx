@@ -10,6 +10,7 @@ const Register = lazy(() => import("./pages/Register"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
 const StudentLayout = lazy(() => import("./layouts/StudentLayout"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const Fees = lazy(() => import("./pages/Fees"));
@@ -52,6 +53,14 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/activate-account" element={<ActivateAccount />} />
+              <Route
+                path="/change-password"
+                element={
+                  <ProtectedRoute allowedRoles={["admin", "staff", "student"]}>
+                    <ChangePassword />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/student"

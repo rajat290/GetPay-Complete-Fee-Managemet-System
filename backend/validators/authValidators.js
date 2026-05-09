@@ -39,4 +39,18 @@ const activateAccountSchema = {
   }
 };
 
-module.exports = { registerStudentSchema, loginSchema, requestPasswordResetSchema, resetPasswordSchema, activateAccountSchema };
+const changePasswordSchema = {
+  body: {
+    currentPassword: { required: true },
+    newPassword: { required: true }
+  }
+};
+
+module.exports = {
+  registerStudentSchema,
+  loginSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+  activateAccountSchema,
+  changePasswordSchema
+};

@@ -90,6 +90,18 @@ export default function StaffManagement() {
     }
   };
 
+  const resetStaffPassword = async (staffId) => {
+    setError("");
+    setTemporaryPassword("");
+    try {
+      const res = await api.patch(`/admin/staff/${staffId}`, { resetPassword: true });
+      setTemporaryPassword(res.data.temporaryPassword || "");
+      await loadData();
+    } catch (err) {
+      setError(err.response?.data?.error || "Unable to reset staff password");
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -222,13 +234,14 @@ export default function StaffManagement() {
                 <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Employee Code</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Roles</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {loading ? (
-                <tr><td className="px-4 py-5 text-gray-500" colSpan="5">Loading staff...</td></tr>
+                <tr><td className="px-4 py-5 text-gray-500" colSpan="6">Loading staff...</td></tr>
               ) : staff.length === 0 ? (
-                <tr><td className="px-4 py-5 text-gray-500" colSpan="5">No staff users yet.</td></tr>
+                <tr><td className="px-4 py-5 text-gray-500" colSpan="6">No staff users yet.</td></tr>
               ) : staff.map((person) => (
                 <tr key={person._id}>
                   <td className="px-4 py-3 text-gray-900 dark:text-white">{person.name}</td>
@@ -238,6 +251,15 @@ export default function StaffManagement() {
                     {(person.roleIds || []).map((role) => role.name).join(", ") || "No roles"}
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{person.status}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => resetStaffPassword(person._id)}
+                      className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900"
+                    >
+                      Reset Password
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

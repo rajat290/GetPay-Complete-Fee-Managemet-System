@@ -191,8 +191,10 @@ exports.updateStaff = async (req, res) => {
       staff.roleIds = validRoles.map((role) => role._id);
     }
 
+    let temporaryPassword = null;
     if (req.body.resetPassword) {
-      staff.password = crypto.randomBytes(6).toString("base64url");
+      temporaryPassword = crypto.randomBytes(6).toString("base64url");
+      staff.password = temporaryPassword;
       staff.mustChangePassword = true;
     }
 
@@ -211,7 +213,12 @@ exports.updateStaff = async (req, res) => {
       }
     });
 
-    res.json(sanitizeUser(staff));
+    const response = { staff: sanitizeUser(staff) };
+    if (temporaryPassword) {
+      response.temporaryPassword = temporaryPassword;
+    }
+
+    res.json(response);
   } catch (err) {
     if (err.code === 11000) {
       return res.status(400).json({ error: "Staff email or employee code already exists" });

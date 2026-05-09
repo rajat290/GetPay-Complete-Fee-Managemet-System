@@ -27,6 +27,14 @@ exports.protect = async (req, res, next) => {
       if (!user.institutionId || user.institutionId.isActive === false) {
         return res.status(403).json({ error: "Institution is inactive or missing" });
       }
+
+      const isPasswordChangeRoute = req.originalUrl?.includes("/api/auth/change-password");
+      if (user.mustChangePassword && !isPasswordChangeRoute) {
+        return res.status(403).json({
+          error: "Password change required",
+          code: "PASSWORD_CHANGE_REQUIRED"
+        });
+      }
       
       req.user = user;
       req.institutionId = user.institutionId._id || user.institutionId;

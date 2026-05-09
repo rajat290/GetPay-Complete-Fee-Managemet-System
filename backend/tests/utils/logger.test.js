@@ -27,4 +27,21 @@ describe("structured logger", () => {
     expect(safe.error.name).toBe("Error");
     expect(safe.error.message).toBe("Database failed");
   });
+
+  it("filters messages below the configured log level", () => {
+    const originalLogLevel = process.env.LOG_LEVEL;
+    process.env.LOG_LEVEL = "warn";
+
+    expect(logger.info("hidden_info_log")).toBeNull();
+    expect(logger.warn("visible_warning_log")).toMatchObject({
+      level: "warn",
+      message: "visible_warning_log"
+    });
+
+    if (originalLogLevel === undefined) {
+      delete process.env.LOG_LEVEL;
+    } else {
+      process.env.LOG_LEVEL = originalLogLevel;
+    }
+  });
 });

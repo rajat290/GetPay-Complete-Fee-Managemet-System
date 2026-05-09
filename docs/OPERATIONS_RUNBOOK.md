@@ -5,6 +5,7 @@ This runbook is the first production operations checklist for GetPay Education.
 ## Daily Checks
 
 - Open `/api/health` and confirm `status: ok`.
+- Open `/api/health/ready` and confirm HTTP 200 with `status: ready`.
 - Check application logs for authentication, payment, webhook, and billing lifecycle errors.
 - Review Super Admin dashboard for suspended, past-due, and trial institutions.
 - Review Super Admin lead inbox for new trial, demo, contact, and support requests.
@@ -18,6 +19,8 @@ This runbook is the first production operations checklist for GetPay Education.
 - Confirm `CORS_ORIGIN` and `FRONTEND_URL` point to the deployed frontend.
 - Seed or verify the Super Admin account.
 - Confirm `/api/health` after deployment.
+- Configure deployment readiness checks to use `/api/health/ready`.
+- Configure basic liveness checks to use `/api/health/live`.
 
 ## Incident Response
 
@@ -44,3 +47,6 @@ For expired subscription disputes:
 - Keep at least daily backups for operational data.
 - Test restore on staging before relying on backups.
 - Never test restore directly on production.
+- Run `npm --prefix backend run backup:mongo:dry-run` when configuring backup hosts.
+- Run `npm --prefix backend run backup:mongo` only where `mongodump` is installed and backup storage is configured.
+- Store production backups outside the application server with restricted access.

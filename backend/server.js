@@ -8,6 +8,7 @@ const { validateEnvironment } = require("./config/environment");
 const { applySecurityHeaders } = require("./middleware/securityMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { requestContext, requestLogger } = require("./middleware/requestContextMiddleware");
+const { health, live, ready } = require("./controllers/healthController");
 const logger = require("./utils/logger");
 
 validateEnvironment({ exitOnError: true });
@@ -27,7 +28,6 @@ const { startOverdueSyncJob } = require("./services/overdueSyncService");
 connectDB();
 
 const app = express();
-const packageInfo = require("./package.json");
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
   .split(",")
@@ -51,27 +51,9 @@ app.use(cors({
 app.post("/api/payments/webhook", express.raw({ type: "application/json" }), handleRazorpayWebhook);
 app.use(express.json());
 
-app.get("/api/health", (req, res) => {
-  const databaseStates = {
-    0: "disconnected",
-    1: "connected",
-    2: "connecting",
-    3: "disconnecting"
-  };
-
-  res.json({
-    service: "getpay-backend",
-    version: packageInfo.version,
-    environment: process.env.NODE_ENV || "development",
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptimeSeconds: Math.round(process.uptime()),
-    requestId: req.requestId,
-    database: {
-      state: databaseStates[mongoose.connection.readyState] || "unknown"
-    }
-  });
-});
+app.get("/api/health", health);
+app.get("/api/health/live", live);
+app.get("/api/health/ready", ready);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/fees", feeRoutes);
@@ -96,7 +78,39 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info("server_started", { port: PORT });
   startOverdueSyncJob();
 });
+
+const shutdown = async (signal) => {
+  logger.warn("server_shutdown_started", { signal });
+
+  server.close(async (error) => {
+    if (error) {
+      logger.fatal("server_shutdown_failed", { signal, error });
+      process.exit(1);
+    }
+
+    try {
+      await mongoose.connection.close(false);
+      logger.info("server_shutdown_completed", { signal });
+      process.exit(0);
+    } catch (closeError) {
+      logger.fatal("database_shutdown_failed", { signal, error: closeError });
+      process.exit(1);
+    }
+  });
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("unhandledRejection", (reason) => {
+  logger.fatal("unhandled_rejection", { error: reason });
+});
+process.on("uncaughtException", (error) => {
+  logger.fatal("uncaught_exception", { error });
+  process.exit(1);
+});
+
+module.exports = app;

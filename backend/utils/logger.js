@@ -4,11 +4,29 @@ const redactKeys = new Set([
   "authorization",
   "cookie",
   "secret",
+  "apikey",
+  "api_key",
   "razorpaySignature",
-  "razorpay_key_secret"
+  "razorpay_key_secret",
+  "razorpayKeySecret"
 ]);
 
+const levelWeights = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+  fatal: 50
+};
+
 const shouldUseJson = () => process.env.LOG_FORMAT === "json" || process.env.NODE_ENV === "production";
+
+const getConfiguredLevel = () => {
+  const configured = (process.env.LOG_LEVEL || "info").toLowerCase();
+  return levelWeights[configured] ? configured : "info";
+};
+
+const shouldLog = (level) => levelWeights[level] >= levelWeights[getConfiguredLevel()];
 
 const safeValue = (value) => {
   if (value instanceof Error) {
@@ -37,6 +55,10 @@ const safeValue = (value) => {
 };
 
 const write = (level, message, meta = {}) => {
+  if (!shouldLog(level)) {
+    return null;
+  }
+
   const entry = {
     timestamp: new Date().toISOString(),
     level,
@@ -48,7 +70,7 @@ const write = (level, message, meta = {}) => {
 
   if (shouldUseJson()) {
     const line = JSON.stringify(entry);
-    if (level === "error") {
+    if (level === "error" || level === "fatal") {
       console.error(line);
     } else {
       console.log(line);
@@ -57,7 +79,7 @@ const write = (level, message, meta = {}) => {
   }
 
   const line = `[${entry.timestamp}] ${level.toUpperCase()} ${message}`;
-  if (level === "error") {
+  if (level === "error" || level === "fatal") {
     console.error(line, safeValue(meta));
   } else {
     console.log(line, safeValue(meta));
@@ -67,14 +89,10 @@ const write = (level, message, meta = {}) => {
 };
 
 module.exports = {
-  debug: (message, meta) => {
-    if (process.env.LOG_LEVEL === "debug") {
-      return write("debug", message, meta);
-    }
-    return null;
-  },
+  debug: (message, meta) => write("debug", message, meta),
   info: (message, meta) => write("info", message, meta),
   warn: (message, meta) => write("warn", message, meta),
   error: (message, meta) => write("error", message, meta),
+  fatal: (message, meta) => write("fatal", message, meta),
   safeValue
 };

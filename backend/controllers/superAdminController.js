@@ -2,6 +2,7 @@ const Institution = require("../models/Institution");
 const Student = require("../models/Student");
 const { logPlatformAction } = require("../services/auditLogService");
 const { buildSubscriptionSummary } = require("../services/subscriptionPlanService");
+const { MODULE_CATALOG, DEFAULT_MODULE_KEYS, normalizeModules, getEnabledModules } = require("../services/moduleAccessService");
 
 const institutionTypes = ["school", "college", "coaching", "other"];
 const subscriptionPlans = ["starter", "growth", "enterprise"];
@@ -17,6 +18,7 @@ const serializeInstitution = async (institution) => {
   return {
     ...institution.toObject(),
     adminCount,
+    enabledModules: getEnabledModules(institution),
     subscriptionSummary: summary
   };
 };
@@ -46,6 +48,13 @@ exports.getPlatformOverview = async (req, res) => {
     console.error("Error fetching platform overview:", err);
     res.status(500).json({ error: "Server error" });
   }
+};
+
+exports.getModuleCatalog = async (req, res) => {
+  res.json({
+    modules: MODULE_CATALOG,
+    defaultModules: DEFAULT_MODULE_KEYS
+  });
 };
 
 exports.listInstitutions = async (req, res) => {
@@ -108,7 +117,8 @@ exports.createInstitution = async (req, res) => {
       subscription: {
         plan,
         status: subscriptionStatus
-      }
+      },
+      enabledModules: DEFAULT_MODULE_KEYS
     });
 
     const admin = await Student.create({
@@ -150,6 +160,35 @@ exports.createInstitution = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ error: "Institution or admin already exists" });
     }
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.updateInstitutionModules = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    institution.enabledModules = normalizeModules(req.body.enabledModules);
+    await institution.save();
+
+    await logPlatformAction({
+      req,
+      action: "platform.modules_updated",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Updated module access for ${institution.name}`,
+      metadata: {
+        institutionId: institution._id,
+        enabledModules: institution.enabledModules
+      }
+    });
+
+    res.json(await serializeInstitution(institution));
+  } catch (err) {
+    console.error("Error updating institution modules:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

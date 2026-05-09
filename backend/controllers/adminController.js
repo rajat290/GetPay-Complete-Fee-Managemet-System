@@ -11,6 +11,7 @@ const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 const { sendDueReminders, runReminderCampaign } = require("../services/feeReminderService");
+const { getEnabledModules } = require("../services/moduleAccessService");
 
 const INVITE_TOKEN_EXPIRES_MINUTES = 7 * 24 * 60;
 
@@ -40,7 +41,10 @@ exports.getInstitutionSettings = async (req, res) => {
       return res.status(404).json({ error: "Institution not found" });
     }
 
-    res.json(institution);
+    const response = institution.toObject();
+    response.enabledModules = getEnabledModules(institution);
+
+    res.json(response);
   } catch (err) {
     console.error("Error fetching institution settings:", err);
     res.status(500).json({ error: "Server error" });

@@ -17,6 +17,7 @@ const emptyForm = {
 
 export default function SuperAdminInstitutions() {
   const [institutions, setInstitutions] = useState([]);
+  const [modules, setModules] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,6 +37,16 @@ export default function SuperAdminInstitutions() {
   };
 
   useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const res = await api.get("/super-admin/modules");
+        setModules(res.data.modules || []);
+      } catch {
+        setModules([]);
+      }
+    };
+
+    loadModules();
     loadInstitutions();
   }, []);
 
@@ -74,6 +85,23 @@ export default function SuperAdminInstitutions() {
       await loadInstitutions();
     } catch (error) {
       setMessage(error.response?.data?.error || "Could not update subscription.");
+    }
+  };
+
+  const toggleModule = async (institution, moduleKey) => {
+    const current = institution.enabledModules || [];
+    const next = current.includes(moduleKey)
+      ? current.filter((key) => key !== moduleKey)
+      : [...current, moduleKey];
+
+    setMessage("");
+    try {
+      await api.patch(`/super-admin/institutions/${institution._id}/modules`, {
+        enabledModules: next
+      });
+      await loadInstitutions();
+    } catch (error) {
+      setMessage(error.response?.data?.error || "Could not update module access.");
     }
   };
 
@@ -148,12 +176,13 @@ export default function SuperAdminInstitutions() {
                   <th className="px-4 py-3">Usage</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Modules</th>
                   <th className="px-4 py-3">Access</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                 {loading ? (
-                  <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-500">Loading institutions...</td></tr>
+                  <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-500">Loading institutions...</td></tr>
                 ) : institutions.map((institution) => (
                   <tr key={institution._id}>
                     <td className="px-4 py-3">
@@ -174,6 +203,28 @@ export default function SuperAdminInstitutions() {
                         <option value="growth">Growth</option>
                         <option value="enterprise">Enterprise</option>
                       </select>
+                    </td>
+                    <td className="min-w-[260px] px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        {modules.map((module) => {
+                          const enabled = (institution.enabledModules || []).includes(module.key);
+                          return (
+                            <button
+                              key={module.key}
+                              type="button"
+                              onClick={() => toggleModule(institution, module.key)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                enabled
+                                  ? "bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-200"
+                                  : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-gray-800 dark:text-slate-300"
+                              }`}
+                              title={module.description}
+                            >
+                              {module.name}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <select

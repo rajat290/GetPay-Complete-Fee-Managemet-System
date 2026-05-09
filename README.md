@@ -19,6 +19,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 ### Institution Operations
 
 - Super Admin platform control for institution creation, suspension, and plan assignment
+- Organization module access toggles controlled by Super Admin
 - Multi-tenant institution isolation through `institutionId`
 - Institution profile, billing contact, and branding configuration
 - Admin and student role-based access control
@@ -42,6 +43,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 ### Admin Experience
 
 - Super Admin dashboard and organization control screen
+- Module-aware organization admin navigation
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
 - Dedicated audit trail and reminder campaign management screens
@@ -63,6 +65,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - JWT authentication
 - Password hashing with bcrypt
 - Super Admin/admin/student authorization middleware
+- Module access middleware for organization-level feature gating
 - Request validation middleware
 - Rate limiting for auth and payment routes
 - Security headers for common browser protections
@@ -274,6 +277,8 @@ All main API routes are mounted under `/api`.
 - `GET /api/super-admin/institutions/:institutionId`
 - `PATCH /api/super-admin/institutions/:institutionId`
 - `PATCH /api/super-admin/institutions/:institutionId/subscription`
+- `GET /api/super-admin/modules`
+- `PATCH /api/super-admin/institutions/:institutionId/modules`
 
 ### Receipts and Notifications
 
@@ -362,11 +367,12 @@ Recommended production settings:
 - Route-level frontend code splitting
 - CI pipeline for backend tests, frontend lint, and frontend build
 - Super Admin platform control
+- Organization module access control
 
 ### Next Priorities
 
 - Production observability, structured logs, and error tracking
-- Organization module access toggles
+- Staff users and granular RBAC permissions
 
 ## Repository Status
 

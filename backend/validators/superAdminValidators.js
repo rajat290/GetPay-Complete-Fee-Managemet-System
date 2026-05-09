@@ -32,8 +32,15 @@ const updateInstitutionSubscriptionSchema = {
   }
 };
 
+const updateInstitutionModulesSchema = {
+  params: {
+    institutionId: { required: true, type: "objectId" }
+  }
+};
+
 module.exports = {
   createInstitutionSchema,
   institutionParamsSchema,
-  updateInstitutionSubscriptionSchema
+  updateInstitutionSubscriptionSchema,
+  updateInstitutionModulesSchema
 };

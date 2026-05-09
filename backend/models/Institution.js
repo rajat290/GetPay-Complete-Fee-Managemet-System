@@ -83,6 +83,17 @@ const institutionSchema = new mongoose.Schema({
       trim: true,
     },
   },
+  enabledModules: [{
+    type: String,
+    enum: [
+      "student_management",
+      "fee_management",
+      "finance_operations",
+      "analytics",
+      "audit_trail",
+      "settings"
+    ],
+  }],
   isActive: {
     type: Boolean,
     default: true,

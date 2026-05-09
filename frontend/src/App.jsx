@@ -38,6 +38,7 @@ const StaffManagement = lazy(() => import("./pages/admin/StaffManagement"));
 const SuperAdminLayout = lazy(() => import("./layouts/SuperAdminLayout"));
 const SuperAdminDashboard = lazy(() => import("./pages/super-admin/SuperAdminDashboard"));
 const SuperAdminInstitutions = lazy(() => import("./pages/super-admin/SuperAdminInstitutions"));
+const SuperAdminInstitutionDetail = lazy(() => import("./pages/super-admin/SuperAdminInstitutionDetail"));
 const SuperAdminLeads = lazy(() => import("./pages/super-admin/SuperAdminLeads"));
 const SuperAdminWebsite = lazy(() => import("./pages/super-admin/SuperAdminWebsite"));
 
@@ -125,6 +126,7 @@ function App() {
               >
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
                 <Route path="institutions" element={<SuperAdminInstitutions />} />
+                <Route path="institutions/:institutionId" element={<SuperAdminInstitutionDetail />} />
                 <Route path="leads" element={<SuperAdminLeads />} />
                 <Route path="website" element={<SuperAdminWebsite />} />
               </Route>

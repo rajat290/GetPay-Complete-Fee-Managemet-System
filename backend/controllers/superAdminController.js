@@ -1,6 +1,11 @@
 const Institution = require("../models/Institution");
 const Student = require("../models/Student");
 const Invoice = require("../models/Invoice");
+const Payment = require("../models/Payment");
+const Branch = require("../models/Branch");
+const Receipt = require("../models/Receipt");
+const ReminderCampaign = require("../models/ReminderCampaign");
+const AdminRecoveryLog = require("../models/AdminRecoveryLog");
 const Lead = require("../models/Lead");
 const WebsiteContent = require("../models/WebsiteContent");
 const LegalPage = require("../models/LegalPage");
@@ -13,17 +18,81 @@ const { createManualInvoice, markInvoicePaid, refreshBillingLifecycle } = requir
 const institutionTypes = ["school", "college", "coaching", "other"];
 const subscriptionPlans = ["starter", "growth", "enterprise"];
 const subscriptionStatuses = ["trialing", "active", "past_due", "paused", "cancelled"];
+const leadStatuses = ["new", "contacted", "demo_scheduled", "trial_active", "converted", "lost"];
+
+const generateTemporaryPassword = () => {
+  const random = Math.random().toString(36).slice(2, 8);
+  return `GetPay@${random}${Math.floor(10 + Math.random() * 90)}`;
+};
+
+const getInstitutionUsageBreakdown = async (institutionId) => {
+  const [
+    staffCount,
+    paymentSummary,
+    receiptCount,
+    branchCount,
+    activeBranchCount,
+    reminderCampaignCount
+  ] = await Promise.all([
+    Student.countDocuments({ institutionId, role: "staff" }),
+    Payment.aggregate([
+      { $match: { institutionId, status: "completed" } },
+      {
+        $group: {
+          _id: "$mode",
+          amount: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      }
+    ]),
+    Receipt.countDocuments({ institutionId }),
+    Branch.countDocuments({ institutionId }),
+    Branch.countDocuments({ institutionId, isActive: true }),
+    ReminderCampaign.countDocuments({ institutionId })
+  ]);
+
+  const payments = paymentSummary.reduce((acc, row) => {
+    acc.totalAmount += row.amount;
+    acc.totalCount += row.count;
+    acc.byMode[row._id] = {
+      amount: row.amount,
+      count: row.count
+    };
+    return acc;
+  }, { totalAmount: 0, totalCount: 0, byMode: {} });
+
+  const storageEstimateMb = Math.round(((receiptCount * 180) / 1024) * 10) / 10;
+
+  return {
+    staff: staffCount,
+    payments,
+    receipts: receiptCount,
+    reminders: reminderCampaignCount,
+    branches: {
+      total: branchCount,
+      active: activeBranchCount
+    },
+    storage: {
+      estimatedMb: storageEstimateMb,
+      basis: "receipt_pdf_estimate"
+    }
+  };
+};
 
 const serializeInstitution = async (institution) => {
-  const summary = await buildSubscriptionSummary(institution);
-  const adminCount = await Student.countDocuments({
-    institutionId: institution._id,
-    role: "admin"
-  });
+  const [summary, adminCount, usageBreakdown] = await Promise.all([
+    buildSubscriptionSummary(institution),
+    Student.countDocuments({
+      institutionId: institution._id,
+      role: "admin"
+    }),
+    getInstitutionUsageBreakdown(institution._id)
+  ]);
 
   return {
     ...institution.toObject(),
     adminCount,
+    usageBreakdown,
     enabledModules: getEnabledModules(institution),
     subscriptionSummary: summary
   };
@@ -123,6 +192,10 @@ exports.updateLead = async (req, res) => {
     const lead = await Lead.findById(req.params.leadId);
     if (!lead) {
       return res.status(404).json({ error: "Lead not found" });
+    }
+
+    if (req.body.status && !leadStatuses.includes(req.body.status)) {
+      return res.status(400).json({ error: "Invalid lead status" });
     }
 
     ["status", "notes", "followUpOwner"].forEach((field) => {
@@ -447,6 +520,20 @@ exports.updateInstitution = async (req, res) => {
       institution.isActive = Boolean(req.body.isActive);
     }
 
+    if (req.body.billingContact !== undefined) {
+      institution.billingContact = {
+        ...(institution.billingContact?.toObject?.() || institution.billingContact || {}),
+        ...req.body.billingContact
+      };
+    }
+
+    if (req.body.branding !== undefined) {
+      institution.branding = {
+        ...(institution.branding?.toObject?.() || institution.branding || {}),
+        ...req.body.branding
+      };
+    }
+
     await institution.save();
 
     await logPlatformAction({
@@ -468,6 +555,121 @@ exports.updateInstitution = async (req, res) => {
   }
 };
 
+exports.archiveInstitution = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const { reason } = req.body;
+    if (!reason) {
+      return res.status(400).json({ error: "Archive reason is required" });
+    }
+
+    institution.isActive = false;
+    institution.lifecycle = {
+      ...(institution.lifecycle?.toObject?.() || institution.lifecycle || {}),
+      archivedAt: new Date(),
+      archivedBy: req.user._id,
+      archiveReason: reason
+    };
+    await institution.save();
+
+    await logPlatformAction({
+      req,
+      action: "platform.institution_archived",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Archived institution ${institution.name}`,
+      metadata: {
+        institutionId: institution._id,
+        reason
+      }
+    });
+
+    res.json(await serializeInstitution(institution));
+  } catch (err) {
+    console.error("Error archiving institution:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.restoreInstitution = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    institution.lifecycle = {
+      ...(institution.lifecycle?.toObject?.() || institution.lifecycle || {}),
+      archivedAt: undefined,
+      archivedBy: undefined,
+      archiveReason: undefined
+    };
+    institution.isActive = true;
+    await institution.save();
+
+    await logPlatformAction({
+      req,
+      action: "platform.institution_restored",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Restored institution ${institution.name}`,
+      metadata: { institutionId: institution._id }
+    });
+
+    res.json(await serializeInstitution(institution));
+  } catch (err) {
+    console.error("Error restoring institution:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.updateInstitutionRiskControls = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const allowed = ["freezeInstitution", "blockPayments", "disableLogins", "restrictExports"];
+    const nextControls = {
+      ...(institution.riskControls?.toObject?.() || institution.riskControls || {})
+    };
+
+    allowed.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        nextControls[field] = Boolean(req.body[field]);
+      }
+    });
+
+    nextControls.reason = req.body.reason || nextControls.reason;
+    nextControls.updatedAt = new Date();
+    nextControls.updatedBy = req.user._id;
+    institution.riskControls = nextControls;
+    await institution.save();
+
+    await logPlatformAction({
+      req,
+      action: "platform.risk_controls_updated",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Updated risk controls for ${institution.name}`,
+      metadata: {
+        institutionId: institution._id,
+        riskControls: institution.riskControls
+      }
+    });
+
+    res.json(await serializeInstitution(institution));
+  } catch (err) {
+    console.error("Error updating risk controls:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 exports.updateInstitutionSubscription = async (req, res) => {
   try {
     const institution = await Institution.findById(req.params.institutionId);
@@ -475,7 +677,7 @@ exports.updateInstitutionSubscription = async (req, res) => {
       return res.status(404).json({ error: "Institution not found" });
     }
 
-    const { plan, status, trialEndsAt, currentPeriodEndsAt } = req.body;
+    const { plan, status, trialEndsAt, currentPeriodEndsAt, limitOverrides } = req.body;
 
     if (plan && !subscriptionPlans.includes(plan)) {
       return res.status(400).json({ error: "Invalid subscription plan" });
@@ -491,6 +693,17 @@ exports.updateInstitutionSubscription = async (req, res) => {
     if (trialEndsAt !== undefined) institution.subscription.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : undefined;
     if (currentPeriodEndsAt !== undefined) {
       institution.subscription.currentPeriodEndsAt = currentPeriodEndsAt ? new Date(currentPeriodEndsAt) : undefined;
+    }
+    if (limitOverrides !== undefined) {
+      institution.subscription.limitOverrides = {
+        ...(institution.subscription.limitOverrides?.toObject?.() || institution.subscription.limitOverrides || {}),
+        ...["students", "admins", "reminderCampaigns"].reduce((acc, key) => {
+          if (limitOverrides[key] !== undefined && limitOverrides[key] !== "") {
+            acc[key] = Number(limitOverrides[key]);
+          }
+          return acc;
+        }, {})
+      };
     }
 
     await institution.save();
@@ -511,6 +724,201 @@ exports.updateInstitutionSubscription = async (req, res) => {
     res.json(await serializeInstitution(institution));
   } catch (err) {
     console.error("Error updating institution subscription:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.extendInstitutionTrial = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const days = Math.max(Number(req.body.days) || 0, 1);
+    const base = institution.subscription?.trialEndsAt && institution.subscription.trialEndsAt > new Date()
+      ? institution.subscription.trialEndsAt
+      : new Date();
+    const nextTrialEndsAt = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+
+    institution.subscription = institution.subscription || {};
+    institution.subscription.status = "trialing";
+    institution.subscription.trialEndsAt = nextTrialEndsAt;
+    institution.isActive = true;
+    await institution.save();
+
+    await logPlatformAction({
+      req,
+      action: "platform.trial_extended",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Extended trial for ${institution.name} by ${days} days`,
+      metadata: {
+        institutionId: institution._id,
+        days,
+        trialEndsAt: nextTrialEndsAt
+      }
+    });
+
+    res.json(await serializeInstitution(institution));
+  } catch (err) {
+    console.error("Error extending trial:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.convertInstitutionTrial = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const { plan = institution.subscription?.plan || "starter", currentPeriodEndsAt } = req.body;
+    if (!subscriptionPlans.includes(plan)) {
+      return res.status(400).json({ error: "Invalid subscription plan" });
+    }
+
+    institution.subscription = institution.subscription || {};
+    institution.subscription.plan = plan;
+    institution.subscription.status = "active";
+    institution.subscription.trialEndsAt = undefined;
+    institution.subscription.currentPeriodEndsAt = currentPeriodEndsAt
+      ? new Date(currentPeriodEndsAt)
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    institution.isActive = true;
+    await institution.save();
+
+    await Lead.updateMany(
+      { institutionId: institution._id, status: { $ne: "converted" } },
+      { $set: { status: "converted", convertedAt: new Date() } }
+    );
+
+    await logPlatformAction({
+      req,
+      action: "platform.trial_converted",
+      entityType: "Institution",
+      entityId: institution._id,
+      summary: `Converted trial to paid for ${institution.name}`,
+      metadata: {
+        institutionId: institution._id,
+        plan,
+        currentPeriodEndsAt: institution.subscription.currentPeriodEndsAt
+      }
+    });
+
+    res.json(await serializeInstitution(institution));
+  } catch (err) {
+    console.error("Error converting trial:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listOrganizationAdmins = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const admins = await Student.find({ institutionId: institution._id, role: "admin" })
+      .select("_id name email registrationNo mustChangePassword status createdAt updatedAt")
+      .sort({ createdAt: -1 });
+
+    res.json(admins);
+  } catch (err) {
+    console.error("Error listing organization admins:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.recoverOrganizationAdmin = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const admin = await Student.findOne({
+      _id: req.params.adminId,
+      institutionId: institution._id,
+      role: "admin"
+    });
+    if (!admin) {
+      return res.status(404).json({ error: "Organization admin not found" });
+    }
+
+    const { action = "force_password_change", reason } = req.body;
+    if (!["force_password_change", "temporary_password_reset"].includes(action)) {
+      return res.status(400).json({ error: "Invalid recovery action" });
+    }
+    if (!reason) {
+      return res.status(400).json({ error: "Recovery reason is required" });
+    }
+
+    let temporaryPassword;
+    admin.mustChangePassword = true;
+    if (action === "temporary_password_reset") {
+      temporaryPassword = generateTemporaryPassword();
+      admin.password = temporaryPassword;
+    }
+    await admin.save();
+
+    const recoveryLog = await AdminRecoveryLog.create({
+      institutionId: institution._id,
+      adminId: admin._id,
+      action,
+      reason,
+      performedBy: req.user._id,
+      temporaryPasswordIssued: Boolean(temporaryPassword)
+    });
+
+    await logPlatformAction({
+      req,
+      action: "platform.admin_recovery",
+      entityType: "Student",
+      entityId: admin._id,
+      summary: `Performed admin recovery for ${admin.email}`,
+      metadata: {
+        institutionId: institution._id,
+        adminId: admin._id,
+        recoveryAction: action,
+        recoveryLogId: recoveryLog._id
+      }
+    });
+
+    res.json({
+      admin: {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        mustChangePassword: admin.mustChangePassword
+      },
+      recoveryLog,
+      temporaryPassword
+    });
+  } catch (err) {
+    console.error("Error recovering organization admin:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listAdminRecoveryLogs = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const logs = await AdminRecoveryLog.find({ institutionId: institution._id })
+      .populate("adminId", "name email")
+      .populate("performedBy", "name email")
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json(logs);
+  } catch (err) {
+    console.error("Error listing admin recovery logs:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

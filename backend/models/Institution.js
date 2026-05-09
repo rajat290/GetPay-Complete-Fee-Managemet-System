@@ -85,6 +85,20 @@ const institutionSchema = new mongoose.Schema({
       type: String,
       trim: true,
     },
+    limitOverrides: {
+      students: {
+        type: Number,
+        min: 0,
+      },
+      admins: {
+        type: Number,
+        min: 0,
+      },
+      reminderCampaigns: {
+        type: Number,
+        min: 0,
+      },
+    },
   },
   enabledModules: [{
     type: String,
@@ -100,6 +114,48 @@ const institutionSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  lifecycle: {
+    archivedAt: {
+      type: Date,
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+    },
+    archiveReason: {
+      type: String,
+      trim: true,
+    },
+  },
+  riskControls: {
+    freezeInstitution: {
+      type: Boolean,
+      default: false,
+    },
+    blockPayments: {
+      type: Boolean,
+      default: false,
+    },
+    disableLogins: {
+      type: Boolean,
+      default: false,
+    },
+    restrictExports: {
+      type: Boolean,
+      default: false,
+    },
+    reason: {
+      type: String,
+      trim: true,
+    },
+    updatedAt: {
+      type: Date,
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+    },
   },
 }, { timestamps: true });
 

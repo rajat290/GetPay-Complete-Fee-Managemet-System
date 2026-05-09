@@ -41,6 +41,7 @@ const {
 const { protect, requireAdminOrStaff } = require("../middleware/authMiddleware");
 const { requireModule } = require("../middleware/moduleAccessMiddleware");
 const { requirePermission } = require("../middleware/permissionMiddleware");
+const { requirePaymentsAllowed, requireExportsAllowed } = require("../middleware/riskControlMiddleware");
 const validateRequest = require("../middleware/validateRequest");
 const {
   createStudentSchema,
@@ -144,7 +145,7 @@ router.get("/payments/recent", requireModule("finance_operations"), requirePermi
 router.get("/payments/reconciliation", requireModule("finance_operations"), requirePermission("report.export"), getPaymentReconciliation);
 
 // POST /admin/payments/offline - Record manual/offline payment
-router.post("/payments/offline", requireModule("finance_operations"), requirePermission("payment.record_offline"), validateRequest(recordOfflinePaymentSchema), recordOfflinePayment);
+router.post("/payments/offline", requireModule("finance_operations"), requirePermission("payment.record_offline"), requirePaymentsAllowed, validateRequest(recordOfflinePaymentSchema), recordOfflinePayment);
 
 // GET /admin/classes - Get all unique class names
 router.get("/classes", getClassNames);
@@ -177,7 +178,7 @@ router.post("/reminder-campaigns/:campaignId/run", requireModule("finance_operat
 router.get("/payments/:paymentId", requireModule("finance_operations"), requirePermission("fee.collect"), validateRequest(paymentDetailsSchema), getPaymentDetails);
 
 // GET /admin/reports/daily-summary - Export daily collection summary
-router.get("/reports/daily-summary", requireModule("finance_operations"), requirePermission("report.export"), exportDailySummary);
+router.get("/reports/daily-summary", requireModule("finance_operations"), requirePermission("report.export"), requireExportsAllowed, exportDailySummary);
 
 // GET /admin/reports/collection-summary - Collection trends
 router.get("/reports/collection-summary", requireModule("finance_operations"), requirePermission("analytics.view"), getCollectionReport);
@@ -186,7 +187,7 @@ router.get("/reports/collection-summary", requireModule("finance_operations"), r
 router.get("/reports/class-wise", requireModule("finance_operations"), requirePermission("analytics.view"), getClassWiseReport);
 
 // GET /admin/reports/defaulters - Defaulters list
-router.get("/reports/defaulters", requireModule("finance_operations"), requirePermission("report.export"), getDefaultersReport);
+router.get("/reports/defaulters", requireModule("finance_operations"), requirePermission("report.export"), requireExportsAllowed, getDefaultersReport);
 
 // GET /admin/reports/payment-modes - Payment mode analysis
 router.get("/reports/payment-modes", requireModule("finance_operations"), requirePermission("analytics.view"), getPaymentModeReport);

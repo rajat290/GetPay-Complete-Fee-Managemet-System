@@ -32,7 +32,8 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "Fee assignment is already paid" });
     }
 
-    const payableAmount = assignment.feeId.amount;
+    // Support new amount field on assignment (for installments), fallback to fee template
+    const payableAmount = assignment.amount || assignment.feeId?.amount || 0;
 
     if (amount && Number(amount) !== payableAmount) {
       return res.status(400).json({ message: "Payment amount does not match assigned fee" });
@@ -123,7 +124,8 @@ exports.verifyPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Payment order not found" });
     }
 
-    if (payment.amount !== assignment.feeId.amount) {
+    const payableAmount = assignment.amount || assignment.feeId?.amount || 0;
+    if (payment.amount !== payableAmount) {
       return res.status(409).json({ success: false, message: "Payment amount mismatch" });
     }
 
@@ -222,13 +224,21 @@ exports.getPaymentHistory = async (req, res) => {
       .sort({ createdAt: -1 });
 
     // Format response to include fee title
-    const formatted = payments.map((p) => ({
-      _id: p._id,
-      amount: p.amount,
-      status: p.status === 'completed' ? 'success' : p.status,
-      createdAt: p.createdAt,
-      feeTitle: p.assignmentId?.feeId?.title || "-"
-    }));
+    const formatted = payments.map((p) => {
+      const assignment = p.assignmentId;
+      let displayTitle = assignment?.feeTitle || assignment?.feeId?.title || "Fee Payment";
+      if (assignment?.installmentName && assignment?.installmentName !== 'Full Payment') {
+        displayTitle = `${displayTitle} (${assignment.installmentName})`;
+      }
+
+      return {
+        _id: p._id,
+        amount: p.amount,
+        status: p.status === 'completed' ? 'success' : p.status,
+        createdAt: p.createdAt,
+        feeTitle: displayTitle
+      };
+    });
     res.json(formatted);
   } catch (err) {
     console.error("Error fetching payment history:", err);

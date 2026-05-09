@@ -59,6 +59,28 @@
     from { transform: translateY(-0.5rem); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
+
+  .animate-slow-zoom {
+    animation: slowZoom 20s infinite alternate linear;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float 10s ease-in-out infinite;
+  }
+
+  @keyframes slowZoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(var(--tw-rotate, 0)); }
+    50% { transform: translateY(-20px) rotate(var(--tw-rotate, 0)); }
+  }
 }
 
 /* Custom Scrollbar */

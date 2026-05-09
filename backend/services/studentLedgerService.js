@@ -50,7 +50,9 @@ const buildStudentLedger = async ({ institutionId, studentId }) => {
     const assignmentPayments = paymentsByAssignment[assignment._id.toString()] || [];
     const completedPayments = assignmentPayments.filter((payment) => payment.status === "completed");
     const paidAmount = completedPayments.reduce((sum, payment) => sum + payment.amount, 0);
-    const assignedAmount = assignment.feeId?.amount || 0;
+    
+    // Support new amount field on assignment, fallback to fee template
+    const assignedAmount = assignment.amount || assignment.feeId?.amount || 0;
     const balanceAmount = Math.max(assignedAmount - paidAmount, 0);
     const dueDate = assignment.dueDate || assignment.feeId?.dueDate;
     const isOverdue = balanceAmount > 0 && dueDate && new Date(dueDate) < now;
@@ -69,14 +71,21 @@ const buildStudentLedger = async ({ institutionId, studentId }) => {
       summary.pendingCount += 1;
     }
 
+    // Format title with installment info
+    let displayTitle = assignment.feeTitle || assignment.feeId?.title || "Fee Assignment";
+    if (assignment.installmentName && assignment.installmentName !== 'Full Payment') {
+      displayTitle = `${displayTitle} (${assignment.installmentName})`;
+    }
+
     return {
       assignmentId: assignment._id,
-      fee: assignment.feeId ? {
-        _id: assignment.feeId._id,
-        title: assignment.feeId.title,
-        category: assignment.feeId.category,
-        amount: assignedAmount
-      } : null,
+      fee: {
+        _id: assignment.feeId?._id || assignment._id,
+        title: displayTitle,
+        category: assignment.feeId?.category || "Other",
+        amount: assignedAmount,
+        installmentName: assignment.installmentName
+      },
       dueDate,
       assignmentStatus: assignment.status,
       ledgerStatus,

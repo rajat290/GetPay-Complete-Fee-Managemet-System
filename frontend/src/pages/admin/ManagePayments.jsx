@@ -10,7 +10,8 @@ import {
   FileText,
   Eye,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Plus
 } from "lucide-react";
 import api from "../../services/api";
 import Button from "../../components/common/Button";
@@ -89,6 +90,22 @@ export default function ManagePayments() {
     }
   };
 
+  const handleDailySummary = async () => {
+    try {
+      const res = await api.get("/admin/reports/daily-summary");
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `daily_summary_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Daily summary export failed", err);
+    }
+  };
+
   const columns = [
     { 
       header: "Payment ID", 
@@ -157,8 +174,11 @@ export default function ManagePayments() {
           <Button variant="secondary" icon={Download} onClick={handleExport}>
             Export CSV
           </Button>
-          <Button icon={FileText}>
-            Generate Report
+          <Button variant="secondary" icon={FileText} onClick={handleDailySummary}>
+            Daily Summary
+          </Button>
+          <Button icon={Plus}>
+            Record Payment
           </Button>
         </div>
       </div>

@@ -118,18 +118,52 @@ exports.updateInstitutionSettings = async (req, res) => {
   }
 };
 
-// Get all students (admin only)
+// Get all students with pagination and search (admin only)
 exports.getAllStudents = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
-    const students = await Student.find({ institutionId: req.institutionId }).select("-password");
-    res.json(students);
+    const { page = 1, limit = 10, search = "", className } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    let query = { institutionId: req.institutionId };
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { registrationNo: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (className && className !== "all") {
+      query.className = className;
+    }
+
+    const [students, total] = await Promise.all([
+      Student.find(query)
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Student.countDocuments(query)
+    ]);
+
+    res.json({
+      data: students,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
   } catch (err) {
     console.error("Error fetching students:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // Create a new student (admin only)
 exports.createStudent = async (req, res) => {
@@ -199,17 +233,18 @@ exports.createStudent = async (req, res) => {
   }
 };
 
-// Get all payments for admin dashboard
+// Get all payments for admin dashboard with pagination
 exports.getAllPayments = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
-    const { className, status, search, startDate, endDate } = req.query;
+    const { page = 1, limit = 10, className, status, search, startDate, endDate } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
     
     let query = { institutionId: req.institutionId };
     
     // Filter by class
-    if (className) {
+    if (className && className !== "all") {
       const students = await Student.find({
         institutionId: req.institutionId,
         className
@@ -242,30 +277,36 @@ exports.getAllPayments = async (req, res) => {
 
       query.$or = [
         { razorpayPaymentId: { $regex: search, $options: 'i' } },
+        { referenceNo: { $regex: search, $options: 'i' } },
         { studentId: { $in: matchingStudents.map((student) => student._id) } }
       ];
     }
     
-    const payments = await Payment.find(query)
-      .populate({
-        path: 'studentId',
-        select: 'name registrationNo className'
-      })
-      .populate({
-        path: 'assignmentId',
-        populate: {
-          path: 'feeId',
-          select: 'title'
-        }
-      })
-      .sort({ createdAt: -1 });
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
+        .populate({
+          path: 'studentId',
+          select: 'name registrationNo className'
+        })
+        .populate({
+          path: 'assignmentId',
+          populate: {
+            path: 'feeId',
+            select: 'title'
+          }
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Payment.countDocuments(query)
+    ]);
     
     // Format the response
     const formattedPayments = payments.map(payment => ({
       _id: payment._id,
       paymentId: `PMT${payment._id.toString().slice(-6).toUpperCase()}`,
-      studentId: `STD${payment.studentId.registrationNo}`,
-      student: payment.studentId.name,
+      studentId: `STD${payment.studentId?.registrationNo || 'N/A'}`,
+      student: payment.studentId?.name || 'Unknown',
       amount: payment.amount,
       type: payment.assignmentId?.feeId?.title || 'Unknown',
       date: payment.createdAt,
@@ -273,15 +314,24 @@ exports.getAllPayments = async (req, res) => {
       mode: payment.mode,
       razorpayTransactionId: payment.razorpayPaymentId || '-',
       referenceNo: payment.referenceNo || '-',
-      className: payment.studentId.className
+      className: payment.studentId?.className || 'N/A'
     }));
     
-    res.json(formattedPayments);
+    res.json({
+      data: formattedPayments,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
   } catch (err) {
     console.error("Error fetching payments:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // Get payment statistics for admin dashboard
 exports.getPaymentStats = async (req, res) => {

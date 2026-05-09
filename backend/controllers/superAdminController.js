@@ -338,7 +338,31 @@ exports.listAnnouncements = async (req, res) => {
 
 exports.createAnnouncement = async (req, res) => {
   try {
-    const announcement = await PlatformAnnouncement.create(req.body);
+    const { title, message, audience = "all", institutionId, channel = "in_app", status = "draft", scheduledAt } = req.body;
+    if (!title || !message) {
+      return res.status(400).json({ error: "Title and message are required" });
+    }
+
+    if (audience === "institution") {
+      if (!institutionId) {
+        return res.status(400).json({ error: "Institution is required for institution announcements" });
+      }
+      const institution = await Institution.findById(institutionId);
+      if (!institution) {
+        return res.status(404).json({ error: "Institution not found" });
+      }
+    }
+
+    const announcement = await PlatformAnnouncement.create({
+      title,
+      message,
+      audience,
+      institutionId: audience === "institution" ? institutionId : undefined,
+      channel,
+      status,
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+      sentAt: status === "sent" ? new Date() : undefined
+    });
 
     await logPlatformAction({
       req,

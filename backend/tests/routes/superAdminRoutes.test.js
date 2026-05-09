@@ -10,6 +10,7 @@ const Institution = require("../../models/Institution");
 const Student = require("../../models/Student");
 const AuditLog = require("../../models/AuditLog");
 const AdminRecoveryLog = require("../../models/AdminRecoveryLog");
+const PlatformAnnouncement = require("../../models/PlatformAnnouncement");
 
 const app = express();
 app.use(express.json());
@@ -262,5 +263,34 @@ describe("super admin platform control", () => {
 
     const recoveryLog = await AdminRecoveryLog.findOne({ adminId: admin._id });
     expect(recoveryLog.reason).toBe("Principal lost access");
+  });
+
+  it("creates and lists platform announcements", async () => {
+    const createRes = await request(app)
+      .post("/api/super-admin/announcements")
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({
+        title: "Maintenance notice",
+        message: "Collections dashboard maintenance tonight.",
+        audience: "all",
+        channel: "in_app",
+        status: "sent"
+      });
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.sentAt).toBeTruthy();
+
+    const announcement = await PlatformAnnouncement.findOne({ title: "Maintenance notice" });
+    expect(announcement).toBeTruthy();
+
+    const listRes = await request(app)
+      .get("/api/super-admin/announcements")
+      .set("Authorization", `Bearer ${superToken}`);
+
+    expect(listRes.status).toBe(200);
+    expect(listRes.body).toHaveLength(1);
+
+    const auditLog = await AuditLog.findOne({ action: "platform.announcement_created" });
+    expect(auditLog).toBeTruthy();
   });
 });

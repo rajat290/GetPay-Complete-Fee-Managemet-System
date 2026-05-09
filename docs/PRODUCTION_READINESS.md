@@ -21,6 +21,8 @@ GitHub Actions also runs backend env validation, backend tests, frontend lint, a
 ## Deployment Baseline
 
 - Backend must expose `/api/health`.
+- Backend must expose `/api/health/live` for process liveness.
+- Backend must expose `/api/health/ready` for traffic readiness.
 - Production env must pass `npm --prefix backend run check:env`.
 - `NODE_ENV=production` must be set in production.
 - `JWT_SECRET` must be strong and private.
@@ -32,6 +34,7 @@ GitHub Actions also runs backend env validation, backend tests, frontend lint, a
 
 - Configure automated database backups.
 - Configure log retention and request ID search.
+- Configure deployment health checks against `/api/health/ready`.
 - Configure Razorpay webhook secret and test webhook delivery.
 - Create a staging environment.
 - Seed one Super Admin account.
@@ -43,5 +46,4 @@ GitHub Actions also runs backend env validation, backend tests, frontend lint, a
 - Add API smoke tests for deployed staging.
 - Add frontend route smoke tests.
 - Add monitoring/error tracking integration.
-- Add database backup automation documentation for the selected host.
 - Add incident templates for payment, auth, and tenant-isolation issues.

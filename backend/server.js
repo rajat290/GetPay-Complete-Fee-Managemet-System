@@ -18,6 +18,7 @@ const receiptRoutes = require("./routes/receiptRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const superAdminRoutes = require("./routes/superAdminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const publicRoutes = require("./routes/publicRoutes");
 const { startOverdueSyncJob } = require("./services/overdueSyncService");
 
 connectDB();
@@ -77,6 +78,7 @@ app.use("/api/receipts", receiptRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/super-admin", superAdminRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/public", publicRoutes);
 
 app.get("/", (req, res) => {
   res.json({

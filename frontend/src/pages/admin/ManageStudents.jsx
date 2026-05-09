@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus, Mail, Fingerprint, Users as UsersIcon, Link as LinkIcon, Plus } from "lucide-react";
+import { UserPlus, Mail, Fingerprint, Users as UsersIcon, Link as LinkIcon, Plus, FileText, Upload, AlertCircle, CheckCircle2, Download } from "lucide-react";
 import api from "../../services/api";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -18,6 +18,9 @@ export default function ManageStudents() {
     className: "" 
   });
   const [message, setMessage] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importSummary, setImportSummary] = useState(null);
   const [classOptions] = useState([
     "12thA", "12thB", "11thA", "11thB", "10thA", "10thB", 
     "9thA", "9thB", "8thA", "8thB", "7thA", "7thB"
@@ -58,6 +61,45 @@ export default function ManageStudents() {
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleImport = async (e) => {
+    e.preventDefault();
+    if (!importFile) return;
+    
+    setIsImporting(true);
+    setImportSummary(null);
+    const formData = new FormData();
+    formData.append("file", importFile);
+
+    try {
+      const res = await api.post("/admin/students/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setImportSummary(res.data);
+      setMessage({ type: "success", text: res.data.message });
+      setImportFile(null);
+      // Refresh logic
+      setTimeout(() => window.location.reload(), 3000);
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.error || "Error importing students"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8,Name,Email,Registration No,Class\nJohn Doe,john@example.com,REG001,12thA";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "student_import_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const fetchStudents = async (params) => {
@@ -206,14 +248,104 @@ export default function ManageStudents() {
         </form>
       </Card>
 
-      {/* Students List Table */}
-      <Card title="Student Directory" noPadding>
-        <DataTable 
-          columns={columns}
-          fetchData={fetchStudents}
-          searchPlaceholder="Search by name, email, or registration..."
-        />
       </Card>
+
+      {/* CSV Import Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <Card title="Student Directory" noPadding>
+            <DataTable 
+              columns={columns}
+              fetchData={fetchStudents}
+              searchPlaceholder="Search by name, email, or registration..."
+            />
+          </Card>
+        </div>
+        
+        <div className="lg:col-span-1">
+          <Card 
+            title="Bulk Onboarding" 
+            subtitle="Import students via CSV file"
+            action={
+              <Button variant="ghost" size="sm" icon={Download} onClick={downloadTemplate}>
+                Template
+              </Button>
+            }
+          >
+            <form onSubmit={handleImport} className="space-y-4">
+              <div 
+                className={`border-2 border-dashed rounded-2xl p-8 text-center transition-premium ${
+                  importFile ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-800 hover:border-primary/50"
+                }`}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files[0]) setImportFile(e.dataTransfer.files[0]);
+                }}
+              >
+                <Upload className={`w-10 h-10 mx-auto mb-3 ${importFile ? "text-primary" : "text-slate-400"}`} />
+                {importFile ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{importFile.name}</p>
+                    <p className="text-xs text-slate-500">{(importFile.size / 1024).toFixed(1)} KB</p>
+                    <button 
+                      type="button"
+                      onClick={() => setImportFile(null)}
+                      className="text-xs text-rose-500 font-bold hover:underline mt-2"
+                    >
+                      Remove File
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Click or drag CSV here</p>
+                    <p className="text-xs text-slate-500 font-medium">Only .csv files are supported</p>
+                    <input 
+                      type="file" 
+                      accept=".csv"
+                      onChange={(e) => setImportFile(e.target.files[0])}
+                      className="hidden"
+                      id="csv-upload"
+                    />
+                    <label 
+                      htmlFor="csv-upload"
+                      className="inline-block mt-4 text-xs font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-primary/10 hover:text-primary transition-premium"
+                    >
+                      Browse Files
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {importSummary && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl space-y-3 border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Import Summary</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-2 bg-emerald-500/5 rounded-lg border border-emerald-500/10 text-center">
+                      <p className="text-xl font-black text-emerald-500">{importSummary.summary.successCount}</p>
+                      <p className="text-[10px] font-bold text-emerald-600/70 uppercase">Success</p>
+                    </div>
+                    <div className="p-2 bg-rose-500/5 rounded-lg border border-rose-500/10 text-center">
+                      <p className="text-xl font-black text-rose-500">{importSummary.summary.validationErrorCount + importSummary.summary.duplicateErrorCount}</p>
+                      <p className="text-[10px] font-bold text-rose-600/70 uppercase">Failed</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                fullWidth 
+                icon={FileText}
+                disabled={!importFile}
+                isLoading={isImporting}
+              >
+                Process Import
+              </Button>
+            </form>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

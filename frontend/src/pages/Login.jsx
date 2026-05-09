@@ -52,54 +52,87 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-slate-950 overflow-hidden">
+    <div className="flex min-h-screen bg-white dark:bg-slate-950 overflow-hidden relative">
+      {/* Dynamic Background Elements for overall feel */}
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
+
       {/* Left Panel: Aesthetic Sidebar */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-primary overflow-hidden">
-        {/* Animated Background Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-700 to-indigo-900" />
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-white/5 rounded-full -mr-96 -mt-96 blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-dark/20 rounded-full -ml-48 -mb-48 blur-3xl" />
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
+        {/* Abstract Background Image */}
+        <img 
+          src="/premium_edu_dashboard_abstract_1778329981304.png" 
+          alt="Premium Education Background" 
+          className="absolute inset-0 w-full h-full object-cover scale-105 animate-slow-zoom"
+        />
         
+        {/* Overlay Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/90 via-primary/40 to-transparent mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/20 to-slate-900/80" />
+        
+        {/* Floating Glass Cards for depth */}
+        <div className="absolute top-[20%] right-[10%] w-32 h-32 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 rotate-12 animate-float-slow pointer-events-none" />
+        <div className="absolute bottom-[20%] left-[10%] w-24 h-24 bg-indigo-500/10 backdrop-blur-lg rounded-2xl border border-white/10 -rotate-12 animate-float pointer-events-none" />
+
         <div className="relative z-10 w-full flex flex-col justify-between p-16">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl">
-              <School className="w-7 h-7 text-primary" />
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-700">
+            <div className="w-14 h-14 bg-white/10 backdrop-blur-2xl rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
+              <School className="w-8 h-8 text-white" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight">GetPay</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black text-white tracking-tight leading-none">GetPay</span>
+              <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-[0.2em] mt-1">Enterprise ERP</span>
+            </div>
           </div>
 
-          <div className="max-w-md space-y-8 animate-in fade-in slide-in-from-top-2 duration-1000">
-            <h2 className="text-5xl font-black text-white leading-tight">
-              The Next Gen <br />
-              <span className="text-indigo-200">Education Hub.</span>
-            </h2>
-            <p className="text-lg text-indigo-100 font-medium leading-relaxed opacity-90">
-              Streamline financial operations, manage student lifecycles, and gain deep institutional insights with our premium ERP.
+          <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-bold text-indigo-100 uppercase tracking-widest">
+                <Zap className="w-3 h-3 text-yellow-400" />
+                Now with AI Insights
+              </div>
+              <h2 className="text-6xl font-black text-white leading-[1.1] tracking-tight">
+                Empower your <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-white">Institutional Vision.</span>
+              </h2>
+            </div>
+            <p className="text-xl text-indigo-50 font-medium leading-relaxed opacity-80 max-w-lg">
+              The definitive platform for managing financial lifecycles, student data, and operational excellence in education.
             </p>
             
-            <div className="grid grid-cols-2 gap-6 pt-4">
-              <div className="space-y-2">
-                <ShieldCheck className="w-6 h-6 text-indigo-300" />
-                <p className="text-sm font-bold text-white">Bank-grade Security</p>
-                <p className="text-xs text-indigo-200">AES-256 encrypted ledger.</p>
+            <div className="flex items-center gap-8 pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
+                  <ShieldCheck className="w-5 h-5 text-indigo-200" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Secure Ledger</p>
+                  <p className="text-[10px] text-indigo-200 font-medium">Bank-grade safety</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Zap className="w-6 h-6 text-indigo-300" />
-                <p className="text-sm font-bold text-white">Real-time Sync</p>
-                <p className="text-xs text-indigo-200">Zero lag payment tracking.</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
+                  <Globe className="w-5 h-5 text-indigo-200" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Global Access</p>
+                  <p className="text-[10px] text-indigo-200 font-medium">Cloud native power</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex -space-x-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="w-10 h-10 rounded-full border-2 border-primary bg-indigo-500 flex items-center justify-center text-[10px] font-black text-white shadow-xl">
-                  {String.fromCharCode(65 + i)}
-                </div>
-              ))}
+          <div className="flex items-center justify-between animate-in fade-in duration-1000 delay-700">
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="w-10 h-10 rounded-full border-2 border-indigo-900 bg-indigo-600 flex items-center justify-center text-[10px] font-black text-white shadow-xl overflow-hidden">
+                    <img src={`https://i.pravatar.cc/100?u=${i}`} alt="User" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs font-bold text-indigo-100">Joining 2,400+ Administrators today</p>
             </div>
-            <p className="text-sm font-bold text-indigo-100">Trusted by 200+ Institutions</p>
           </div>
         </div>
       </div>

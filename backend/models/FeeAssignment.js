@@ -22,6 +22,19 @@ const feeAssignmentSchema = new mongoose.Schema({
         ref: 'Fee',
         required: true
     },
+    feeTitle: {
+        type: String,
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    installmentName: {
+        type: String,
+        default: 'Full Payment'
+    },
     dueDate: {
         type: Date,
         required: true
@@ -33,7 +46,7 @@ const feeAssignmentSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-feeAssignmentSchema.index({ institutionId: 1, studentId: 1, feeId: 1 }, { unique: true });
+// Updated index to allow multiple installments for the same fee type
+feeAssignmentSchema.index({ institutionId: 1, studentId: 1, feeId: 1, installmentName: 1 }, { unique: true });
 
 module.exports = mongoose.model('FeeAssignment', feeAssignmentSchema);
-// This schema defines the structure for the FeeAssignment model, which links students to fees with a due date and status.

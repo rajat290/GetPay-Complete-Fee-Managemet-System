@@ -63,7 +63,7 @@ exports.assignFee = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const { studentId, feeId, dueDate } = req.body;
+    const { studentId, feeId, dueDate, amount, installmentName } = req.body;
     if (!studentId || !feeId || !dueDate) {
       return res.status(400).json({ message: "All fields required" });
     }
@@ -81,6 +81,9 @@ exports.assignFee = async (req, res) => {
       institutionId: req.institutionId,
       studentId,
       feeId,
+      feeTitle: fee.title,
+      amount: amount || fee.amount,
+      installmentName: installmentName || 'Full Payment',
       dueDate,
       status: "pending"
     });
@@ -96,12 +99,16 @@ exports.assignFee = async (req, res) => {
         feeId,
         studentId,
         dueDate,
-        amount: fee.amount
+        amount: assignment.amount,
+        installmentName: assignment.installmentName
       }
     });
 
     res.status(201).json(assignment);
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "This fee/installment is already assigned to this student" });
+    }
     console.error("Error assigning fee:", err);
     res.status(500).json({ message: "Server error" });
   }
@@ -114,17 +121,18 @@ exports.getStudentFees = async (req, res) => {
         institutionId: req.institutionId,
         studentId: req.user._id
       })
-      .populate("feeId")
+      .populate("feeId", "category")
       .sort({ dueDate: 1 });
 
     // Flatten the structure for frontend
     const formatted = assignments.map((a) => ({
       _id: a._id,
-      title: a.feeId?.title || "-",
-      amount: a.feeId?.amount || 0,
-      category: a.feeId?.category || "-",
+      title: a.installmentName && a.installmentName !== 'Full Payment' ? `${a.feeTitle} (${a.installmentName})` : a.feeTitle,
+      amount: a.amount,
+      category: a.feeId?.category || "Other",
       dueDate: a.dueDate,
       status: a.status,
+      installmentName: a.installmentName
     }));
     res.json(formatted);
   } catch (err) {
@@ -157,16 +165,17 @@ exports.getAllFeeAssignments = async (req, res) => {
 
     const assignments = await FeeAssignment.find({ institutionId: req.institutionId })
       .populate('studentId', 'name registrationNo')
-      .populate('feeId', 'title amount dueDate')
       .sort({ dueDate: 1 });
+
     // Format for frontend
     const formatted = assignments.map(a => ({
       _id: a._id,
       student: a.studentId ? { name: a.studentId.name, registrationNo: a.studentId.registrationNo } : null,
-      feeTitle: a.feeId?.title || '-',
-      amount: a.feeId?.amount || 0,
-      dueDate: a.feeId?.dueDate || a.dueDate,
+      feeTitle: a.installmentName && a.installmentName !== 'Full Payment' ? `${a.feeTitle} (${a.installmentName})` : a.feeTitle,
+      amount: a.amount,
+      dueDate: a.dueDate,
       status: a.status,
+      installmentName: a.installmentName
     }));
     res.json(formatted);
   } catch (err) {
@@ -186,7 +195,7 @@ exports.bulkAssignFee = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const { feeId, dueDate, className, studentIds = [] } = req.body;
+    const { feeId, dueDate, className, studentIds = [], installments = [] } = req.body;
 
     if (!className && (!Array.isArray(studentIds) || studentIds.length === 0)) {
       return res.status(400).json({ message: "Provide className or studentIds" });
@@ -198,74 +207,63 @@ exports.bulkAssignFee = async (req, res) => {
     }
 
     const studentQuery = { institutionId: req.institutionId, role: "student" };
+    if (className) studentQuery.className = className;
+    if (Array.isArray(studentIds) && studentIds.length > 0) studentQuery._id = { $in: studentIds };
 
-    if (className) {
-      studentQuery.className = className;
+    const students = await Student.find(studentQuery).select("_id name");
+    if (students.length === 0) return res.status(404).json({ message: "No matching students found" });
+
+    // Prepare installment list
+    const installmentList = installments.length > 0 
+      ? installments 
+      : [{ name: 'Full Payment', amount: fee.amount, dueDate: dueDate || fee.dueDate }];
+
+    const assignmentsToCreate = [];
+    const skippedCount = 0;
+
+    for (const student of students) {
+      for (const inst of installmentList) {
+        assignmentsToCreate.push({
+          institutionId: req.institutionId,
+          academicSessionId: fee.academicSessionId,
+          studentId: student._id,
+          feeId,
+          feeTitle: fee.title,
+          amount: inst.amount,
+          installmentName: inst.name,
+          dueDate: inst.dueDate,
+          status: "pending"
+        });
+      }
     }
 
-    if (Array.isArray(studentIds) && studentIds.length > 0) {
-      studentQuery._id = { $in: studentIds };
-    }
-
-    const students = await Student.find(studentQuery).select("_id name registrationNo className");
-
-    if (students.length === 0) {
-      return res.status(404).json({ message: "No matching students found" });
-    }
-
-    const existingAssignments = await FeeAssignment.find({
-      institutionId: req.institutionId,
-      feeId,
-      studentId: { $in: students.map((student) => student._id) }
-    }).select("studentId");
-
-    const existingStudentIds = new Set(existingAssignments.map((assignment) => assignment.studentId.toString()));
-    const assignmentsToCreate = students
-      .filter((student) => !existingStudentIds.has(student._id.toString()))
-      .map((student) => ({
-        institutionId: req.institutionId,
-        academicSessionId: fee.academicSessionId,
-        studentId: student._id,
-        feeId,
-        dueDate,
-        status: "pending"
-      }));
-
-    const createdAssignments = assignmentsToCreate.length > 0
-      ? await FeeAssignment.insertMany(assignmentsToCreate, { ordered: false })
-      : [];
+    // Use insertMany with ordered: false to skip duplicates
+    const result = await FeeAssignment.insertMany(assignmentsToCreate, { ordered: false }).catch(err => {
+      // Partial success is fine for bulk
+      return err.insertedDocs || [];
+    });
 
     await logAdminAction({
       req,
       action: "fee.bulk_assigned",
       entityType: "FeeAssignment",
       entityId: fee._id,
-      summary: `Bulk assigned ${fee.title} to ${createdAssignments.length} students`,
+      summary: `Bulk assigned ${fee.title} to ${students.length} students (${installments.length || 1} installments each)`,
       metadata: {
         feeId,
         className: className || null,
-        requestedStudentIds: studentIds,
-        matchedStudents: students.length,
-        createdCount: createdAssignments.length,
-        skippedCount: existingAssignments.length,
-        createdAssignmentIds: createdAssignments.map((assignment) => assignment._id),
-        skippedStudentIds: Array.from(existingStudentIds)
+        createdCount: result.length,
+        installmentCount: installmentList.length
       }
     });
 
     res.status(201).json({
-      feeId,
-      matchedStudents: students.length,
-      createdCount: createdAssignments.length,
-      skippedCount: existingAssignments.length,
-      createdAssignmentIds: createdAssignments.map((assignment) => assignment._id),
-      skippedStudentIds: Array.from(existingStudentIds)
+      message: "Bulk assignment completed",
+      createdCount: result.length,
+      matchedStudents: students.length
     });
   } catch (err) {
     console.error("Error bulk assigning fee:", err);
-    if (err.code === 11000) {
-      return res.status(409).json({ message: "Some fee assignments already exist" });
-    }
     res.status(500).json({ message: "Server error" });
   }
 };

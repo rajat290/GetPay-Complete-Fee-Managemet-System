@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs");
 const { 
   getAllStudents, 
   createStudent, 
@@ -20,7 +21,9 @@ const {
   getReminderCampaigns,
   createReminderCampaign,
   updateReminderCampaign,
-  runSavedReminderCampaign
+  runSavedReminderCampaign,
+  importStudents,
+  getDailyAccountingSummary
 } = require("../controllers/adminController");
 const {
   getPermissionCatalog,
@@ -51,7 +54,34 @@ const {
   staffParamsSchema
 } = require("../validators/adminValidators");
 
+const multer = require("multer");
+const path = require("path");
 const router = express.Router();
+
+// Multer setup for CSV imports
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, "../../uploads");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `import-${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ 
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "text/csv") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only CSV files are allowed"), false);
+    }
+  }
+});
 
 router.use(protect, requireAdminOrStaff);
 
@@ -90,6 +120,9 @@ router.post("/students", requireModule("student_management"), requirePermission(
 
 // POST /admin/students/invite - Invite a student to activate their account
 router.post("/students/invite", requireModule("student_management"), requirePermission("student.create"), validateRequest(inviteStudentSchema), inviteStudent);
+
+// POST /admin/students/import - Bulk import students from CSV
+router.post("/students/import", requireModule("student_management"), requirePermission("student.create"), upload.single("file"), importStudents);
 
 // GET /admin/students/:studentId/ledger - Get student ledger
 router.get("/students/:studentId/ledger", requireModule("fee_management"), requirePermission("fee.view"), validateRequest(studentLedgerSchema), getStudentLedger);
@@ -138,5 +171,8 @@ router.post("/reminder-campaigns/:campaignId/run", requireModule("finance_operat
 
 // GET /admin/payments/:paymentId - Get payment details
 router.get("/payments/:paymentId", requireModule("finance_operations"), requirePermission("fee.collect"), validateRequest(paymentDetailsSchema), getPaymentDetails);
+
+// GET /admin/reports/daily-summary - Export daily collection summary
+router.get("/reports/daily-summary", requireModule("finance_operations"), requirePermission("report.export"), getDailyAccountingSummary);
 
 module.exports = router;

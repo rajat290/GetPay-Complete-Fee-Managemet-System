@@ -18,6 +18,7 @@ const receiptRoutes = require("./routes/receiptRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const superAdminRoutes = require("./routes/superAdminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const { startOverdueSyncJob } = require("./services/overdueSyncService");
 
 connectDB();
 
@@ -90,4 +91,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => logger.info("server_started", { port: PORT }));
+app.listen(PORT, () => {
+  logger.info("server_started", { port: PORT });
+  startOverdueSyncJob();
+});

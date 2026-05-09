@@ -16,9 +16,11 @@ import {
 } from "react-icons/fi";
 import { AuthContext } from "../context/authContextValue";
 import { ThemeContext } from "../context/themeContextValue";
+import api from "../services/api";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [enabledModules, setEnabledModules] = useState([]);
   const { user, logout } = useContext(AuthContext);
   const { theme, toggleTheme } = useContext(ThemeContext);
   const location = useLocation();
@@ -40,17 +42,30 @@ export default function AdminLayout() {
     setSidebarOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const loadModuleAccess = async () => {
+      try {
+        const res = await api.get("/admin/institution");
+        setEnabledModules(res.data.enabledModules || []);
+      } catch {
+        setEnabledModules([]);
+      }
+    };
+
+    loadModuleAccess();
+  }, []);
+
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: FiHome },
-    { name: 'Manage Students', href: '/admin/students', icon: FiUsers },
-    { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard },
-    { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2 },
-    { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase },
-    { name: 'Reminder Campaigns', href: '/admin/reminder-campaigns', icon: FiClock },
-    { name: 'Audit Trail', href: '/admin/audit-trail', icon: FiShield },
-    { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp },
-    { name: 'Settings', href: '/admin/settings', icon: FiSettings },
-  ];
+    { name: 'Manage Students', href: '/admin/students', icon: FiUsers, module: 'student_management' },
+    { name: 'Manage Fees', href: '/admin/fees', icon: FiCreditCard, module: 'fee_management' },
+    { name: 'Manage Payments', href: '/admin/payments', icon: FiBarChart2, module: 'finance_operations' },
+    { name: 'Finance Workspace', href: '/admin/finance', icon: FiBriefcase, module: 'finance_operations' },
+    { name: 'Reminder Campaigns', href: '/admin/reminder-campaigns', icon: FiClock, module: 'finance_operations' },
+    { name: 'Audit Trail', href: '/admin/audit-trail', icon: FiShield, module: 'audit_trail' },
+    { name: 'Analytics', href: '/admin/analytics', icon: FiTrendingUp, module: 'analytics' },
+    { name: 'Settings', href: '/admin/settings', icon: FiSettings, module: 'settings' },
+  ].filter((item) => !item.module || enabledModules.length === 0 || enabledModules.includes(item.module));
 
   const isActive = (href) => location.pathname === href;
 

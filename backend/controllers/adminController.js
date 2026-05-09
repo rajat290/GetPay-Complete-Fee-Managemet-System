@@ -11,6 +11,7 @@ const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 const { sendDueReminders, runReminderCampaign } = require("../services/feeReminderService");
+const { getEnabledModules } = require("../services/moduleAccessService");
 const {
   buildSubscriptionSummary,
   assertCanAddStudent,
@@ -48,6 +49,7 @@ exports.getInstitutionSettings = async (req, res) => {
     const subscriptionSummary = await buildSubscriptionSummary(institution);
     const institutionObj = institution.toObject();
     institutionObj.subscriptionSummary = subscriptionSummary;
+    institutionObj.enabledModules = getEnabledModules(institution);
 
     res.json(institutionObj);
   } catch (err) {
@@ -104,6 +106,7 @@ exports.updateInstitutionSettings = async (req, res) => {
     const subscriptionSummary = await buildSubscriptionSummary(institution);
     const institutionObj = institution.toObject();
     institutionObj.subscriptionSummary = subscriptionSummary;
+    institutionObj.enabledModules = getEnabledModules(institution);
 
     res.json(institutionObj);
   } catch (err) {

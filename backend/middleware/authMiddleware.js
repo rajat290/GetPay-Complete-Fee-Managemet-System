@@ -8,7 +8,7 @@ exports.protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await Student.findById(decoded.id).select("-password").populate("institutionId", "name code type isActive subscription");
+      const user = await Student.findById(decoded.id).select("-password").populate("institutionId", "name code type isActive subscription enabledModules");
       
       if (!user) {
         return res.status(401).json({ error: "User not found" });

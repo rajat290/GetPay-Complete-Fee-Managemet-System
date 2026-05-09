@@ -32,6 +32,10 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   .dark body {
     background: #020617;
     color: #f1f5f9;
@@ -158,4 +162,18 @@
 
 * {
   transition: background-color 300ms ease, border-color 300ms ease;
+}
+
+.getpay-site {
+  cursor: default;
+}
+
+.getpay-site a,
+.getpay-site button {
+  cursor: pointer;
+}
+
+.getpay-site::selection {
+  background: #00d26a;
+  color: #06120c;
 }

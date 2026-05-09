@@ -1,27 +1,42 @@
-import { useState, useEffect } from "react";
-import { motion, useScroll } from "framer-motion";
-import { 
-  ShieldCheck, 
-  Zap, 
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  motion,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform
+} from "framer-motion";
+import {
   ArrowRight,
-  Globe,
-  Play,
-  CheckCircle2,
   BadgeIndianRupee,
-  Users
+  BellRing,
+  Building2,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
+  LockKeyhole,
+  ReceiptText,
+  ShieldCheck,
+  Sparkles,
+  WalletCards
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import Button from "../components/common/Button";
 import api from "../services/api";
 
 const fallbackContent = {
-  announcement: { enabled: false, text: "", ctaLabel: "Start trial", ctaPath: "/trial" },
+  announcement: {
+    enabled: true,
+    text: "Now accepting early pilot institutions for GetPay Education.",
+    ctaLabel: "Start trial",
+    ctaPath: "/trial"
+  },
   hero: {
-    eyebrow: "The Modern Standard for Education",
-    title: "Institutional Trust.\nPerfectly Handled.",
-    subtitle: "GetPay is the premium ERP architecture designed to secure institutional revenue, automate recovery, and provide absolute financial transparency.",
-    primaryCtaLabel: "Launch Your Trial",
-    secondaryCtaLabel: "Watch Product Tour"
+    eyebrow: "Fee operations for serious institutions",
+    title: "Collect fees without the daily chase",
+    subtitle:
+      "GetPay gives schools, colleges, and coaching institutes one controlled system for fee assignment, online payments, reminders, receipts, ledgers, and owner-level visibility.",
+    primaryCtaLabel: "Start 14-day trial",
+    secondaryCtaLabel: "Book a demo"
   },
   contact: {
     email: "sales@getpay.in",
@@ -30,35 +45,205 @@ const fallbackContent = {
   pricingPlans: []
 };
 
-const FeatureCard = ({ icon: Icon, title, description, delay, className = "" }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.8, delay, ease: [0.23, 1, 0.32, 1] }}
-    className={`group relative p-10 bg-white border border-slate-200/60 shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-premium overflow-hidden rounded-[2.5rem] ${className}`}
-  >
-    <div className="relative z-10">
-      <div className="w-16 h-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center mb-8 group-hover:rotate-6 transition-premium">
-        <Icon className="w-8 h-8 text-primary" />
-      </div>
-      <h3 className="text-2xl font-display font-black text-slate-900 mb-4 tracking-tight">{title}</h3>
-      <p className="text-slate-500 leading-relaxed font-medium text-lg">{description}</p>
-    </div>
-  </motion.div>
-);
+const modules = [
+  {
+    title: "Fee Control",
+    text: "Create fee plans, assign installments, collect online or offline, and reconcile without spreadsheet drift.",
+    icon: BadgeIndianRupee
+  },
+  {
+    title: "Smart Reminders",
+    text: "Schedule payment nudges for due, overdue, and partial-payment cases with campaign history.",
+    icon: BellRing
+  },
+  {
+    title: "Receipts & Ledger",
+    text: "Generate branded receipts only after verified collection and keep student-wise ledgers clean.",
+    icon: ReceiptText
+  },
+  {
+    title: "SaaS Control",
+    text: "Plans, modules, risk controls, billing status, trials, audits, and institution lifecycle in one owner console.",
+    icon: ShieldCheck
+  }
+];
 
-export default function Landing() {
-  const { scrollY } = useScroll();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [content, setContent] = useState(fallbackContent);
-  const [loadError, setLoadError] = useState("");
+const proof = [
+  ["30%", "less follow-up time"],
+  ["10x", "faster fee visibility"],
+  ["24/7", "parent payment access"],
+  ["100%", "auditable actions"]
+];
+
+const SplitText = ({ text, className = "" }) => {
+  const letters = useMemo(() => text.split(""), [text]);
+
+  return (
+    <span className={className} aria-label={text}>
+      {letters.map((letter, index) => (
+        <motion.span
+          aria-hidden="true"
+          className="inline-block"
+          initial={{ opacity: 0, y: 42, rotateX: -80, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, rotateX: 0, filter: "blur(0px)" }}
+          transition={{
+            delay: 0.018 * index,
+            duration: 0.72,
+            ease: [0.16, 1, 0.3, 1]
+          }}
+          style={{ transformOrigin: "50% 80%" }}
+        >
+          {letter === " " ? "\u00A0" : letter}
+        </motion.span>
+      ))}
+    </span>
+  );
+};
+
+const MagneticLink = ({ to, children, className = "", variant = "primary" }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 180, damping: 18 });
+  const springY = useSpring(y, { stiffness: 180, damping: 18 });
+
+  const onMouseMove = (event) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    x.set((event.clientX - rect.left - rect.width / 2) * 0.22);
+    y.set((event.clientY - rect.top - rect.height / 2) * 0.22);
+  };
+
+  const reset = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  const base =
+    variant === "primary"
+      ? "bg-[#00d26a] text-[#06120c] shadow-[0_18px_50px_rgba(0,210,106,0.34)]"
+      : "border border-black/10 bg-white/80 text-[#101412] backdrop-blur-xl";
+
+  return (
+    <motion.div ref={ref} style={{ x: springX, y: springY }} onMouseMove={onMouseMove} onMouseLeave={reset}>
+      <Link
+        to={to}
+        className={`group inline-flex h-16 items-center justify-center gap-3 rounded-full px-8 text-sm font-black uppercase tracking-[0.16em] transition duration-500 hover:scale-[1.03] ${base} ${className}`}
+      >
+        {children}
+        <ArrowRight className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1" />
+      </Link>
+    </motion.div>
+  );
+};
+
+const ProductMockup = () => {
+  const rows = [
+    ["Class XI - Science", "Rs. 8.4L", "82%", "Due today"],
+    ["B.Com Sem 2", "Rs. 5.1L", "67%", "Reminder sent"],
+    ["Hostel Block A", "Rs. 2.8L", "91%", "Settled"]
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 80, rotateX: 10 }}
+      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+      transition={{ duration: 1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="relative mx-auto max-w-5xl rounded-[2.2rem] border border-white/70 bg-[#101412] p-3 shadow-[0_50px_120px_rgba(0,0,0,0.28)]"
+    >
+      <div className="rounded-[1.7rem] bg-[#f8fbf7] p-4 md:p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="h-3 w-3 rounded-full bg-[#ff6b57]" />
+            <span className="h-3 w-3 rounded-full bg-[#ffcb45]" />
+            <span className="h-3 w-3 rounded-full bg-[#00d26a]" />
+          </div>
+          <div className="rounded-full border border-black/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-black/55">
+            Live Control Room
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-[1.35rem] border border-black/10 bg-white p-5">
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-black/45">Today collected</p>
+                <p className="mt-3 text-5xl font-black tracking-[-0.06em] text-[#101412]">Rs. 12.8L</p>
+              </div>
+              <div className="rounded-full bg-[#00d26a]/15 px-4 py-2 text-xs font-black text-[#007d3f]">+18.4%</div>
+            </div>
+            <div className="flex h-52 items-end gap-2">
+              {[42, 68, 45, 78, 55, 86, 72, 95, 66, 88, 61, 92].map((height, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ height: 0 }}
+                  animate={{ height: `${height}%` }}
+                  transition={{ delay: 0.65 + index * 0.04, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex-1 rounded-t-full bg-[#00d26a]"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-[1.35rem] border border-black/10 bg-[#fff7d7] p-5">
+              <div className="mb-5 flex items-center justify-between">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-black/50">Payment status</p>
+                <WalletCards className="h-5 w-5 text-[#101412]" />
+              </div>
+              <div className="space-y-3">
+                {rows.map(([name, value, percent, state]) => (
+                  <div key={name} className="rounded-2xl bg-white/70 p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="text-sm font-black text-[#101412]">{name}</span>
+                      <span className="text-sm font-black text-[#101412]">{value}</span>
+                    </div>
+                    <div className="mb-2 h-2 overflow-hidden rounded-full bg-black/10">
+                      <div className="h-full rounded-full bg-[#101412]" style={{ width: percent }} />
+                    </div>
+                    <p className="text-xs font-bold text-black/45">{state}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const Cursor = () => {
+  const x = useMotionValue(-100);
+  const y = useMotionValue(-100);
+  const smoothX = useSpring(x, { stiffness: 500, damping: 40 });
+  const smoothY = useSpring(y, { stiffness: 500, damping: 40 });
 
   useEffect(() => {
-    return scrollY.onChange((latest) => {
-      setIsScrolled(latest > 50);
-    });
-  }, [scrollY]);
+    const move = (event) => {
+      x.set(event.clientX - 16);
+      y.set(event.clientY - 16);
+    };
+    window.addEventListener("mousemove", move);
+    return () => window.removeEventListener("mousemove", move);
+  }, [x, y]);
+
+  return (
+    <motion.div
+      className="pointer-events-none fixed left-0 top-0 z-[80] hidden h-8 w-8 rounded-full border border-[#00d26a]/70 mix-blend-difference lg:block"
+      style={{ x: smoothX, y: smoothY }}
+    />
+  );
+};
+
+export default function Landing() {
+  const { scrollYProgress } = useScroll();
+  const [content, setContent] = useState(fallbackContent);
+  const [loadError, setLoadError] = useState("");
+  const heroY = useTransform(scrollYProgress, [0, 0.35], [0, -170]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.35], [1, 0.92]);
+  const bandX = useTransform(scrollYProgress, [0.12, 0.62], ["0%", "-22%"]);
+  const panelRotate = useTransform(scrollYProgress, [0.18, 0.58], [-6, 6]);
 
   useEffect(() => {
     const loadContent = async () => {
@@ -66,7 +251,7 @@ export default function Landing() {
         const res = await api.get("/public/website-content");
         setContent({ ...fallbackContent, ...res.data });
       } catch {
-        setLoadError("Live website settings are unavailable. Showing default product information.");
+        setLoadError("Website settings are offline. Showing default GetPay content.");
       }
     };
 
@@ -74,346 +259,305 @@ export default function Landing() {
   }, []);
 
   const visiblePlans = (content.pricingPlans || []).filter((plan) => plan.isVisible !== false);
-  const growthPlan = visiblePlans.find((plan) => plan.isPopular) || visiblePlans[1] || visiblePlans[0];
+  const recommendedPlan = visiblePlans.find((plan) => plan.isPopular) || visiblePlans[1] || visiblePlans[0];
 
   return (
-    <div className="min-h-screen bg-[#F0F4F4] text-slate-900 selection:bg-primary selection:text-white overflow-x-hidden font-sans">
-      {/* Mesh Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-float-slow" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/30 blur-[100px] animate-float" />
-        <div className="absolute inset-0 bg-grain opacity-[0.03]" />
-      </div>
+    <main className="getpay-site min-h-screen overflow-x-hidden bg-[#f5f3e8] text-[#101412]">
+      <Cursor />
 
-      {/* Floating Pill Navigation */}
-      <div className="fixed top-8 w-full z-50 flex justify-center px-6">
-        <motion.nav 
-          animate={{ 
-            width: isScrolled ? "90%" : "100%",
-            maxWidth: isScrolled ? "800px" : "1200px",
-            y: isScrolled ? 0 : 0
-          }}
-          className="flex items-center justify-between backdrop-blur-2xl bg-white/80 border border-white shadow-2xl shadow-black/5 px-8 py-4 rounded-[2rem] transition-all duration-700"
-        >
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="font-display font-black text-xl text-white">G</span>
-            </div>
-            <span className="font-display font-black text-2xl tracking-tighter uppercase text-slate-900">GetPay</span>
+      <motion.nav
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed left-1/2 top-5 z-50 flex w-[calc(100%-24px)] max-w-6xl -translate-x-1/2 items-center justify-between rounded-full border border-black/10 bg-[#fffdf4]/85 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.08)] backdrop-blur-2xl md:px-6"
+      >
+        <Link to="/" className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-[#00d26a] text-lg font-black text-[#06120c]">
+            G
+          </span>
+          <span className="text-xl font-black tracking-[-0.06em]">GetPay</span>
+        </Link>
+        <div className="hidden items-center gap-7 lg:flex">
+          {[
+            ["Platform", "#platform"],
+            ["Proof", "#proof"],
+            ["Pricing", "#pricing"],
+            ["Trust", "#trust"]
+          ].map(([label, href]) => (
+            <a key={label} href={href} className="text-xs font-black uppercase tracking-[0.18em] text-black/50 hover:text-black">
+              {label}
+            </a>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/login" className="hidden rounded-full px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-black/60 hover:text-black sm:block">
+            Portal
           </Link>
-          
-          <div className="hidden lg:flex items-center gap-10">
-            {["Platform", "Solutions", "Pricing"].map(item => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-black text-slate-500 hover:text-primary transition-premium uppercase tracking-widest">
-                {item}
-              </a>
-            ))}
+          <Link to="/trial" className="rounded-full bg-[#101412] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white">
+            Start Trial
+          </Link>
+        </div>
+      </motion.nav>
+
+      <section className="relative min-h-screen px-4 pb-16 pt-32 md:px-8">
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div style={{ x: bandX }} className="absolute left-[-10%] top-28 flex gap-6 whitespace-nowrap text-[16vw] font-black leading-none tracking-[-0.08em] text-black/[0.035]">
+            <span>REMIND</span>
+            <span>COLLECT</span>
+            <span>RECEIPT</span>
+            <span>REPORT</span>
+          </motion.div>
+          <div className="absolute right-8 top-32 h-40 w-40 rounded-full border border-black/10 bg-[#00d26a]/30 blur-2xl" />
+          <div className="absolute bottom-16 left-6 h-48 w-48 rounded-full border border-black/10 bg-[#ffe36e]/50 blur-3xl" />
+        </div>
+
+        <motion.div style={{ y: heroY, scale: heroScale }} className="relative mx-auto max-w-7xl">
+          <div className="mb-8 flex flex-col gap-4 pt-6 md:flex-row md:items-center md:justify-between">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-black/55 backdrop-blur-xl">
+              <Sparkles className="h-4 w-4 text-[#00a954]" />
+              {content.hero?.eyebrow || fallbackContent.hero.eyebrow}
+            </div>
+            {(content.announcement?.enabled || loadError) && (
+              <div className="max-w-xl rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm font-bold text-black/60 backdrop-blur-xl">
+                {loadError || content.announcement.text}
+                {!loadError && (
+                  <Link to={content.announcement.ctaPath || "/trial"} className="ml-3 text-black underline underline-offset-4">
+                    {content.announcement.ctaLabel || "Start trial"}
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="hidden sm:block text-sm font-black text-slate-500 hover:text-slate-900 transition-premium uppercase tracking-widest">
-              Portal
-            </Link>
-            <Link to="/trial">
-              <Button className="rounded-2xl px-8 h-12 bg-primary text-white hover:bg-primary-dark border-none font-black shadow-xl shadow-primary/20 transition-premium hover:scale-105 active:scale-95">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </motion.nav>
-      </div>
-
-      <div className="relative z-10 pt-32 pb-4 px-6 flex justify-center">
-        {content.announcement?.enabled && (
-          <div className="border border-blue-200 bg-blue-50/80 backdrop-blur-md px-6 py-3 rounded-full text-center text-sm font-semibold text-blue-800 animate-fade-in shadow-sm shadow-blue-500/10">
-            {content.announcement.text}
-            <Link to={content.announcement.ctaPath || "/trial"} className="ml-3 underline underline-offset-4 hover:text-blue-900 transition-colors">
-              {content.announcement.ctaLabel || "Start trial"}
-            </Link>
-          </div>
-        )}
-
-        {loadError && (
-          <div className="rounded-full border border-amber-200 bg-amber-50/80 backdrop-blur-md px-6 py-3 text-sm text-amber-800 animate-fade-in shadow-sm shadow-amber-500/10">
-            {loadError}
-          </div>
-        )}
-      </div>
-
-      {/* Hero Section */}
-      <section className="relative pt-10 pb-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
-            >
-              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-10 shadow-sm shadow-primary/5">
-                <CheckCircle2 className="w-3 h-3" /> {content.hero?.eyebrow}
-              </span>
-              <h1 className="text-7xl md:text-8xl font-display font-black tracking-tighter leading-[0.85] mb-10 text-slate-900 whitespace-pre-line">
-                {content.hero?.title}
+          <div className="grid items-end gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+            <div>
+              <h1 className="max-w-5xl text-[16vw] font-black leading-[0.78] tracking-[-0.095em] md:text-[9.2rem] lg:text-[10.6rem]">
+                <SplitText text={content.hero?.title || fallbackContent.hero.title} />
               </h1>
-              <p className="max-w-xl text-xl text-slate-500 font-medium leading-relaxed mb-12">
-                {content.hero?.subtitle}
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <Link to="/trial">
-                  <Button className="rounded-[1.5rem] px-12 h-20 bg-primary text-white hover:bg-primary-dark border-none font-black text-xl shadow-2xl shadow-primary/40 group relative overflow-hidden">
-                    <span className="relative z-10 flex items-center">
-                      {content.hero?.primaryCtaLabel || "Launch Your Trial"} <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-premium" />
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  </Button>
-                </Link>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full border-2 border-primary/20 flex items-center justify-center cursor-pointer hover:bg-primary/5 transition-premium group">
-                    <Play className="w-5 h-5 text-primary fill-primary group-hover:scale-110 transition-premium" />
-                  </div>
-                  <span className="text-sm font-black uppercase tracking-widest text-slate-400">{content.hero?.secondaryCtaLabel || "Watch Product Tour"}</span>
+              <div className="mt-8 grid gap-8 md:grid-cols-[0.9fr_1fr] md:items-end">
+                <p className="max-w-2xl text-lg font-semibold leading-8 text-black/62 md:text-xl">
+                  {content.hero?.subtitle || fallbackContent.hero.subtitle}
+                </p>
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  <MagneticLink to="/trial">{content.hero?.primaryCtaLabel || "Start trial"}</MagneticLink>
+                  <MagneticLink to="/contact?type=request_demo" variant="secondary">
+                    {content.hero?.secondaryCtaLabel || "Book demo"}
+                  </MagneticLink>
                 </div>
               </div>
-
-              {/* Trust Badge */}
-              <div className="mt-20 pt-10 border-t border-slate-200 flex items-center gap-10">
-                <div className="flex -space-x-4">
-                  {[1,2,3,4].map(i => (
-                    <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-slate-200 overflow-hidden shadow-sm">
-                      <img src={`https://i.pravatar.cc/100?u=${i}`} alt="User" />
-                    </div>
-                  ))}
-                </div>
-                <div className="text-sm font-black text-slate-400 uppercase tracking-widest leading-none">
-                  Trusted by <span className="text-slate-900">500+</span> Academic Leaders
-                </div>
-              </div>
-            </motion.div>
+            </div>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.8, rotateY: -10 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              transition={{ duration: 1.2, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              className="relative perspective-1000"
+              style={{ rotate: panelRotate }}
+              className="rounded-[2rem] border border-black/10 bg-[#101412] p-6 text-white shadow-[0_35px_80px_rgba(0,0,0,0.24)]"
             >
-              <div className="relative rounded-[4rem] bg-white p-6 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-slate-100 group">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-[3rem] blur-2xl animate-float" />
-                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-100 rounded-[3rem] blur-3xl animate-float-slow" />
-                
-                <img 
-                  src="https://images.unsplash.com/photo-1551288049-bbda3865c170?auto=format&fit=crop&q=80&w=2426" 
-                  alt="Interface" 
-                  className="rounded-[3rem] shadow-sm group-hover:scale-[1.02] transition-premium duration-1000"
-                />
-
-                {/* Floating Widget */}
-                <motion.div 
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-20 -right-12 bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-100 max-w-[200px]"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recovery</span>
+              <div className="mb-12 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/35">This month</p>
+                  <p className="mt-2 text-5xl font-black tracking-[-0.08em]">Rs. 48.2L</p>
+                </div>
+                <div className="rounded-full bg-[#00d26a] px-4 py-2 text-xs font-black text-[#06120c]">Live</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {proof.map(([value, label]) => (
+                  <div key={label} className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
+                    <p className="text-3xl font-black tracking-[-0.06em] text-[#00d26a]">{value}</p>
+                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-white/45">{label}</p>
                   </div>
-                  <div className="text-2xl font-display font-black text-emerald-600">+85%</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase mt-1">Efficiency Boost</div>
-                </motion.div>
+                ))}
               </div>
             </motion.div>
           </div>
+
+          <div className="mt-16">
+            <ProductMockup />
+          </div>
+        </motion.div>
+      </section>
+
+      <section id="platform" className="relative px-4 py-24 md:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-14 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+            <h2 className="max-w-3xl text-6xl font-black leading-[0.86] tracking-[-0.08em] md:text-8xl">
+              Built for the fee desk and the owner cabin.
+            </h2>
+            <p className="max-w-md text-lg font-semibold leading-8 text-black/55">
+              Institutions need speed, but they also need control. GetPay combines operational screens with Super Admin governance.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {modules.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <motion.article
+                  key={item.title}
+                  initial={{ opacity: 0, y: 60 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 0.75, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  className="group min-h-[22rem] rounded-[2rem] border border-black/10 bg-white/70 p-6 backdrop-blur-xl transition duration-500 hover:-translate-y-2 hover:bg-white"
+                >
+                  <div className="mb-16 grid h-14 w-14 place-items-center rounded-2xl bg-[#101412] text-[#00d26a] transition duration-500 group-hover:rotate-6">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-3xl font-black tracking-[-0.06em]">{item.title}</h3>
+                  <p className="mt-5 text-base font-semibold leading-7 text-black/55">{item.text}</p>
+                </motion.article>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* Feature Bento Grid */}
-      <section id="platform" className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24">
-            <h2 className="text-5xl md:text-6xl font-display font-black mb-8 tracking-tighter">Everything to run your <br /> <span className="text-primary italic">Empire.</span></h2>
-            <div className="w-24 h-2 bg-primary mx-auto rounded-full" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard 
-              className="md:col-span-2 md:row-span-1"
-              icon={BadgeIndianRupee}
-              title="Fee Collection & Reconciliation"
-              description="Collect online and offline payments with verified receipts and payment history. Daily collections, dues, defaulters, ledgers, and gateway reconciliation in real-time."
-              delay={0.1}
-            />
-            <FeatureCard 
-              icon={ShieldCheck}
-              title="Controls & Audit"
-              description="Tenant isolation, RBAC, module access, billing lifecycle, and audit trails ensure complete compliance and accountability."
-              delay={0.2}
-            />
-            <FeatureCard 
-              icon={Zap}
-              title="Hyper-Automation"
-              description="One-click reminder campaigns across WhatsApp, SMS, and Email."
-              delay={0.3}
-            />
-            <FeatureCard 
-              className="md:col-span-2"
-              icon={Users}
-              title="Student Operations"
-              description="Import students, assign fees, track dues, and manage institution-level workflows seamlessly. Scale from one branch to one hundred without breaking a sweat."
-              delay={0.4}
-            />
-          </div>
-        </div>
+      <section id="proof" className="overflow-hidden bg-[#101412] py-20 text-white">
+        <motion.div style={{ x: bandX }} className="flex gap-8 whitespace-nowrap text-7xl font-black tracking-[-0.08em] md:text-9xl">
+          {["NO SPREADSHEET CHAOS", "NO MISSED DUES", "NO RECEIPT CONFUSION"].map((item) => (
+            <span key={item} className="text-white/90">
+              {item} <span className="text-[#00d26a]">/</span>
+            </span>
+          ))}
+        </motion.div>
       </section>
 
-      {/* Social Proof Slider */}
-      <section id="solutions" className="py-20 border-y border-slate-200 bg-white overflow-hidden">
-        <div className="flex animate-in slide-in-from-left duration-1000 opacity-50 whitespace-nowrap gap-20 items-center justify-center px-10 grayscale">
-          {["OXFORD", "CAMBRIDGE", "STANFORD", "HARVARD", "MIT", "IIT", "BITS"].map(name => (
-            <span key={name} className="text-3xl font-display font-black text-slate-300 tracking-[0.5em]">{name}</span>
+      <section className="px-4 py-24 md:px-8">
+        <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-3">
+          {[
+            ["Assign", "Upload students, group them by class/batch, create fee plans, and assign dues in controlled batches.", Building2],
+            ["Collect", "Let parents pay online while admins record verified offline payments with receipt discipline.", WalletCards],
+            ["Close", "Run daily collection reports, pending dues, reconciliation, and student-wise ledgers before month-end.", FileText]
+          ].map(([title, text, Icon], index) => (
+            <motion.div
+              key={title}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.75, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-[2rem] border border-black/10 bg-white p-8"
+            >
+              <div className="mb-20 flex items-center justify-between">
+                <Icon className="h-8 w-8 text-[#00a954]" />
+                <span className="text-sm font-black text-black/30">0{index + 1}</span>
+              </div>
+              <h3 className="text-5xl font-black tracking-[-0.08em]">{title}</h3>
+              <p className="mt-5 text-lg font-semibold leading-8 text-black/55">{text}</p>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Pricing - The 'Cofee' Style */}
-      <section id="pricing" className="py-32 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div>
-              <h2 className="text-5xl font-display font-black mb-8 tracking-tight">Transparent <span className="text-primary">pricing</span> <br /> that grows with you.</h2>
-              <p className="text-xl text-slate-500 font-medium leading-relaxed mb-10">
-                No hidden setup fees. No complex contracts. Start small, scale fast.
-              </p>
-              <ul className="space-y-6">
-                {[
-                  "14-Day Free Trial on all plans",
-                  "Cancel or switch plans anytime",
-                  "Enterprise-grade security included",
-                  "Dedicated Relationship Manager"
-                ].map(item => (
-                  <li key={item} className="flex items-center gap-4 text-slate-600 font-bold">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      <CheckCircle2 className="w-3 h-3 text-primary" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+      <section id="pricing" className="px-4 py-24 md:px-8">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 rounded-[2.5rem] bg-[#ffe36e] p-6 md:p-12 lg:grid-cols-[0.95fr_1.05fr]">
+          <div>
+            <p className="mb-5 text-xs font-black uppercase tracking-[0.2em] text-black/45">Pricing that can be controlled</p>
+            <h2 className="text-6xl font-black leading-[0.86] tracking-[-0.08em] md:text-8xl">Start lean. Unlock modules as you grow.</h2>
+            <p className="mt-8 max-w-xl text-lg font-semibold leading-8 text-black/60">
+              Your Super Admin can control visible plans, trial availability, module access, limits, and institution lifecycle without changing code.
+            </p>
+          </div>
 
-            {growthPlan ? (
-              <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 -mr-20 -mt-20 rounded-full blur-3xl transition-premium group-hover:scale-150" />
-                <div className="relative z-10">
-                  <span className="px-4 py-1 rounded-full bg-primary text-white text-[10px] font-black uppercase tracking-widest mb-6 inline-block">Recommended</span>
-                  <h3 className="text-3xl font-display font-black mb-2 tracking-tight uppercase">{growthPlan.name}</h3>
-                  <p className="text-slate-500 font-medium text-sm mb-8">{growthPlan.description}</p>
-                  
-                  <div className="flex items-baseline gap-2 mb-10">
-                    <span className="text-6xl font-display font-black text-slate-900">{growthPlan.priceInr ? `₹${Number(growthPlan.priceInr).toLocaleString("en-IN")}` : "Custom"}</span>
-                    <span className="text-lg font-bold text-slate-400">/{growthPlan.billingCycle || "month"}</span>
-                  </div>
-                  <div className="space-y-6 mb-12">
-                    {[
-                      "Up to 1,000 Active Students",
-                      "Unlimited Reminder Campaigns",
-                      "Full Reporting Suite & Audits",
-                      "Multi-part Installments Support",
-                      "Custom Branded Receipts"
-                    ].map(f => (
-                      <div key={f} className="flex items-center gap-4">
-                        <div className="w-5 h-5 rounded-full border-2 border-primary/20 flex items-center justify-center">
-                          <ArrowRight className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-slate-600 font-bold tracking-tight">{f}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Link to="/trial">
-                    <Button className="w-full h-20 rounded-[2rem] bg-primary text-white hover:bg-primary-dark border-none font-black text-xl shadow-xl shadow-primary/20 transition-premium">
-                      Get Started Free
-                    </Button>
-                  </Link>
-                  <p className="text-center mt-6 text-slate-400 text-xs font-bold uppercase tracking-widest">No credit card required</p>
+          <div className="rounded-[2rem] border border-black/10 bg-[#101412] p-7 text-white">
+            <div className="mb-8 flex items-center justify-between">
+              <span className="rounded-full bg-[#00d26a] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#06120c]">
+                Recommended
+              </span>
+              <LockKeyhole className="h-6 w-6 text-white/50" />
+            </div>
+            <h3 className="text-5xl font-black tracking-[-0.08em]">{recommendedPlan?.name || "Growth"}</h3>
+            <p className="mt-3 min-h-12 text-base font-semibold leading-7 text-white/50">
+              {recommendedPlan?.description || "For growing schools and colleges that need serious fee operations."}
+            </p>
+            <div className="my-9 flex items-end gap-2">
+              <span className="text-7xl font-black tracking-[-0.09em]">
+                {recommendedPlan?.priceInr ? `Rs. ${Number(recommendedPlan.priceInr).toLocaleString("en-IN")}` : "Custom"}
+              </span>
+              <span className="pb-3 text-sm font-black uppercase tracking-[0.16em] text-white/35">
+                / {recommendedPlan?.billingCycle || "month"}
+              </span>
+            </div>
+            <div className="space-y-4">
+              {["Student fee plans", "Online and offline payments", "Receipts and ledgers", "Reminder campaigns", "Admin reports"].map((item) => (
+                <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/[0.06] px-4 py-3">
+                  <CheckCircle2 className="h-5 w-5 text-[#00d26a]" />
+                  <span className="font-bold text-white/75">{item}</span>
                 </div>
-              </div>
-            ) : (
-              <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-2xl flex flex-col items-center justify-center text-center">
-                 <h3 className="text-2xl font-display font-black text-slate-900 mb-4">Enterprise Custom Plan</h3>
-                 <p className="text-slate-500 mb-8">Contact us to design a custom package that fits your institution's scale perfectly.</p>
-                 <Link to="/contact?type=request_demo">
-                    <Button className="h-14 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black px-8">Contact Sales</Button>
-                 </Link>
-              </div>
-            )}
+              ))}
+            </div>
+            <Link to="/trial" className="mt-8 flex h-16 items-center justify-center rounded-full bg-white text-sm font-black uppercase tracking-[0.18em] text-[#101412]">
+              Start Trial <ChevronRight className="ml-2 h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer Pill */}
-      <footer className="py-20 px-6">
-        <div className="max-w-7xl mx-auto bg-slate-900 rounded-[3.5rem] p-16 md:p-24 relative overflow-hidden">
-          <div className="absolute inset-0 mesh-gradient opacity-10" />
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start gap-20">
-            <div className="max-w-sm">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                  <span className="font-display font-black text-xl text-white">G</span>
+      <section id="trust" className="px-4 py-24 md:px-8">
+        <div className="mx-auto max-w-7xl rounded-[2.5rem] border border-black/10 bg-white/70 p-8 backdrop-blur-xl md:p-12">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr]">
+            <div>
+              <p className="mb-5 text-xs font-black uppercase tracking-[0.2em] text-black/35">Why institutions trust it</p>
+              <h2 className="text-6xl font-black leading-[0.88] tracking-[-0.08em]">Control before scale.</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ["Tenant isolation", "Every important record is institution scoped."],
+                ["Role permissions", "Staff only sees what they are allowed to operate."],
+                ["Audit trail", "Sensitive actions carry actor, time, and context."],
+                ["Risk switches", "Freeze logins, exports, or collections when needed."]
+              ].map(([title, text]) => (
+                <div key={title} className="rounded-3xl border border-black/10 bg-[#f5f3e8] p-6">
+                  <h3 className="text-2xl font-black tracking-[-0.05em]">{title}</h3>
+                  <p className="mt-3 font-semibold leading-7 text-black/55">{text}</p>
                 </div>
-                <span className="font-display font-black text-2xl tracking-tighter uppercase text-white">GetPay</span>
-              </div>
-              <p className="text-slate-400 font-medium leading-relaxed mb-10 text-lg">
-                The institution of the future isn't just paperless; it's frictionless. Secure your legacy with GetPay.
-              </p>
-              
-              <div className="flex flex-col gap-2 mb-10">
-                <a href={`mailto:${content.contact?.email || "sales@getpay.in"}`} className="text-slate-300 font-medium hover:text-white transition-colors">{content.contact?.email}</a>
-                <a href={`tel:${(content.contact?.phone || "").replace(/\s/g, "")}`} className="text-slate-300 font-medium hover:text-white transition-colors">{content.contact?.phone}</a>
-              </div>
-
-              <div className="flex gap-4">
-                {["Twitter", "LinkedIn", "Instagram"].map(social => (
-                  <a key={social} href="#" className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-premium">
-                    <span className="sr-only">{social}</span>
-                    <Globe className="w-5 h-5 text-white" />
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-20">
-              <div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-8">Product</h4>
-                <ul className="space-y-4">
-                  <li><a href="#platform" className="text-slate-400 font-bold hover:text-white transition-premium">Platform</a></li>
-                  <li><Link to="/pricing" className="text-slate-400 font-bold hover:text-white transition-premium">Pricing</Link></li>
-                  <li><Link to="/trial" className="text-slate-400 font-bold hover:text-white transition-premium">Start Trial</Link></li>
-                  <li><Link to="/contact?type=request_demo" className="text-slate-400 font-bold hover:text-white transition-premium">Request Demo</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-8">Trust</h4>
-                <ul className="space-y-4">
-                  <li><Link to="/contact" className="text-slate-400 font-bold hover:text-white transition-premium">Contact</Link></li>
-                  <li><Link to="/support" className="text-slate-400 font-bold hover:text-white transition-premium">Support</Link></li>
-                  <li><Link to="/terms" className="text-slate-400 font-bold hover:text-white transition-premium">Terms</Link></li>
-                  <li><Link to="/privacy" className="text-slate-400 font-bold hover:text-white transition-premium">Privacy</Link></li>
-                  <li><Link to="/refund-policy" className="text-slate-400 font-bold hover:text-white transition-premium">Refund Policy</Link></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">© 2026 GetPay SaaS ERP. Designed for Excellence.</p>
-            <div className="flex gap-10">
-              <Link to="/support" className="text-slate-500 hover:text-white transition-premium text-xs font-black uppercase tracking-[0.2em]">Contact Support</Link>
-              <a href="#" className="text-slate-500 hover:text-white transition-premium text-xs font-black uppercase tracking-[0.2em]">Status: Online</a>
+              ))}
             </div>
           </div>
         </div>
+      </section>
+
+      <footer className="px-4 pb-8 md:px-8">
+        <div className="mx-auto max-w-7xl rounded-[2.5rem] bg-[#101412] p-8 text-white md:p-12">
+          <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <div className="mb-7 flex items-center gap-3">
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-[#00d26a] text-xl font-black text-[#06120c]">G</span>
+                <span className="text-3xl font-black tracking-[-0.08em]">GetPay</span>
+              </div>
+              <h2 className="max-w-2xl text-5xl font-black leading-[0.9] tracking-[-0.08em] md:text-7xl">
+                Ready to stop chasing fees manually?
+              </h2>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <MagneticLink to="/trial">Start trial</MagneticLink>
+                <MagneticLink to="/contact?type=request_demo" variant="secondary">Book demo</MagneticLink>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <p className="mb-5 text-xs font-black uppercase tracking-[0.2em] text-[#00d26a]">Product</p>
+                <div className="space-y-3">
+                  <a href="#platform" className="block font-bold text-white/55 hover:text-white">Platform</a>
+                  <Link to="/pricing" className="block font-bold text-white/55 hover:text-white">Pricing</Link>
+                  <Link to="/trial" className="block font-bold text-white/55 hover:text-white">Start Trial</Link>
+                  <Link to="/login" className="block font-bold text-white/55 hover:text-white">Portal Login</Link>
+                </div>
+              </div>
+              <div>
+                <p className="mb-5 text-xs font-black uppercase tracking-[0.2em] text-[#00d26a]">Company</p>
+                <div className="space-y-3">
+                  <Link to="/contact" className="block font-bold text-white/55 hover:text-white">Contact</Link>
+                  <Link to="/support" className="block font-bold text-white/55 hover:text-white">Support</Link>
+                  <Link to="/terms" className="block font-bold text-white/55 hover:text-white">Terms</Link>
+                  <Link to="/privacy" className="block font-bold text-white/55 hover:text-white">Privacy</Link>
+                  <Link to="/refund-policy" className="block font-bold text-white/55 hover:text-white">Refund Policy</Link>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-16 flex flex-col justify-between gap-4 border-t border-white/10 pt-7 text-sm font-bold text-white/35 md:flex-row">
+            <p>2026 GetPay Education. SaaS ERP for institutions.</p>
+            <p>{content.contact?.email || "sales@getpay.in"} / {content.contact?.phone || "+91 90000 00000"}</p>
+          </div>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 }

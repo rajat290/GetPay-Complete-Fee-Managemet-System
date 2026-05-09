@@ -1182,7 +1182,7 @@ exports.listPlatformAudits = async (req, res) => {
     const logs = await listPlatformAuditLogs(req.query);
     res.json(logs);
   } catch (err) {
-    console.error(" Error listing platform audits:\, err);
- res.status(500).json({ error: \Server error\ });
- }
+    console.error("Error listing platform audits:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 };

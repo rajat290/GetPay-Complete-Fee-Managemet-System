@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiBriefcase, FiPauseCircle, FiShield, FiUsers } from "react-icons/fi";
+import { FiBriefcase, FiDollarSign, FiInbox, FiPauseCircle, FiShield, FiUsers } from "react-icons/fi";
 import api from "../../services/api";
 
 export default function SuperAdminDashboard() {
@@ -43,6 +43,10 @@ export default function SuperAdminDashboard() {
         <Metric icon={<FiShield />} label="Active" value={overview?.institutions?.active || 0} />
         <Metric icon={<FiPauseCircle />} label="Suspended" value={overview?.institutions?.suspended || 0} />
         <Metric icon={<FiUsers />} label="Students" value={overview?.users?.students || 0} />
+        <Metric icon={<FiInbox />} label="New Leads" value={overview?.leads?.new || 0} />
+        <Metric icon={<FiShield />} label="Trialing" value={overview?.institutions?.trialing || 0} />
+        <Metric icon={<FiPauseCircle />} label="Past Due" value={overview?.institutions?.pastDue || 0} />
+        <Metric icon={<FiDollarSign />} label="Paid Invoices" value={`₹${Number(overview?.billing?.paid?.amountInr || 0).toLocaleString("en-IN")}`} />
       </div>
     </div>
   );

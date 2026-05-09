@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { FiRefreshCw, FiSave } from "react-icons/fi";
 import api from "../../services/api";
 
@@ -242,6 +243,9 @@ export default function SuperAdminInstitutions() {
                     <td className="px-4 py-3">
                       <div className="font-semibold">{institution.name}</div>
                       <div className="text-xs text-slate-500">{institution.code}</div>
+                      <Link to={`/super-admin/institutions/${institution._id}`} className="mt-2 inline-block text-xs font-semibold text-blue-700 hover:underline">
+                        Open control center
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <div>{institution.subscriptionSummary?.usage?.students || 0} students</div>

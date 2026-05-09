@@ -58,6 +58,17 @@ const getPlan = (planKey = "starter") => PLAN_CATALOG[planKey] || PLAN_CATALOG.s
 
 const isLimitReached = (used, limit) => Number.isFinite(limit) && used >= limit;
 
+const getEffectiveLimits = (institution) => {
+  const plan = getPlan(institution?.subscription?.plan);
+  const overrides = institution?.subscription?.limitOverrides || {};
+
+  return Object.keys(plan.limits).reduce((limits, key) => {
+    const override = overrides[key];
+    limits[key] = Number.isFinite(override) ? override : plan.limits[key];
+    return limits;
+  }, {});
+};
+
 const getInstitutionUsage = async (institutionId) => {
   const [studentCount, adminCount, reminderCampaignCount] = await Promise.all([
     Student.countDocuments({ institutionId, role: "student" }),
@@ -74,6 +85,7 @@ const getInstitutionUsage = async (institutionId) => {
 
 const buildSubscriptionSummary = async (institution) => {
   const plan = getPlan(institution?.subscription?.plan);
+  const limits = getEffectiveLimits(institution);
   const usage = await getInstitutionUsage(institution._id);
 
   return {
@@ -87,13 +99,15 @@ const buildSubscriptionSummary = async (institution) => {
     pricing: {
       monthlyPriceInr: plan.monthlyPriceInr
     },
-    limits: plan.limits,
+    planLimits: plan.limits,
+    limitOverrides: institution.subscription?.limitOverrides || {},
+    limits,
     usage,
     utilization: {
-      students: plan.limits.students ? Math.round((usage.students / plan.limits.students) * 100) : null,
-      admins: plan.limits.admins ? Math.round((usage.admins / plan.limits.admins) * 100) : null,
-      reminderCampaigns: plan.limits.reminderCampaigns
-        ? Math.round((usage.reminderCampaigns / plan.limits.reminderCampaigns) * 100)
+      students: limits.students ? Math.round((usage.students / limits.students) * 100) : null,
+      admins: limits.admins ? Math.round((usage.admins / limits.admins) * 100) : null,
+      reminderCampaigns: limits.reminderCampaigns
+        ? Math.round((usage.reminderCampaigns / limits.reminderCampaigns) * 100)
         : null
     },
     features: plan.features
@@ -102,15 +116,16 @@ const buildSubscriptionSummary = async (institution) => {
 
 const assertCanAddStudent = async (institution) => {
   const plan = getPlan(institution?.subscription?.plan);
+  const limits = getEffectiveLimits(institution);
   const usage = await getInstitutionUsage(institution._id);
 
-  if (isLimitReached(usage.students, plan.limits.students)) {
+  if (isLimitReached(usage.students, limits.students)) {
     const error = new Error(`Student limit reached for ${plan.name} plan`);
     error.statusCode = 402;
     error.code = "PLAN_STUDENT_LIMIT_REACHED";
     error.details = {
       plan: plan.key,
-      limit: plan.limits.students,
+      limit: limits.students,
       used: usage.students
     };
     throw error;
@@ -124,17 +139,18 @@ const assertCanAddStudent = async (institution) => {
 
 const assertCanAddStudents = async (institution, additionalStudents = 1) => {
   const plan = getPlan(institution?.subscription?.plan);
+  const limits = getEffectiveLimits(institution);
   const usage = await getInstitutionUsage(institution._id);
   const requested = Math.max(Number(additionalStudents) || 0, 0);
   const projected = usage.students + requested;
 
-  if (Number.isFinite(plan.limits.students) && projected > plan.limits.students) {
+  if (Number.isFinite(limits.students) && projected > limits.students) {
     const error = new Error(`Student limit reached for ${plan.name} plan`);
     error.statusCode = 402;
     error.code = "PLAN_STUDENT_LIMIT_REACHED";
     error.details = {
       plan: plan.key,
-      limit: plan.limits.students,
+      limit: limits.students,
       used: usage.students,
       requested,
       projected
@@ -151,15 +167,16 @@ const assertCanAddStudents = async (institution, additionalStudents = 1) => {
 
 const assertCanAddReminderCampaign = async (institution) => {
   const plan = getPlan(institution?.subscription?.plan);
+  const limits = getEffectiveLimits(institution);
   const usage = await getInstitutionUsage(institution._id);
 
-  if (isLimitReached(usage.reminderCampaigns, plan.limits.reminderCampaigns)) {
+  if (isLimitReached(usage.reminderCampaigns, limits.reminderCampaigns)) {
     const error = new Error(`Reminder campaign limit reached for ${plan.name} plan`);
     error.statusCode = 402;
     error.code = "PLAN_REMINDER_CAMPAIGN_LIMIT_REACHED";
     error.details = {
       plan: plan.key,
-      limit: plan.limits.reminderCampaigns,
+      limit: limits.reminderCampaigns,
       used: usage.reminderCampaigns
     };
     throw error;
@@ -174,6 +191,7 @@ const assertCanAddReminderCampaign = async (institution) => {
 module.exports = {
   PLAN_CATALOG,
   getPlan,
+  getEffectiveLimits,
   getInstitutionUsage,
   buildSubscriptionSummary,
   assertCanAddStudent,

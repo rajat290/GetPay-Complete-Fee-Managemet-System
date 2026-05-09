@@ -1,11 +1,13 @@
 import { useContext } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { FiBriefcase, FiHome, FiLogOut, FiShield } from "react-icons/fi";
+import { FiBriefcase, FiGlobe, FiHome, FiInbox, FiLogOut, FiShield } from "react-icons/fi";
 import { AuthContext } from "../context/authContextValue";
 
 const navigation = [
   { name: "Overview", href: "/super-admin/dashboard", icon: FiHome },
-  { name: "Organizations", href: "/super-admin/institutions", icon: FiBriefcase }
+  { name: "Organizations", href: "/super-admin/institutions", icon: FiBriefcase },
+  { name: "Leads & Queries", href: "/super-admin/leads", icon: FiInbox },
+  { name: "Website Manager", href: "/super-admin/website", icon: FiGlobe }
 ];
 
 export default function SuperAdminLayout() {

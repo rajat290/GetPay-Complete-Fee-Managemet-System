@@ -45,10 +45,18 @@ const invoiceParamsSchema = {
   }
 };
 
+const adminRecoveryParamsSchema = {
+  params: {
+    institutionId: { required: true, type: "objectId" },
+    adminId: { required: true, type: "objectId" }
+  }
+};
+
 module.exports = {
   createInstitutionSchema,
   institutionParamsSchema,
   updateInstitutionSubscriptionSchema,
   updateInstitutionModulesSchema,
-  invoiceParamsSchema
+  invoiceParamsSchema,
+  adminRecoveryParamsSchema
 };

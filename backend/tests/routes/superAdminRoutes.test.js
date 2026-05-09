@@ -9,6 +9,7 @@ const authRoutes = require("../../routes/authRoutes");
 const Institution = require("../../models/Institution");
 const Student = require("../../models/Student");
 const AuditLog = require("../../models/AuditLog");
+const AdminRecoveryLog = require("../../models/AdminRecoveryLog");
 
 const app = express();
 app.use(express.json());
@@ -150,5 +151,116 @@ describe("super admin platform control", () => {
       });
 
     expect(loginRes.status).toBe(404);
+  });
+
+  it("allows super admin to archive, restore, and apply risk controls", async () => {
+    const institution = await Institution.create({
+      name: "Risk School",
+      code: "RISK"
+    });
+
+    const archiveRes = await request(app)
+      .patch(`/api/super-admin/institutions/${institution._id}/archive`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({ reason: "Closed pilot" });
+
+    expect(archiveRes.status).toBe(200);
+    expect(archiveRes.body.isActive).toBe(false);
+    expect(archiveRes.body.lifecycle.archiveReason).toBe("Closed pilot");
+
+    const restoreRes = await request(app)
+      .patch(`/api/super-admin/institutions/${institution._id}/restore`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send();
+
+    expect(restoreRes.status).toBe(200);
+    expect(restoreRes.body.isActive).toBe(true);
+
+    const riskRes = await request(app)
+      .patch(`/api/super-admin/institutions/${institution._id}/risk-controls`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({
+        freezeInstitution: true,
+        blockPayments: true,
+        restrictExports: true,
+        reason: "Payment dispute"
+      });
+
+    expect(riskRes.status).toBe(200);
+    expect(riskRes.body.riskControls.freezeInstitution).toBe(true);
+    expect(riskRes.body.riskControls.reason).toBe("Payment dispute");
+
+    const auditLog = await AuditLog.findOne({ action: "platform.risk_controls_updated" });
+    expect(auditLog).toBeTruthy();
+  });
+
+  it("supports trial conversion, limit overrides, and admin recovery", async () => {
+    const institution = await Institution.create({
+      name: "Trial College",
+      code: "TRIALCTRL",
+      subscription: {
+        plan: "starter",
+        status: "trialing",
+        trialEndsAt: new Date()
+      }
+    });
+
+    const admin = await Student.create({
+      institutionId: institution._id,
+      name: "Trial Admin",
+      email: "admin@trialctrl.edu",
+      password: "password",
+      registrationNo: "ADM001",
+      className: "Administration",
+      role: "admin"
+    });
+
+    const overrideRes = await request(app)
+      .patch(`/api/super-admin/institutions/${institution._id}/subscription`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({
+        limitOverrides: {
+          students: 750,
+          admins: 4,
+          reminderCampaigns: 8
+        }
+      });
+
+    expect(overrideRes.status).toBe(200);
+    expect(overrideRes.body.subscriptionSummary.limits.students).toBe(750);
+    expect(overrideRes.body.subscriptionSummary.planLimits.students).toBe(500);
+
+    const extendRes = await request(app)
+      .patch(`/api/super-admin/institutions/${institution._id}/trial/extend`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({ days: 7 });
+
+    expect(extendRes.status).toBe(200);
+    expect(extendRes.body.subscription.status).toBe("trialing");
+    expect(extendRes.body.subscription.trialEndsAt).toBeTruthy();
+
+    const convertRes = await request(app)
+      .patch(`/api/super-admin/institutions/${institution._id}/trial/convert`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({ plan: "growth" });
+
+    expect(convertRes.status).toBe(200);
+    expect(convertRes.body.subscription.status).toBe("active");
+    expect(convertRes.body.subscription.plan).toBe("growth");
+
+    const recoveryRes = await request(app)
+      .post(`/api/super-admin/institutions/${institution._id}/admins/${admin._id}/recovery`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({
+        action: "temporary_password_reset",
+        reason: "Principal lost access"
+      });
+
+    expect(recoveryRes.status).toBe(200);
+    expect(recoveryRes.body.temporaryPassword).toMatch(/^GetPay@/);
+    expect(recoveryRes.body.admin.mustChangePassword).toBe(true);
+
+    const recoveryLog = await AdminRecoveryLog.findOne({ adminId: admin._id });
+    expect(recoveryLog.reason).toBe("Principal lost access");
   });
 });

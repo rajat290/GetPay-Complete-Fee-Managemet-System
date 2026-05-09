@@ -229,9 +229,10 @@ export default function TrialSignup() {
                             name="adminPassword"
                             value={formData.adminPassword}
                             onChange={handleChange}
-                            placeholder="••••••••••••"
+                            placeholder="At least 8 characters"
                             className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none transition-premium font-bold text-slate-700"
                             required
+                            minLength={8}
                           />
                         </div>
                       </div>

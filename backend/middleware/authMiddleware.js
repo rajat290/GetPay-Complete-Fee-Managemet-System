@@ -11,7 +11,7 @@ exports.protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await Student.findById(decoded.id)
         .select("-password")
-        .populate("institutionId", "name code type isActive subscription enabledModules")
+        .populate("institutionId", "name code type isActive subscription enabledModules lifecycle riskControls")
         .populate("roleIds", "name permissions isActive");
       
       if (!user) {
@@ -26,6 +26,14 @@ exports.protect = async (req, res, next) => {
 
       if (!user.institutionId || user.institutionId.isActive === false) {
         return res.status(403).json({ error: "Institution is inactive or missing" });
+      }
+
+      if (user.institutionId.lifecycle?.archivedAt) {
+        return res.status(403).json({ error: "Institution is archived" });
+      }
+
+      if (user.institutionId.riskControls?.disableLogins || user.institutionId.riskControls?.freezeInstitution) {
+        return res.status(403).json({ error: "Institution access is temporarily restricted" });
       }
 
       const isPasswordChangeRoute = req.originalUrl?.includes("/api/auth/change-password");

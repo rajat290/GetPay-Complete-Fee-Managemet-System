@@ -4,10 +4,13 @@ dotenv.config();
 const cors = require("cors");
 const mongoose = require("mongoose");
 const connectDB = require("./config/db");
+const { validateEnvironment } = require("./config/environment");
 const { applySecurityHeaders } = require("./middleware/securityMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { requestContext, requestLogger } = require("./middleware/requestContextMiddleware");
 const logger = require("./utils/logger");
+
+validateEnvironment({ exitOnError: true });
 
 const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");

@@ -20,7 +20,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import api from "../../services/api";
 
 const statuses = ["new", "contacted", "demo_scheduled", "trial_active", "converted", "lost"];
-const sources = ["", "trial_signup", "request_demo", "contact", "support"];
 
 const statusColors = {
   new: "bg-blue-500 text-white",

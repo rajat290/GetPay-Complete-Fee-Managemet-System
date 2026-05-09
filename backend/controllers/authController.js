@@ -73,6 +73,21 @@ exports.loginStudent = async (req, res) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
+    const superAdmin = await Student.findOne({
+      email: email.toLowerCase(),
+      role: "super_admin"
+    });
+
+    if (superAdmin && (await superAdmin.matchPassword(password))) {
+      return res.json({
+        _id: superAdmin._id,
+        name: superAdmin.name,
+        email: superAdmin.email,
+        role: superAdmin.role,
+        token: generateToken(superAdmin._id, superAdmin.role),
+      });
+    }
+
     const query = { email: email?.toLowerCase() };
 
     if (institutionCode) {
@@ -95,16 +110,6 @@ exports.loginStudent = async (req, res) => {
 
     const student = students[0];
     if (student && (await student.matchPassword(password))) {
-      if (student.role === "super_admin") {
-        return res.json({
-          _id: student._id,
-          name: student.name,
-          email: student.email,
-          role: student.role,
-          token: generateToken(student._id, student.role),
-        });
-      }
-
       if (!student.institutionId || student.institutionId.isActive === false) {
         return res.status(403).json({ error: "Institution is inactive" });
       }

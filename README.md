@@ -18,6 +18,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 ### Institution Operations
 
+- Super Admin platform control for institution creation, suspension, and plan assignment
 - Multi-tenant institution isolation through `institutionId`
 - Institution profile, billing contact, and branding configuration
 - Admin and student role-based access control
@@ -40,6 +41,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 ### Admin Experience
 
+- Super Admin dashboard and organization control screen
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
 - Dedicated audit trail and reminder campaign management screens
@@ -60,7 +62,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 
 - JWT authentication
 - Password hashing with bcrypt
-- Admin/student authorization middleware
+- Super Admin/admin/student authorization middleware
 - Request validation middleware
 - Rate limiting for auth and payment routes
 - Security headers for common browser protections
@@ -264,6 +266,15 @@ All main API routes are mounted under `/api`.
 - `POST /api/admin/reminder-campaigns/:campaignId/run`
 - `GET /api/admin/payments/:paymentId`
 
+### Super Admin Platform
+
+- `GET /api/super-admin/overview`
+- `GET /api/super-admin/institutions`
+- `POST /api/super-admin/institutions`
+- `GET /api/super-admin/institutions/:institutionId`
+- `PATCH /api/super-admin/institutions/:institutionId`
+- `PATCH /api/super-admin/institutions/:institutionId/subscription`
+
 ### Receipts and Notifications
 
 - `GET /api/receipts`
@@ -350,10 +361,12 @@ Recommended production settings:
 - Dedicated audit trail UI
 - Route-level frontend code splitting
 - CI pipeline for backend tests, frontend lint, and frontend build
+- Super Admin platform control
 
 ### Next Priorities
 
 - Production observability, structured logs, and error tracking
+- Organization module access toggles
 
 ## Repository Status
 

@@ -20,7 +20,9 @@ export default function Login() {
       const res = await api.post("/auth/login", { email, password, institutionCode });
       login(res.data, res.data.token);
 
-      if (res.data.role === "admin") {
+      if (res.data.role === "super_admin") {
+        navigate("/super-admin/dashboard");
+      } else if (res.data.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/student/dashboard");
@@ -58,7 +60,6 @@ export default function Login() {
                          focus:ring-2 focus:ring-blue-500 focus:outline-none"
               value={institutionCode}
               onChange={(e) => setInstitutionCode(e.target.value.toUpperCase())}
-              required
             />
           </div>
 

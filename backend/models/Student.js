@@ -79,8 +79,14 @@ const studentSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-studentSchema.index({ institutionId: 1, email: 1 }, { unique: true });
-studentSchema.index({ institutionId: 1, registrationNo: 1 }, { unique: true });
+studentSchema.index(
+    { institutionId: 1, email: 1 },
+    { unique: true, partialFilterExpression: { institutionId: { $exists: true } } }
+);
+studentSchema.index(
+    { institutionId: 1, registrationNo: 1 },
+    { unique: true, partialFilterExpression: { institutionId: { $exists: true } } }
+);
 
 
 // courses: [{type: mongoose.Schema.Types.ObjectId, ref: 'Course'}]// this is for one to many relationship

@@ -22,6 +22,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Organization module access toggles controlled by Super Admin
 - Multi-tenant institution isolation through `institutionId`
 - Institution profile, billing contact, and branding configuration
+- SaaS plan metadata, subscription status, and institution usage limits
 - Admin and student role-based access control
 - Student onboarding and class-based organization
 - Fee template creation and student/class-level assignment
@@ -46,6 +47,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Module-aware organization admin navigation
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
+- Subscription summary with plan, status, usage, and limits
 - Dedicated audit trail and reminder campaign management screens
 - Finance workspace for dues, overdue refresh, bulk assignment, CSV export, and reconciliation snapshot
 - Payment management with filters, polling, detail modal, and export support
@@ -70,6 +72,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Rate limiting for auth and payment routes
 - Security headers for common browser protections
 - Institution-scoped database queries for core resources
+- Request IDs, structured request logs, and sanitized error logging
 - Backend test suite covering domain, payment lifecycle, ledgers, dues, and route behavior
 - Frontend lint and production build gates
 - GitHub Actions CI for backend tests, frontend lint, and frontend build
@@ -166,6 +169,8 @@ RAZORPAY_KEY_ID=rzp_test_replace_me
 RAZORPAY_KEY_SECRET=replace_me
 EMAIL_USER=notifications@example.com
 EMAIL_PASS=replace_me
+LOG_FORMAT=pretty
+LOG_LEVEL=info
 ```
 
 Frontend `.env`:
@@ -214,6 +219,8 @@ Frontend: http://localhost:5173
 Backend: http://localhost:5000
 API health: http://localhost:5000/api/health
 ```
+
+Production deployments can set `LOG_FORMAT=json` so API, database, request, and error events are emitted as structured JSON log lines.
 
 ## API Overview
 
@@ -366,13 +373,17 @@ Recommended production settings:
 - Dedicated audit trail UI
 - Route-level frontend code splitting
 - CI pipeline for backend tests, frontend lint, and frontend build
+- Request IDs and structured backend observability
+- SaaS packaging baseline with Starter, Growth, and Enterprise plans
+- Student-seat and reminder-campaign limit enforcement
 - Super Admin platform control
 - Organization module access control
 
 ### Next Priorities
 
-- Production observability, structured logs, and error tracking
 - Staff users and granular RBAC permissions
+- Error tracking integration such as Sentry or OpenTelemetry
+- Billing checkout and invoice lifecycle integration
 
 ## Repository Status
 

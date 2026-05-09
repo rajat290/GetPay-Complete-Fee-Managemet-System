@@ -43,7 +43,6 @@ const emptyInvoiceForm = {
 
 export default function SuperAdminInstitutions() {
   const [institutions, setInstitutions] = useState([]);
-  const [modules, setModules] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,16 +66,6 @@ export default function SuperAdminInstitutions() {
   };
 
   useEffect(() => {
-    const loadModules = async () => {
-      try {
-        const res = await api.get("/super-admin/modules");
-        setModules(res.data.modules || []);
-      } catch {
-        setModules([]);
-      }
-    };
-
-    loadModules();
     loadInstitutions();
   }, []);
 
@@ -94,17 +83,6 @@ export default function SuperAdminInstitutions() {
       setMessage(error.response?.data?.error || "Could not create institution.");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const updateStatus = async (institution, isActive) => {
-    setMessage("");
-    try {
-      await api.patch(`/super-admin/institutions/${institution._id}`, { isActive });
-      await loadInstitutions();
-      setMessage(`Institution ${isActive ? 'reactivated' : 'suspended'}.`);
-    } catch (error) {
-      setMessage(error.response?.data?.error || "Could not update status.");
     }
   };
 

@@ -5,7 +5,10 @@
   "scripts": {
     "build": "cd frontend && npm ci --production=false && npm run build",
     "start": "cd backend && npm ci && npm start",
-    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\""
+    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\"",
+    "verify:backend": "npm --prefix backend run check:env && npm --prefix backend run test:ci",
+    "verify:frontend": "npm --prefix frontend run lint && npm --prefix frontend run build",
+    "verify:release": "npm run verify:backend && npm run verify:frontend"
   },
   "devDependencies": {
     "concurrently": "^7.6.0"

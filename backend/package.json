@@ -8,6 +8,8 @@
     "check:env": "node scripts/validateEnv.js",
     "seed:demo": "node seedDemo.js",
     "seed:super-admin": "node createSuperAdmin.js",
+    "backup:verify": "node scripts/verifyBackupRestore.js",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
     "test": "jest",
     "test:ci": "jest --runInBand",
     "test:watch": "jest --watch",
@@ -27,7 +29,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.0",
     "multer": "^2.1.1",
-    "nodemailer": "^7.0.5",
+    "nodemailer": "^8.0.7",
     "nodemon": "^3.1.10",
     "pdfkit": "^0.17.1",
     "razorpay": "^2.9.6"

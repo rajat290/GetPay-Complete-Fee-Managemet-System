@@ -29,6 +29,7 @@ export default function Receipts() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [downloadingId, setDownloadingId] = useState(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const fetchReceipts = async () => {
@@ -47,6 +48,7 @@ export default function Receipts() {
 
   const handleDownload = async (paymentId) => {
     try {
+      setMessage("");
       setDownloadingId(paymentId);
       const res = await api.get(`/receipts/download/${paymentId}`, {
         responseType: "blob",
@@ -61,7 +63,7 @@ export default function Receipts() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download error:", err);
-      alert("Failed to download receipt. Please try again.");
+      setMessage("Failed to download receipt. Please try again.");
     } finally {
       setDownloadingId(null);
     }
@@ -99,6 +101,12 @@ export default function Receipts() {
           <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
         </div>
       </div>
+
+      {message && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+          {message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredReceipts.length > 0 ? (

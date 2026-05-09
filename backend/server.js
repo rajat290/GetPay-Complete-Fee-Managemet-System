@@ -9,8 +9,10 @@ const { applySecurityHeaders } = require("./middleware/securityMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { requestContext, requestLogger } = require("./middleware/requestContextMiddleware");
 const logger = require("./utils/logger");
+const { initErrorTracking } = require("./utils/errorTracking");
 
 validateEnvironment({ exitOnError: true });
+initErrorTracking();
 
 const authRoutes = require("./routes/authRoutes");
 const feeRoutes = require("./routes/feeRoutes");

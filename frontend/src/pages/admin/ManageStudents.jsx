@@ -21,6 +21,7 @@ export default function ManageStudents() {
   const [isImporting, setIsImporting] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importSummary, setImportSummary] = useState(null);
+  const [tableRefreshKey, setTableRefreshKey] = useState(0);
   const [classOptions] = useState([
     "12thA", "12thB", "11thA", "11thB", "10thA", "10thB", 
     "9thA", "9thB", "8thA", "8thB", "7thA", "7thB"
@@ -49,10 +50,7 @@ export default function ManageStudents() {
         setInviteUrl(res.data.inviteUrl);
       }
       setForm({ name: "", email: "", registrationNo: "", className: "" });
-      // Refresh table logic would go here if we had a ref to loadData, 
-      // but DataTable handles its own loading. For now, a manual refresh or state sync is needed.
-      // In a real app, I'd use React Query or a similar hook.
-      window.location.reload(); // Quick fix for now to sync the list
+      setTableRefreshKey((key) => key + 1);
     } catch (err) {
       setMessage({
         type: "error",
@@ -79,8 +77,7 @@ export default function ManageStudents() {
       setImportSummary(res.data);
       setMessage({ type: "success", text: res.data.message });
       setImportFile(null);
-      // Refresh logic
-      setTimeout(() => window.location.reload(), 3000);
+      setTableRefreshKey((key) => key + 1);
     } catch (err) {
       setMessage({
         type: "error",
@@ -256,6 +253,7 @@ export default function ManageStudents() {
               columns={columns}
               fetchData={fetchStudents}
               searchPlaceholder="Search by name, email, or registration..."
+              refreshKey={tableRefreshKey}
             />
           </Card>
         </div>

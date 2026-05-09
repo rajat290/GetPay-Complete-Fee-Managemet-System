@@ -9,6 +9,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Contact = lazy(() => import("./pages/Contact"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 const TrialSignup = lazy(() => import("./pages/TrialSignup"));
 const Login = lazy(() => import("./pages/Login"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -130,6 +131,8 @@ function App() {
                 <Route path="website" element={<SuperAdminWebsite />} />
                 <Route path="communications" element={<SuperAdminCommunications />} />
               </Route>
+
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </Router>

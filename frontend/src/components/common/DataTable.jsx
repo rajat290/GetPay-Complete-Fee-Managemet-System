@@ -23,7 +23,8 @@ export default function DataTable({
   columns, 
   fetchData, 
   searchPlaceholder = "Search...", 
-  filters 
+  filters,
+  refreshKey = 0
 }) {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
@@ -61,7 +62,7 @@ export default function DataTable({
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, refreshKey]);
 
   return (
     <div className="space-y-4">

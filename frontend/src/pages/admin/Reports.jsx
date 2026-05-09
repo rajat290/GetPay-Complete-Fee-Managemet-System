@@ -47,6 +47,7 @@ export default function Reports() {
   const [ledgerSearch, setLedgerSearch] = useState("");
   const [studentLedger, setStudentLedger] = useState(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerMessage, setLedgerMessage] = useState("");
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -88,13 +89,14 @@ export default function Reports() {
   const fetchStudentLedger = async (regNo) => {
     if (!regNo) return;
     setLedgerLoading(true);
+    setLedgerMessage("");
     try {
       const studentsRes = await api.get(`/admin/students?search=${regNo}`);
       const students = Array.isArray(studentsRes.data) ? studentsRes.data : studentsRes.data.data || [];
       const student = students.find(s => s.registrationNo === regNo);
       
       if (!student) {
-        alert("Student not found");
+        setLedgerMessage("Student not found for this registration number.");
         return;
       }
 
@@ -103,6 +105,7 @@ export default function Reports() {
       setActiveTab("ledger");
     } catch (err) {
       console.error("Failed to fetch ledger", err);
+      setLedgerMessage("Could not fetch the student ledger. Please try again.");
     } finally {
       setLedgerLoading(false);
     }
@@ -457,6 +460,12 @@ export default function Reports() {
               </div>
             </div>
           </Card>
+
+          {ledgerMessage && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+              {ledgerMessage}
+            </div>
+          )}
 
           {studentLedger && (
             <div className="space-y-8">

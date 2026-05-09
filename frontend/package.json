@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "playwright test",
+    "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
@@ -15,19 +17,17 @@
     "chart.js": "^4.5.0",
     "css": "^3.0.0",
     "framer-motion": "^12.38.0",
-    "install": "^0.13.0",
     "lucide-react": "^0.536.0",
-    "npm": "^11.5.2",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.7.1",
-    "recharts": "^3.1.1",
-    "tailwind": "^4.0.0"
+    "recharts": "^3.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

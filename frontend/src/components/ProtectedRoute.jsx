@@ -6,13 +6,11 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useContext(AuthContext);
 
   if (!user) {
-    // agar login nahi hai to login page pe bhej do
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // agar user ka role allowed list me nahi hai
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

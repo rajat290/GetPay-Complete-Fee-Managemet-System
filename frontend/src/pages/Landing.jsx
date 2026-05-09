@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   motion,
+  useReducedMotion,
   useMotionValue,
   useScroll,
   useSpring,
@@ -77,6 +78,11 @@ const proof = [
 
 const SplitText = ({ text, className = "" }) => {
   const letters = useMemo(() => text.split(""), [text]);
+  const reduceMotion = useReducedMotion();
+
+  if (reduceMotion) {
+    return <span className={className}>{text}</span>;
+  }
 
   return (
     <span className={className} aria-label={text}>
@@ -101,6 +107,7 @@ const SplitText = ({ text, className = "" }) => {
 };
 
 const MagneticLink = ({ to, children, className = "", variant = "primary" }) => {
+  const reduceMotion = useReducedMotion();
   const ref = useRef(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -125,7 +132,12 @@ const MagneticLink = ({ to, children, className = "", variant = "primary" }) => 
       : "border border-black/10 bg-white/80 text-[#101412] backdrop-blur-xl";
 
   return (
-    <motion.div ref={ref} style={{ x: springX, y: springY }} onMouseMove={onMouseMove} onMouseLeave={reset}>
+    <motion.div
+      ref={ref}
+      style={reduceMotion ? undefined : { x: springX, y: springY }}
+      onMouseMove={reduceMotion ? undefined : onMouseMove}
+      onMouseLeave={reduceMotion ? undefined : reset}
+    >
       <Link
         to={to}
         className={`group inline-flex h-16 items-center justify-center gap-3 rounded-full px-8 text-sm font-black uppercase tracking-[0.16em] transition duration-500 hover:scale-[1.03] ${base} ${className}`}
@@ -138,6 +150,7 @@ const MagneticLink = ({ to, children, className = "", variant = "primary" }) => 
 };
 
 const ProductMockup = () => {
+  const reduceMotion = useReducedMotion();
   const rows = [
     ["Class XI - Science", "Rs. 8.4L", "82%", "Due today"],
     ["B.Com Sem 2", "Rs. 5.1L", "67%", "Reminder sent"],
@@ -146,8 +159,8 @@ const ProductMockup = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 80, rotateX: 10 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 80, rotateX: 10 }}
+      animate={reduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0 }}
       transition={{ duration: 1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="relative mx-auto max-w-5xl rounded-[2.2rem] border border-white/70 bg-[#101412] p-3 shadow-[0_50px_120px_rgba(0,0,0,0.28)]"
     >
@@ -176,7 +189,7 @@ const ProductMockup = () => {
               {[42, 68, 45, 78, 55, 86, 72, 95, 66, 88, 61, 92].map((height, index) => (
                 <motion.div
                   key={index}
-                  initial={{ height: 0 }}
+                  initial={reduceMotion ? false : { height: 0 }}
                   animate={{ height: `${height}%` }}
                   transition={{ delay: 0.65 + index * 0.04, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
                   className="flex-1 rounded-t-full bg-[#00d26a]"
@@ -214,19 +227,23 @@ const ProductMockup = () => {
 };
 
 const Cursor = () => {
+  const reduceMotion = useReducedMotion();
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
   const smoothX = useSpring(x, { stiffness: 500, damping: 40 });
   const smoothY = useSpring(y, { stiffness: 500, damping: 40 });
 
   useEffect(() => {
+    if (reduceMotion) return undefined;
     const move = (event) => {
       x.set(event.clientX - 16);
       y.set(event.clientY - 16);
     };
     window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
-  }, [x, y]);
+  }, [reduceMotion, x, y]);
+
+  if (reduceMotion) return null;
 
   return (
     <motion.div
@@ -238,12 +255,17 @@ const Cursor = () => {
 
 export default function Landing() {
   const { scrollYProgress } = useScroll();
+  const reduceMotion = useReducedMotion();
   const [content, setContent] = useState(fallbackContent);
   const [loadError, setLoadError] = useState("");
-  const heroY = useTransform(scrollYProgress, [0, 0.35], [0, -170]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.35], [1, 0.92]);
-  const bandX = useTransform(scrollYProgress, [0.12, 0.62], ["0%", "-22%"]);
-  const panelRotate = useTransform(scrollYProgress, [0.18, 0.58], [-6, 6]);
+  const heroYMotion = useTransform(scrollYProgress, [0, 0.35], [0, -170]);
+  const heroScaleMotion = useTransform(scrollYProgress, [0, 0.35], [1, 0.92]);
+  const bandXMotion = useTransform(scrollYProgress, [0.12, 0.62], ["0%", "-22%"]);
+  const panelRotateMotion = useTransform(scrollYProgress, [0.18, 0.58], [-6, 6]);
+  const heroY = reduceMotion ? 0 : heroYMotion;
+  const heroScale = reduceMotion ? 1 : heroScaleMotion;
+  const bandX = reduceMotion ? "0%" : bandXMotion;
+  const panelRotate = reduceMotion ? 0 : panelRotateMotion;
 
   useEffect(() => {
     const loadContent = async () => {
@@ -266,8 +288,8 @@ export default function Landing() {
       <Cursor />
 
       <motion.nav
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        initial={reduceMotion ? false : { y: -30, opacity: 0 }}
+        animate={reduceMotion ? undefined : { y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         className="fixed left-1/2 top-5 z-50 flex w-[calc(100%-24px)] max-w-6xl -translate-x-1/2 items-center justify-between rounded-full border border-black/10 bg-[#fffdf4]/85 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.08)] backdrop-blur-2xl md:px-6"
       >
@@ -392,8 +414,8 @@ export default function Landing() {
               return (
                 <motion.article
                   key={item.title}
-                  initial={{ opacity: 0, y: 60 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={reduceMotion ? false : { opacity: 0, y: 60 }}
+                  whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-80px" }}
                   transition={{ duration: 0.75, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
                   className="group min-h-[22rem] rounded-[2rem] border border-black/10 bg-white/70 p-6 backdrop-blur-xl transition duration-500 hover:-translate-y-2 hover:bg-white"
@@ -429,8 +451,8 @@ export default function Landing() {
           ].map(([title, text, Icon], index) => (
             <motion.div
               key={title}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 50 }}
+              whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.75, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="rounded-[2rem] border border-black/10 bg-white p-8"

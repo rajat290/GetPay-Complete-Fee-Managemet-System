@@ -146,7 +146,7 @@ export default function ManageFees() {
     );
   }
 
-  const handleShare = (fee) => {
+  const handleShare = async (fee) => {
     const studentName = fee.student?.name || "Student";
     const amount = formatCurrency(fee.amount);
     const dueDate = new Date(fee.dueDate).toLocaleDateString();
@@ -159,10 +159,16 @@ export default function ManageFees() {
         title: 'Fee Payment Link',
         text: text,
         url: payUrl,
-      }).catch(console.error);
+      }).catch((error) => {
+        setMessage({ type: "error", text: error?.message || "Could not open share sheet." });
+      });
     } else {
-      navigator.clipboard.writeText(text);
-      alert("Payment message copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(text);
+        setMessage({ type: "success", text: "Payment message copied to clipboard." });
+      } catch {
+        setMessage({ type: "error", text: "Could not copy the payment message." });
+      }
     }
   };
 

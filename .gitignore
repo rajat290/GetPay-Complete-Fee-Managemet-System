@@ -2,3 +2,5 @@ SAAS_ERP_EXECUTION_PLAN.local.md
 demowebsie.html
 backend/receipts/
 backend/backups/
+frontend/test-results/
+frontend/playwright-report/

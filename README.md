@@ -392,12 +392,19 @@ Recommended production settings:
 - Staff users and granular RBAC permissions
 - Password lifecycle foundation and forced staff password change
 - Billing lifecycle foundation with manual invoices and grace-period suspension
+- Product website polish for pricing, contact, legal, support, and 404 pages
+- Reduced-motion handling for high-motion public pages
+- Browser smoke test suite for public and protected shells
+- Production audit, backup/restore, and error-tracking readiness hooks
 
 ### Next Priorities
 
 - Student/admin reset policy controls and reset request queue
-- Error tracking integration such as Sentry or OpenTelemetry
 - Razorpay subscription checkout and billing payment automation
+
+## Production Readiness
+
+See [docs/production-readiness.md](docs/production-readiness.md) for dependency audit, browser smoke, backup/restore, and error tracking checks.
 
 ## Repository Status
 

@@ -6,6 +6,9 @@ import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Contact = lazy(() => import("./pages/Contact"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
 const TrialSignup = lazy(() => import("./pages/TrialSignup"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -35,6 +38,8 @@ const StaffManagement = lazy(() => import("./pages/admin/StaffManagement"));
 const SuperAdminLayout = lazy(() => import("./layouts/SuperAdminLayout"));
 const SuperAdminDashboard = lazy(() => import("./pages/super-admin/SuperAdminDashboard"));
 const SuperAdminInstitutions = lazy(() => import("./pages/super-admin/SuperAdminInstitutions"));
+const SuperAdminLeads = lazy(() => import("./pages/super-admin/SuperAdminLeads"));
+const SuperAdminWebsite = lazy(() => import("./pages/super-admin/SuperAdminWebsite"));
 
 function RouteLoader() {
   return (
@@ -52,6 +57,12 @@ function App() {
           <Suspense fallback={<RouteLoader />}>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/terms" element={<LegalPage />} />
+              <Route path="/privacy" element={<LegalPage />} />
+              <Route path="/refund-policy" element={<LegalPage />} />
+              <Route path="/support" element={<LegalPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/trial" element={<TrialSignup />} />
               <Route path="/register" element={<Register />} />
@@ -114,6 +125,8 @@ function App() {
               >
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
                 <Route path="institutions" element={<SuperAdminInstitutions />} />
+                <Route path="leads" element={<SuperAdminLeads />} />
+                <Route path="website" element={<SuperAdminWebsite />} />
               </Route>
             </Routes>
           </Suspense>

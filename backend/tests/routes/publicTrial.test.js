@@ -4,6 +4,7 @@ const request = require("supertest");
 const publicRoutes = require("../../routes/publicRoutes");
 const Institution = require("../../models/Institution");
 const Student = require("../../models/Student");
+const Lead = require("../../models/Lead");
 
 const app = express();
 app.use(express.json());
@@ -34,6 +35,11 @@ describe("public trial registration", () => {
     const admin = await Student.findById(res.body.adminId);
     expect(admin.role).toBe("admin");
     expect(admin.email).toBe("principal@futurevalley.edu");
+
+    const lead = await Lead.findOne({ source: "trial_signup", institutionId: institution._id });
+    expect(lead).toBeTruthy();
+    expect(lead.status).toBe("trial_active");
+    expect(lead.contactEmail).toBe("principal@futurevalley.edu");
   });
 
   it("rejects weak passwords and duplicate admin emails", async () => {

@@ -1,6 +1,10 @@
 const Institution = require("../models/Institution");
 const Student = require("../models/Student");
 const Invoice = require("../models/Invoice");
+const Lead = require("../models/Lead");
+const WebsiteContent = require("../models/WebsiteContent");
+const LegalPage = require("../models/LegalPage");
+const PlatformAnnouncement = require("../models/PlatformAnnouncement");
 const { logPlatformAction } = require("../services/auditLogService");
 const { buildSubscriptionSummary } = require("../services/subscriptionPlanService");
 const { MODULE_CATALOG, DEFAULT_MODULE_KEYS, normalizeModules, getEnabledModules } = require("../services/moduleAccessService");
@@ -27,27 +31,258 @@ const serializeInstitution = async (institution) => {
 
 exports.getPlatformOverview = async (req, res) => {
   try {
-    const [institutionCount, activeInstitutionCount, suspendedInstitutionCount, studentCount, adminCount] = await Promise.all([
+    const [
+      institutionCount,
+      activeInstitutionCount,
+      suspendedInstitutionCount,
+      trialInstitutionCount,
+      pastDueInstitutionCount,
+      studentCount,
+      adminCount,
+      leadCount,
+      newLeadCount,
+      activeTrialLeadCount,
+      openInvoiceTotals
+    ] = await Promise.all([
       Institution.countDocuments(),
       Institution.countDocuments({ isActive: true }),
       Institution.countDocuments({ isActive: false }),
+      Institution.countDocuments({ "subscription.status": "trialing" }),
+      Institution.countDocuments({ "subscription.status": "past_due" }),
       Student.countDocuments({ role: "student" }),
-      Student.countDocuments({ role: "admin" })
+      Student.countDocuments({ role: "admin" }),
+      Lead.countDocuments(),
+      Lead.countDocuments({ status: "new" }),
+      Lead.countDocuments({ status: "trial_active" }),
+      Invoice.aggregate([
+        { $match: { status: { $in: ["issued", "overdue", "paid"] } } },
+        {
+          $group: {
+            _id: "$status",
+            amountInr: { $sum: "$amountInr" },
+            count: { $sum: 1 }
+          }
+        }
+      ])
     ]);
+
+    const billing = openInvoiceTotals.reduce((acc, row) => {
+      acc[row._id] = {
+        amountInr: row.amountInr,
+        count: row.count
+      };
+      return acc;
+    }, {});
 
     res.json({
       institutions: {
         total: institutionCount,
         active: activeInstitutionCount,
-        suspended: suspendedInstitutionCount
+        suspended: suspendedInstitutionCount,
+        trialing: trialInstitutionCount,
+        pastDue: pastDueInstitutionCount
       },
       users: {
         students: studentCount,
         organizationAdmins: adminCount
+      },
+      leads: {
+        total: leadCount,
+        new: newLeadCount,
+        trialActive: activeTrialLeadCount
+      },
+      billing: {
+        issued: billing.issued || { amountInr: 0, count: 0 },
+        overdue: billing.overdue || { amountInr: 0, count: 0 },
+        paid: billing.paid || { amountInr: 0, count: 0 }
       }
     });
   } catch (err) {
     console.error("Error fetching platform overview:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listLeads = async (req, res) => {
+  try {
+    const { status, source } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (source) filter.source = source;
+
+    const leads = await Lead.find(filter).sort({ createdAt: -1 }).limit(200);
+    res.json(leads);
+  } catch (err) {
+    console.error("Error listing leads:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.updateLead = async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.leadId);
+    if (!lead) {
+      return res.status(404).json({ error: "Lead not found" });
+    }
+
+    ["status", "notes", "followUpOwner"].forEach((field) => {
+      if (req.body[field] !== undefined) {
+        lead[field] = req.body[field];
+      }
+    });
+
+    if (req.body.nextFollowUpAt !== undefined) {
+      lead.nextFollowUpAt = req.body.nextFollowUpAt ? new Date(req.body.nextFollowUpAt) : undefined;
+    }
+
+    if (req.body.status === "converted" && !lead.convertedAt) {
+      lead.convertedAt = new Date();
+    }
+
+    await lead.save();
+
+    await logPlatformAction({
+      req,
+      action: "platform.lead_updated",
+      entityType: "Lead",
+      entityId: lead._id,
+      summary: `Updated lead ${lead.institutionName}`,
+      metadata: {
+        leadId: lead._id,
+        status: lead.status,
+        source: lead.source
+      }
+    });
+
+    res.json(lead);
+  } catch (err) {
+    console.error("Error updating lead:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.getWebsiteContent = async (req, res) => {
+  try {
+    const content = await WebsiteContent.findOneAndUpdate(
+      { key: "default" },
+      { $setOnInsert: { key: "default" } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    res.json(content);
+  } catch (err) {
+    console.error("Error fetching website content:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.updateWebsiteContent = async (req, res) => {
+  try {
+    const allowed = ["announcement", "hero", "contact", "pricingPlans", "faqs"];
+    const update = {};
+    allowed.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        update[field] = req.body[field];
+      }
+    });
+
+    const content = await WebsiteContent.findOneAndUpdate(
+      { key: "default" },
+      { $set: update, $setOnInsert: { key: "default" } },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    );
+
+    await logPlatformAction({
+      req,
+      action: "platform.website_content_updated",
+      entityType: "WebsiteContent",
+      entityId: content._id,
+      summary: "Updated public website content",
+      metadata: { fields: Object.keys(update) }
+    });
+
+    res.json(content);
+  } catch (err) {
+    console.error("Error updating website content:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listLegalPages = async (req, res) => {
+  try {
+    const pages = await LegalPage.find().sort({ slug: 1 });
+    res.json(pages);
+  } catch (err) {
+    console.error("Error listing legal pages:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.upsertLegalPage = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    if (!["terms", "privacy", "refund-policy", "support"].includes(slug)) {
+      return res.status(400).json({ error: "Invalid legal page" });
+    }
+
+    const page = await LegalPage.findOneAndUpdate(
+      { slug },
+      {
+        $set: {
+          title: req.body.title,
+          content: req.body.content,
+          status: req.body.status || "published",
+          lastReviewedAt: req.body.lastReviewedAt ? new Date(req.body.lastReviewedAt) : new Date()
+        }
+      },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    );
+
+    await logPlatformAction({
+      req,
+      action: "platform.legal_page_updated",
+      entityType: "LegalPage",
+      entityId: page._id,
+      summary: `Updated legal page ${page.slug}`,
+      metadata: { slug: page.slug, status: page.status }
+    });
+
+    res.json(page);
+  } catch (err) {
+    console.error("Error updating legal page:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listAnnouncements = async (req, res) => {
+  try {
+    const announcements = await PlatformAnnouncement.find().sort({ createdAt: -1 }).limit(100);
+    res.json(announcements);
+  } catch (err) {
+    console.error("Error listing announcements:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.createAnnouncement = async (req, res) => {
+  try {
+    const announcement = await PlatformAnnouncement.create(req.body);
+
+    await logPlatformAction({
+      req,
+      action: "platform.announcement_created",
+      entityType: "PlatformAnnouncement",
+      entityId: announcement._id,
+      summary: `Created announcement ${announcement.title}`,
+      metadata: {
+        audience: announcement.audience,
+        channel: announcement.channel,
+        status: announcement.status
+      }
+    });
+
+    res.status(201).json(announcement);
+  } catch (err) {
+    console.error("Error creating announcement:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

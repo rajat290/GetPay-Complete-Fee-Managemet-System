@@ -11,7 +11,15 @@ const {
   listInstitutionInvoices,
   createInstitutionInvoice,
   markInstitutionInvoicePaid,
-  runBillingLifecycleRefresh
+  runBillingLifecycleRefresh,
+  listLeads,
+  updateLead,
+  getWebsiteContent,
+  updateWebsiteContent,
+  listLegalPages,
+  upsertLegalPage,
+  listAnnouncements,
+  createAnnouncement
 } = require("../controllers/superAdminController");
 const { protect, requireSuperAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -30,6 +38,14 @@ router.use(protect, requireSuperAdmin);
 router.get("/overview", getPlatformOverview);
 router.get("/modules", getModuleCatalog);
 router.post("/billing/refresh", runBillingLifecycleRefresh);
+router.get("/leads", listLeads);
+router.patch("/leads/:leadId", updateLead);
+router.get("/website-content", getWebsiteContent);
+router.patch("/website-content", updateWebsiteContent);
+router.get("/legal-pages", listLegalPages);
+router.put("/legal-pages/:slug", upsertLegalPage);
+router.get("/announcements", listAnnouncements);
+router.post("/announcements", createAnnouncement);
 router.get("/institutions", listInstitutions);
 router.post("/institutions", validateRequest(createInstitutionSchema), createInstitution);
 router.get("/institutions/:institutionId", validateRequest(institutionParamsSchema), getInstitution);

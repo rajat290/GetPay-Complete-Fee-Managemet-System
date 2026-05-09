@@ -19,6 +19,8 @@ const {
   listOrganizationAdmins,
   recoverOrganizationAdmin,
   listAdminRecoveryLogs,
+  startAdminImpersonation,
+  listImpersonationLogs,
   runBillingLifecycleRefresh,
   listLeads,
   updateLead,
@@ -64,10 +66,16 @@ router.patch("/institutions/:institutionId/restore", validateRequest(institution
 router.patch("/institutions/:institutionId/risk-controls", validateRequest(institutionParamsSchema), updateInstitutionRiskControls);
 router.get("/institutions/:institutionId/admins", validateRequest(institutionParamsSchema), listOrganizationAdmins);
 router.get("/institutions/:institutionId/admin-recovery-logs", validateRequest(institutionParamsSchema), listAdminRecoveryLogs);
+router.get("/institutions/:institutionId/impersonation-logs", validateRequest(institutionParamsSchema), listImpersonationLogs);
 router.post(
   "/institutions/:institutionId/admins/:adminId/recovery",
   validateRequest(adminRecoveryParamsSchema),
   recoverOrganizationAdmin
+);
+router.post(
+  "/institutions/:institutionId/admins/:adminId/impersonate",
+  validateRequest(adminRecoveryParamsSchema),
+  startAdminImpersonation
 );
 router.get("/institutions/:institutionId/invoices", validateRequest(institutionParamsSchema), listInstitutionInvoices);
 router.post("/institutions/:institutionId/invoices", validateRequest(institutionParamsSchema), createInstitutionInvoice);

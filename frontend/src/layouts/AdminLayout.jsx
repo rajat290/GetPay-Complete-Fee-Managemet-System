@@ -31,7 +31,7 @@ export default function AdminLayout() {
   const [institution, setInstitution] = useState(null);
   const [enabledModules, setEnabledModules] = useState([]);
   const [userPermissions, setUserPermissions] = useState([]);
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, stopImpersonation } = useContext(AuthContext);
   const { theme, toggleTheme } = useContext(ThemeContext);
   const location = useLocation();
 
@@ -77,6 +77,14 @@ export default function AdminLayout() {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 overflow-hidden">
+      {user?.impersonated && (
+        <div className="fixed left-0 right-0 top-0 z-[70] flex items-center justify-between bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950">
+          <span>Support mode: impersonating {user.email}. Reason: {user.impersonationReason}</span>
+          <button onClick={stopImpersonation} className="rounded bg-amber-950 px-3 py-1 text-xs text-white">
+            Return to Super Admin
+          </button>
+        </div>
+      )}
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 

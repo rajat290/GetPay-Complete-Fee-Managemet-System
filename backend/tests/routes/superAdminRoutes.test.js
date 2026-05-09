@@ -10,6 +10,8 @@ const Institution = require("../../models/Institution");
 const Student = require("../../models/Student");
 const AuditLog = require("../../models/AuditLog");
 const AdminRecoveryLog = require("../../models/AdminRecoveryLog");
+const PlatformAnnouncement = require("../../models/PlatformAnnouncement");
+const ImpersonationLog = require("../../models/ImpersonationLog");
 
 const app = express();
 app.use(express.json());
@@ -262,5 +264,71 @@ describe("super admin platform control", () => {
 
     const recoveryLog = await AdminRecoveryLog.findOne({ adminId: admin._id });
     expect(recoveryLog.reason).toBe("Principal lost access");
+  });
+
+  it("creates and lists platform announcements", async () => {
+    const createRes = await request(app)
+      .post("/api/super-admin/announcements")
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({
+        title: "Maintenance notice",
+        message: "Collections dashboard maintenance tonight.",
+        audience: "all",
+        channel: "in_app",
+        status: "sent"
+      });
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.sentAt).toBeTruthy();
+
+    const announcement = await PlatformAnnouncement.findOne({ title: "Maintenance notice" });
+    expect(announcement).toBeTruthy();
+
+    const listRes = await request(app)
+      .get("/api/super-admin/announcements")
+      .set("Authorization", `Bearer ${superToken}`);
+
+    expect(listRes.status).toBe(200);
+    expect(listRes.body).toHaveLength(1);
+
+    const auditLog = await AuditLog.findOne({ action: "platform.announcement_created" });
+    expect(auditLog).toBeTruthy();
+  });
+
+  it("starts audited support impersonation for an organization admin", async () => {
+    const institution = await Institution.create({
+      name: "Support Mode School",
+      code: "SUPPORTMODE"
+    });
+
+    const admin = await Student.create({
+      institutionId: institution._id,
+      name: "Support Target",
+      email: "admin@supportmode.edu",
+      password: "password",
+      registrationNo: "ADM001",
+      className: "Administration",
+      role: "admin"
+    });
+
+    const res = await request(app)
+      .post(`/api/super-admin/institutions/${institution._id}/admins/${admin._id}/impersonate`)
+      .set("Authorization", `Bearer ${superToken}`)
+      .send({ reason: "Debugging billing setup with principal approval" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.token).toBeTruthy();
+    expect(res.body.user.role).toBe("admin");
+    expect(res.body.user.impersonated).toBe(true);
+
+    const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET);
+    expect(decoded.impersonation.reason).toBe("Debugging billing setup with principal approval");
+    expect(decoded.impersonation.by).toBe(String(superAdmin._id));
+
+    const impersonationLog = await ImpersonationLog.findOne({ targetUserId: admin._id });
+    expect(impersonationLog.reason).toBe("Debugging billing setup with principal approval");
+
+    const auditLog = await AuditLog.findOne({ action: "platform.impersonation_started" });
+    expect(auditLog).toBeTruthy();
   });
 });

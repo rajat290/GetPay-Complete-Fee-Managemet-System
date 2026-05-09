@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { FiArrowLeft, FiRefreshCw, FiSave, FiShield } from "react-icons/fi";
+import { AuthContext } from "../../context/authContextValue";
 import api from "../../services/api";
 
 const blankLimitOverrides = {
@@ -11,7 +12,10 @@ const blankLimitOverrides = {
 
 export default function SuperAdminInstitutionDetail() {
   const { institutionId } = useParams();
+  const navigate = useNavigate();
+  const { startImpersonation } = useContext(AuthContext);
   const [institution, setInstitution] = useState(null);
+  const [modules, setModules] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [recoveryLogs, setRecoveryLogs] = useState([]);
   const [message, setMessage] = useState("");
@@ -20,8 +24,14 @@ export default function SuperAdminInstitutionDetail() {
   const [archiveReason, setArchiveReason] = useState("");
   const [trialDays, setTrialDays] = useState(7);
   const [convertPlan, setConvertPlan] = useState("growth");
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    plan: "starter",
+    status: "trialing",
+    currentPeriodEndsAt: ""
+  });
   const [limitOverrides, setLimitOverrides] = useState(blankLimitOverrides);
   const [recoveryReason, setRecoveryReason] = useState("");
+  const [impersonationReason, setImpersonationReason] = useState("");
   const [temporaryPassword, setTemporaryPassword] = useState("");
 
   const load = useCallback(async () => {
@@ -38,6 +48,11 @@ export default function SuperAdminInstitutionDetail() {
       setAdmins(adminsRes.data || []);
       setRecoveryLogs(logsRes.data || []);
       setRiskReason(data.riskControls?.reason || "");
+      setSubscriptionForm({
+        plan: data.subscription?.plan || "starter",
+        status: data.subscription?.status || "trialing",
+        currentPeriodEndsAt: data.subscription?.currentPeriodEndsAt?.slice(0, 10) || ""
+      });
       setLimitOverrides({
         students: data.subscription?.limitOverrides?.students ?? "",
         admins: data.subscription?.limitOverrides?.admins ?? "",
@@ -51,6 +66,16 @@ export default function SuperAdminInstitutionDetail() {
   }, [institutionId]);
 
   useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const res = await api.get("/super-admin/modules");
+        setModules(res.data.modules || []);
+      } catch {
+        setModules([]);
+      }
+    };
+
+    loadModules();
     load();
   }, [load]);
 
@@ -70,6 +95,22 @@ export default function SuperAdminInstitutionDetail() {
 
   const saveLimitOverrides = async () => {
     await patchInstitution("/subscription", { limitOverrides }, "Limit overrides saved.");
+  };
+
+  const saveSubscription = async () => {
+    await patchInstitution("/subscription", {
+      ...subscriptionForm,
+      currentPeriodEndsAt: subscriptionForm.currentPeriodEndsAt || undefined
+    }, "Subscription updated.");
+  };
+
+  const toggleModule = async (moduleKey) => {
+    const current = institution?.enabledModules || [];
+    const next = current.includes(moduleKey)
+      ? current.filter((key) => key !== moduleKey)
+      : [...current, moduleKey];
+
+    await patchInstitution("/modules", { enabledModules: next }, "Module access updated.");
   };
 
   const toggleRisk = async (field) => {
@@ -96,6 +137,20 @@ export default function SuperAdminInstitutionDetail() {
       await load();
     } catch (error) {
       setMessage(error.response?.data?.error || "Could not recover admin.");
+    }
+  };
+
+  const impersonateAdmin = async (admin) => {
+    setMessage("");
+    setTemporaryPassword("");
+    try {
+      const res = await api.post(`/super-admin/institutions/${institutionId}/admins/${admin._id}/impersonate`, {
+        reason: impersonationReason || "Support investigation approved by institution"
+      });
+      startImpersonation(res.data.user, res.data.token);
+      navigate("/admin/dashboard");
+    } catch (error) {
+      setMessage(error.response?.data?.error || "Could not start support mode.");
     }
   };
 
@@ -148,7 +203,7 @@ export default function SuperAdminInstitutionDetail() {
         <Metric label="Students" value={usage.students || 0} detail={`Limit ${summary.limits?.students ?? "Unlimited"}`} />
         <Metric label="Admins" value={usage.admins || 0} detail={`Limit ${summary.limits?.admins ?? "Unlimited"}`} />
         <Metric label="Staff" value={breakdown.staff || 0} detail="Operational users" />
-        <Metric label="Collections" value={`₹${Number(breakdown.payments?.totalAmount || 0).toLocaleString("en-IN")}`} detail={`${breakdown.payments?.totalCount || 0} payments`} />
+        <Metric label="Collections" value={`INR ${Number(breakdown.payments?.totalAmount || 0).toLocaleString("en-IN")}`} detail={`${breakdown.payments?.totalCount || 0} payments`} />
         <Metric label="Reminders" value={breakdown.reminders || 0} detail={`Limit ${summary.limits?.reminderCampaigns ?? "Unlimited"}`} />
         <Metric label="Branches" value={breakdown.branches?.active || 0} detail={`${breakdown.branches?.total || 0} total`} />
         <Metric label="Receipts" value={breakdown.receipts || 0} detail="Generated PDFs" />
@@ -156,6 +211,54 @@ export default function SuperAdminInstitutionDetail() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <Card title="Subscription Renewal Control">
+          <div className="grid gap-3 md:grid-cols-3">
+            <Select label="Plan" value={subscriptionForm.plan} onChange={(value) => setSubscriptionForm({ ...subscriptionForm, plan: value })} options={[
+              ["starter", "Starter"],
+              ["growth", "Growth"],
+              ["enterprise", "Enterprise"]
+            ]} />
+            <Select label="Status" value={subscriptionForm.status} onChange={(value) => setSubscriptionForm({ ...subscriptionForm, status: value })} options={[
+              ["trialing", "Trialing"],
+              ["active", "Active"],
+              ["past_due", "Past due"],
+              ["paused", "Paused"],
+              ["cancelled", "Cancelled"]
+            ]} />
+            <Input label="Renewal date" type="date" value={subscriptionForm.currentPeriodEndsAt} onChange={(value) => setSubscriptionForm({ ...subscriptionForm, currentPeriodEndsAt: value })} />
+          </div>
+          <button onClick={saveSubscription} className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+            <FiSave className="h-4 w-4" />
+            Save Subscription
+          </button>
+        </Card>
+
+        <Card title="Module Access">
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-gray-800 dark:bg-gray-950 dark:text-slate-300">
+            Plan modules are the commercial default. Manual toggles below are the Super Admin override currently enforced for this institution.
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {modules.map((module) => {
+              const enabled = (institution.enabledModules || []).includes(module.key);
+              return (
+                <button
+                  key={module.key}
+                  onClick={() => toggleModule(module.key)}
+                  className={`rounded-md border px-4 py-3 text-left text-sm ${
+                    enabled
+                      ? "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100"
+                      : "border-slate-200 bg-slate-100 text-slate-600 dark:border-gray-800 dark:bg-gray-800 dark:text-slate-300"
+                  }`}
+                >
+                  <div className="font-semibold">{module.name}</div>
+                  <p className="mt-1 text-xs opacity-80">{module.description}</p>
+                  <span className="mt-2 inline-block text-xs font-bold">{enabled ? "Enabled override" : "Disabled override"}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
         <Card title="Plan, Trial & Limit Overrides">
           <div className="grid gap-3 md:grid-cols-3">
             <Input label="Student limit override" type="number" value={limitOverrides.students} onChange={(value) => setLimitOverrides({ ...limitOverrides, students: value })} />
@@ -235,6 +338,7 @@ export default function SuperAdminInstitutionDetail() {
 
         <Card title="Organization Admin Recovery">
           <Input label="Recovery reason" value={recoveryReason} onChange={setRecoveryReason} />
+          <Input label="Support mode reason" value={impersonationReason} onChange={setImpersonationReason} />
           <div className="space-y-3">
             {admins.length === 0 ? (
               <p className="text-sm text-slate-500">No organization admins found.</p>
@@ -248,6 +352,9 @@ export default function SuperAdminInstitutionDetail() {
                   </button>
                   <button onClick={() => recoverAdmin(admin, "temporary_password_reset")} className="rounded-md bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-800">
                     Reset Temporary Password
+                  </button>
+                  <button onClick={() => impersonateAdmin(admin)} className="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700">
+                    Login as Admin
                   </button>
                 </div>
               </div>
@@ -310,6 +417,19 @@ function Input({ label, value, onChange, type = "text" }) {
     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
       {label}
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950" />
+    </label>
+  );
+}
+
+function Select({ label, value, onChange, options }) {
+  return (
+    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+      {label}
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>{optionLabel}</option>
+        ))}
+      </select>
     </label>
   );
 }

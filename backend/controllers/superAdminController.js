@@ -6,10 +6,12 @@ const Branch = require("../models/Branch");
 const Receipt = require("../models/Receipt");
 const ReminderCampaign = require("../models/ReminderCampaign");
 const AdminRecoveryLog = require("../models/AdminRecoveryLog");
+const ImpersonationLog = require("../models/ImpersonationLog");
 const Lead = require("../models/Lead");
 const WebsiteContent = require("../models/WebsiteContent");
 const LegalPage = require("../models/LegalPage");
 const PlatformAnnouncement = require("../models/PlatformAnnouncement");
+const jwt = require("jsonwebtoken");
 const { logPlatformAction } = require("../services/auditLogService");
 const { buildSubscriptionSummary } = require("../services/subscriptionPlanService");
 const { MODULE_CATALOG, DEFAULT_MODULE_KEYS, normalizeModules, getEnabledModules } = require("../services/moduleAccessService");
@@ -24,6 +26,16 @@ const generateTemporaryPassword = () => {
   const random = Math.random().toString(36).slice(2, 8);
   return `GetPay@${random}${Math.floor(10 + Math.random() * 90)}`;
 };
+
+const generateImpersonationToken = ({ targetUser, performedBy, reason, logId }) => jwt.sign({
+  id: targetUser._id,
+  role: targetUser.role,
+  impersonation: {
+    by: performedBy._id,
+    reason,
+    logId
+  }
+}, process.env.JWT_SECRET, { expiresIn: "30m" });
 
 const getInstitutionUsageBreakdown = async (institutionId) => {
   const [
@@ -338,7 +350,31 @@ exports.listAnnouncements = async (req, res) => {
 
 exports.createAnnouncement = async (req, res) => {
   try {
-    const announcement = await PlatformAnnouncement.create(req.body);
+    const { title, message, audience = "all", institutionId, channel = "in_app", status = "draft", scheduledAt } = req.body;
+    if (!title || !message) {
+      return res.status(400).json({ error: "Title and message are required" });
+    }
+
+    if (audience === "institution") {
+      if (!institutionId) {
+        return res.status(400).json({ error: "Institution is required for institution announcements" });
+      }
+      const institution = await Institution.findById(institutionId);
+      if (!institution) {
+        return res.status(404).json({ error: "Institution not found" });
+      }
+    }
+
+    const announcement = await PlatformAnnouncement.create({
+      title,
+      message,
+      audience,
+      institutionId: audience === "institution" ? institutionId : undefined,
+      channel,
+      status,
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+      sentAt: status === "sent" ? new Date() : undefined
+    });
 
     await logPlatformAction({
       req,
@@ -919,6 +955,115 @@ exports.listAdminRecoveryLogs = async (req, res) => {
     res.json(logs);
   } catch (err) {
     console.error("Error listing admin recovery logs:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.startAdminImpersonation = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    if (institution.lifecycle?.archivedAt) {
+      return res.status(403).json({ error: "Cannot impersonate an archived institution" });
+    }
+
+    if (institution.riskControls?.disableLogins || institution.riskControls?.freezeInstitution) {
+      return res.status(403).json({ error: "Institution login is restricted" });
+    }
+
+    const { reason } = req.body;
+    if (!reason || reason.trim().length < 8) {
+      return res.status(400).json({ error: "A clear impersonation reason is required" });
+    }
+
+    const admin = await Student.findOne({
+      _id: req.params.adminId,
+      institutionId: institution._id,
+      role: "admin",
+      status: { $ne: "inactive" }
+    });
+    if (!admin) {
+      return res.status(404).json({ error: "Organization admin not found" });
+    }
+
+    const tokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const impersonationLog = await ImpersonationLog.create({
+      institutionId: institution._id,
+      targetUserId: admin._id,
+      performedBy: req.user._id,
+      reason,
+      tokenExpiresAt
+    });
+
+    const token = generateImpersonationToken({
+      targetUser: admin,
+      performedBy: req.user,
+      reason,
+      logId: impersonationLog._id
+    });
+
+    await logPlatformAction({
+      req,
+      action: "platform.impersonation_started",
+      entityType: "Student",
+      entityId: admin._id,
+      summary: `Started support impersonation for ${admin.email}`,
+      metadata: {
+        institutionId: institution._id,
+        targetUserId: admin._id,
+        impersonationLogId: impersonationLog._id,
+        reason,
+        tokenExpiresAt
+      }
+    });
+
+    res.json({
+      token,
+      expiresAt: tokenExpiresAt,
+      user: {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        institution: {
+          _id: institution._id,
+          name: institution.name,
+          code: institution.code
+        },
+        impersonated: true,
+        impersonatedBy: {
+          _id: req.user._id,
+          name: req.user.name,
+          email: req.user.email
+        },
+        impersonationReason: reason
+      }
+    });
+  } catch (err) {
+    console.error("Error starting impersonation:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listImpersonationLogs = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const logs = await ImpersonationLog.find({ institutionId: institution._id })
+      .populate("targetUserId", "name email")
+      .populate("performedBy", "name email")
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json(logs);
+  } catch (err) {
+    console.error("Error listing impersonation logs:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

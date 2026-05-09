@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiBriefcase, FiImage, FiMail, FiPhone, FiSave, FiSettings } from "react-icons/fi";
+import { FiBriefcase, FiCreditCard, FiImage, FiMail, FiPhone, FiSave, FiSettings } from "react-icons/fi";
 import api from "../../services/api";
 
 const emptySettings = {
@@ -18,6 +18,29 @@ const emptySettings = {
     name: "",
     email: "",
     phone: ""
+  },
+  subscriptionSummary: {
+    subscription: {
+      planName: "Starter",
+      status: "trialing"
+    },
+    pricing: {
+      monthlyPriceInr: 4999
+    },
+    limits: {
+      students: 500,
+      admins: 2,
+      reminderCampaigns: 3
+    },
+    usage: {
+      students: 0,
+      admins: 0
+    },
+    utilization: {
+      students: 0,
+      admins: 0
+    },
+    features: []
   }
 };
 
@@ -31,8 +54,34 @@ const mergeSettings = (data = {}) => ({
   billingContact: {
     ...emptySettings.billingContact,
     ...(data.billingContact || {})
+  },
+  subscriptionSummary: {
+    ...emptySettings.subscriptionSummary,
+    ...(data.subscriptionSummary || {}),
+    subscription: {
+      ...emptySettings.subscriptionSummary.subscription,
+      ...(data.subscriptionSummary?.subscription || {})
+    },
+    pricing: {
+      ...emptySettings.subscriptionSummary.pricing,
+      ...(data.subscriptionSummary?.pricing || {})
+    },
+    limits: {
+      ...emptySettings.subscriptionSummary.limits,
+      ...(data.subscriptionSummary?.limits || {})
+    },
+    usage: {
+      ...emptySettings.subscriptionSummary.usage,
+      ...(data.subscriptionSummary?.usage || {})
+    },
+    utilization: {
+      ...emptySettings.subscriptionSummary.utilization,
+      ...(data.subscriptionSummary?.utilization || {})
+    }
   }
 });
+
+const formatPrice = (price) => (price ? `INR ${Number(price).toLocaleString("en-IN")}/mo` : "Custom");
 
 export default function InstitutionSettings() {
   const [settings, setSettings] = useState(emptySettings);
@@ -291,6 +340,53 @@ export default function InstitutionSettings() {
 
         <aside className="space-y-6">
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Subscription</p>
+                <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                  {settings.subscriptionSummary.subscription.planName}
+                </h3>
+                <p className="mt-1 text-sm capitalize text-gray-500 dark:text-gray-400">
+                  {settings.subscriptionSummary.subscription.status}
+                </p>
+              </div>
+              <div className="rounded-md bg-blue-50 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-200">
+                <FiCreditCard className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
+              {formatPrice(settings.subscriptionSummary.pricing.monthlyPriceInr)}
+            </p>
+            <div className="mt-5 space-y-4">
+              <UsageBar
+                label="Students"
+                used={settings.subscriptionSummary.usage.students}
+                limit={settings.subscriptionSummary.limits.students}
+                percent={settings.subscriptionSummary.utilization.students}
+              />
+              <UsageBar
+                label="Admins"
+                used={settings.subscriptionSummary.usage.admins}
+                limit={settings.subscriptionSummary.limits.admins}
+                percent={settings.subscriptionSummary.utilization.admins}
+              />
+              <UsageBar
+                label="Reminder campaigns"
+                used={settings.subscriptionSummary.usage.reminderCampaigns || 0}
+                limit={settings.subscriptionSummary.limits.reminderCampaigns}
+                percent={null}
+              />
+            </div>
+            <div className="mt-5 space-y-2">
+              {settings.subscriptionSummary.features.slice(0, 4).map((feature) => (
+                <div key={feature} className="text-sm text-gray-600 dark:text-gray-300">
+                  {feature}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center gap-4">
               <div
                 className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md text-lg font-semibold text-white"
@@ -347,6 +443,26 @@ export default function InstitutionSettings() {
             </p>
           </div>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+function UsageBar({ label, used, limit, percent }) {
+  const safePercent = percent === null ? 100 : Math.min(Number(percent || 0), 100);
+  const limitText = limit ? `${used}/${limit}` : `${used}/Unlimited`;
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-sm">
+        <span className="font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="text-gray-500 dark:text-gray-400">{limitText}</span>
+      </div>
+      <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700">
+        <div
+          className="h-2 rounded-full bg-blue-600"
+          style={{ width: `${safePercent}%` }}
+        />
       </div>
     </div>
   );

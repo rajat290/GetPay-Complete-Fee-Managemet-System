@@ -27,6 +27,7 @@ const FinanceWorkspace = lazy(() => import("./pages/admin/FinanceWorkspace"));
 const ReminderCampaigns = lazy(() => import("./pages/admin/ReminderCampaigns"));
 const AuditTrail = lazy(() => import("./pages/admin/AuditTrail"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
+const Reports = lazy(() => import("./pages/admin/Reports"));
 const InstitutionSettings = lazy(() => import("./pages/admin/InstitutionSettings"));
 const StaffManagement = lazy(() => import("./pages/admin/StaffManagement"));
 const SuperAdminLayout = lazy(() => import("./layouts/SuperAdminLayout"));
@@ -94,6 +95,7 @@ function App() {
                 <Route path="reminder-campaigns" element={<ReminderCampaigns />} />
                 <Route path="audit-trail" element={<AuditTrail />} />
                 <Route path="analytics" element={<Analytics />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="settings" element={<InstitutionSettings />} />
                 <Route path="staff" element={<StaffManagement />} />
               </Route>

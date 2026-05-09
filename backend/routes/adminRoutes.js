@@ -23,7 +23,11 @@ const {
   updateReminderCampaign,
   runSavedReminderCampaign,
   importStudents,
-  getDailyAccountingSummary
+  exportDailySummary,
+  getCollectionReport,
+  getClassWiseReport,
+  getDefaultersReport,
+  getPaymentModeReport
 } = require("../controllers/adminController");
 const {
   getPermissionCatalog,
@@ -173,6 +177,18 @@ router.post("/reminder-campaigns/:campaignId/run", requireModule("finance_operat
 router.get("/payments/:paymentId", requireModule("finance_operations"), requirePermission("fee.collect"), validateRequest(paymentDetailsSchema), getPaymentDetails);
 
 // GET /admin/reports/daily-summary - Export daily collection summary
-router.get("/reports/daily-summary", requireModule("finance_operations"), requirePermission("report.export"), getDailyAccountingSummary);
+router.get("/reports/daily-summary", requireModule("finance_operations"), requirePermission("report.export"), exportDailySummary);
+
+// GET /admin/reports/collection-summary - Collection trends
+router.get("/reports/collection-summary", requireModule("finance_operations"), requirePermission("analytics.view"), getCollectionReport);
+
+// GET /admin/reports/class-wise - Class collections
+router.get("/reports/class-wise", requireModule("finance_operations"), requirePermission("analytics.view"), getClassWiseReport);
+
+// GET /admin/reports/defaulters - Defaulters list
+router.get("/reports/defaulters", requireModule("finance_operations"), requirePermission("report.export"), getDefaultersReport);
+
+// GET /admin/reports/payment-modes - Payment mode analysis
+router.get("/reports/payment-modes", requireModule("finance_operations"), requirePermission("analytics.view"), getPaymentModeReport);
 
 module.exports = router;

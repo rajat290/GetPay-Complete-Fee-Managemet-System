@@ -11,6 +11,7 @@ const { buildStudentLedger } = require("../services/studentLedgerService");
 const { refreshOverdueAssignments, buildDuesReport } = require("../services/duesReportService");
 const { logAdminAction, listAuditLogs } = require("../services/auditLogService");
 const { sendDueReminders, runReminderCampaign } = require("../services/feeReminderService");
+const reportService = require("../services/reportService");
 const { getEnabledModules } = require("../services/moduleAccessService");
 const { getUserPermissions } = require("../middleware/permissionMiddleware");
 const {
@@ -1229,36 +1230,27 @@ exports.importStudents = async (req, res) => {
   }
 };
 
-// Daily Accounting Summary Export
-exports.getDailyAccountingSummary = async (req, res) => {
+/**
+ * 21. Export Daily Collection Summary (CSV)
+ */
+exports.exportDailySummary = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
     const payments = await Payment.find({
       institutionId: req.institutionId,
       status: "completed",
-      createdAt: { $gte: today, $lt: tomorrow }
-    })
-    .populate("studentId", "name registrationNo className")
-    .populate({
-      path: "assignmentId",
-      select: "feeTitle installmentName"
-    })
-    .sort({ createdAt: 1 });
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    }).populate("studentId", "name className registrationNo")
+      .populate("assignmentId", "feeTitle installmentName");
 
-    if (payments.length === 0) {
-      return res.status(404).json({ error: "No collections found for today" });
-    }
-
-    // Generate CSV content
-    const headers = ["Time", "Student", "Reg No", "Class", "Fee Type", "Installment", "Amount", "Mode", "Reference"];
-    const rows = payments.map(p => [
-      new Date(p.createdAt).toLocaleTimeString(),
+    const csvHeaders = ["Date", "Student", "Reg No", "Class", "Fee Type", "Installment", "Amount", "Mode", "Reference"];
+    const csvRows = payments.map(p => [
+      new Date(p.createdAt).toLocaleDateString(),
       p.studentId?.name || "N/A",
       p.studentId?.registrationNo || "N/A",
       p.studentId?.className || "N/A",
@@ -1269,12 +1261,11 @@ exports.getDailyAccountingSummary = async (req, res) => {
       p.referenceNo || p.razorpayPaymentId || "-"
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const csvContent = [csvHeaders.join(","), ...csvRows.map(r => r.join(","))].join("\n");
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename=daily_summary_${new Date().toISOString().slice(0,10)}.csv`);
-    res.status(200).send(csvContent);
-
+    res.setHeader("Content-Disposition", `attachment; filename=daily_summary_${new Date().toISOString().slice(0, 10)}.csv`);
+    
     await logAdminAction({
       req,
       action: "report.daily_summary_exported",
@@ -1283,8 +1274,81 @@ exports.getDailyAccountingSummary = async (req, res) => {
       metadata: { count: payments.length, date: today }
     });
 
+    return res.status(200).send(csvContent);
   } catch (err) {
     console.error("Error generating daily summary:", err);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+/**
+ * 22. Collection Summary Report (API)
+ */
+exports.getCollectionReport = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const { startDate, endDate, groupBy } = req.query;
+    const summary = await reportService.getCollectionSummary({
+      institutionId: req.institutionId,
+      startDate: startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
+      endDate: endDate || new Date(),
+      groupBy: groupBy || "day"
+    });
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to generate collection report" });
+  }
+};
+
+/**
+ * 23. Class-wise Collection Report
+ */
+exports.getClassWiseReport = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const { startDate, endDate } = req.query;
+    const report = await reportService.getClassWiseCollection({
+      institutionId: req.institutionId,
+      startDate: startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
+      endDate: endDate || new Date()
+    });
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to generate class-wise report" });
+  }
+};
+
+/**
+ * 24. Defaulters Report
+ */
+exports.getDefaultersReport = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const { className } = req.query;
+    const report = await reportService.getDefaultersReport({
+      institutionId: req.institutionId,
+      className
+    });
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to generate defaulters report" });
+  }
+};
+
+/**
+ * 25. Payment Mode Analysis
+ */
+exports.getPaymentModeReport = async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const { startDate, endDate } = req.query;
+    const report = await reportService.getPaymentModeAnalysis({
+      institutionId: req.institutionId,
+      startDate: startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
+      endDate: endDate || new Date()
+    });
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to generate payment mode report" });
   }
 };

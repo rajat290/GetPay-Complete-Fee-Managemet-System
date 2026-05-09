@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  FileText,
   Bell,
   Search,
   ChevronRight,
@@ -57,6 +58,7 @@ export default function AdminLayout() {
     { name: 'Reminder Campaigns', href: '/admin/reminder-campaigns', icon: History, module: 'finance_operations', permission: 'fee.collect' },
     { name: 'Audit Trail', href: '/admin/audit-trail', icon: Shield, module: 'audit_trail', permission: 'settings.manage' },
     { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, module: 'analytics', permission: 'analytics.view' },
+    { name: 'Reports', href: '/admin/reports', icon: FileText, module: 'finance_operations', permission: 'report.export' },
     { name: 'Staff & Roles', href: '/admin/staff', icon: UserCheck, module: 'settings', permission: 'staff.manage' },
     { name: 'Settings', href: '/admin/settings', icon: Settings, module: 'settings', permission: 'settings.manage' },
   ].filter((item) => {

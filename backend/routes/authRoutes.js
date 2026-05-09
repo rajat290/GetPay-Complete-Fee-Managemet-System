@@ -1,9 +1,9 @@
 const express = require('express');
-const { registerStudent, loginStudent, getProfile, requestPasswordReset, resetPassword, activateAccount } = require('../controllers/authController');
+const { registerStudent, loginStudent, getProfile, requestPasswordReset, resetPassword, activateAccount, changePassword } = require('../controllers/authController');
 const { protect} = require('../middleware/authMiddleware');
 const rateLimit = require('../middleware/rateLimitMiddleware');
 const validateRequest = require('../middleware/validateRequest');
-const { registerStudentSchema, loginSchema, requestPasswordResetSchema, resetPasswordSchema, activateAccountSchema } = require('../validators/authValidators');
+const { registerStudentSchema, loginSchema, requestPasswordResetSchema, resetPasswordSchema, activateAccountSchema, changePasswordSchema } = require('../validators/authValidators');
 
 const router = express.Router();
 
@@ -18,6 +18,7 @@ router.post('/login', authLimiter, validateRequest(loginSchema), loginStudent);
 router.post('/forgot-password', authLimiter, validateRequest(requestPasswordResetSchema), requestPasswordReset);
 router.post('/reset-password', authLimiter, validateRequest(resetPasswordSchema), resetPassword);
 router.post('/activate-account', authLimiter, validateRequest(activateAccountSchema), activateAccount);
+router.post('/change-password', protect, validateRequest(changePasswordSchema), changePassword);
 router.get('/profile', protect, getProfile);
 module.exports = router;
 // This code sets up the authentication routes for student registration, login, and profile retrieval. It uses Express Router to define the routes and their corresponding controller functions.

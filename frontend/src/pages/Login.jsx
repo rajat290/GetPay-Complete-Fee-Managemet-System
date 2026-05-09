@@ -20,7 +20,9 @@ export default function Login() {
       const res = await api.post("/auth/login", { email, password, institutionCode });
       login(res.data, res.data.token);
 
-      if (res.data.role === "super_admin") {
+      if (res.data.mustChangePassword) {
+        navigate("/change-password");
+      } else if (res.data.role === "super_admin") {
         navigate("/super-admin/dashboard");
       } else if (res.data.role === "admin" || res.data.role === "staff") {
         navigate("/admin/dashboard");

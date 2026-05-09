@@ -129,6 +129,7 @@ exports.loginStudent = async (req, res) => {
         name: student.name,
         email: student.email,
         role: student.role,
+        mustChangePassword: Boolean(student.mustChangePassword),
         institution: {
           _id: student.institutionId._id,
           name: student.institutionId.name,
@@ -221,6 +222,7 @@ exports.resetPassword = async (req, res) => {
     }
 
     user.password = password;
+    user.mustChangePassword = false;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
@@ -260,6 +262,7 @@ exports.activateAccount = async (req, res) => {
 
     user.password = password;
     user.status = "active";
+    user.mustChangePassword = false;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
@@ -281,6 +284,51 @@ exports.activateAccount = async (req, res) => {
     });
   } catch (err) {
     console.error("Account activation error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Change password for authenticated users, including first-login staff password change
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current password and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters" });
+    }
+
+    const user = await Student.findById(req.user._id).select("+password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const matches = await user.matchPassword(currentPassword);
+    if (!matches) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    user.password = newPassword;
+    user.mustChangePassword = false;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    res.json({
+      message: "Password changed successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        mustChangePassword: false
+      }
+    });
+  } catch (err) {
+    console.error("Change password error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

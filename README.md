@@ -48,6 +48,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Module-aware organization admin navigation
 - Staff and role management screen for organization admins
 - Permission-aware admin navigation for staff users
+- Forced password-change screen for temporary staff credentials
 - Admin dashboard for institutional overview
 - Institution settings screen for profile, logo, brand color, receipt footer, and billing contact
 - Subscription summary with plan, status, usage, and limits
@@ -72,6 +73,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Super Admin/admin/student authorization middleware
 - Module access middleware for organization-level feature gating
 - Permission middleware for staff-level RBAC
+- First-login password change enforcement for temporary staff passwords
 - Request validation middleware
 - Rate limiting for auth and payment routes
 - Security headers for common browser protections
@@ -383,10 +385,11 @@ Recommended production settings:
 - Super Admin platform control
 - Organization module access control
 - Staff users and granular RBAC permissions
+- Password lifecycle foundation and forced staff password change
 
 ### Next Priorities
 
-- Password lifecycle by user type
+- Student/admin reset policy controls and reset request queue
 - Error tracking integration such as Sentry or OpenTelemetry
 - Billing checkout and invoice lifecycle integration
 

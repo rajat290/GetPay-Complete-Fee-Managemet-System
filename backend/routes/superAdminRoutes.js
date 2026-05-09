@@ -29,7 +29,7 @@ const {
   listLegalPages,
   upsertLegalPage,
   listAnnouncements,
-  createAnnouncement
+  createAnnouncement, listPlatformAudits
 } = require("../controllers/superAdminController");
 const { protect, requireSuperAdmin } = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -56,7 +56,7 @@ router.patch("/website-content", updateWebsiteContent);
 router.get("/legal-pages", listLegalPages);
 router.put("/legal-pages/:slug", upsertLegalPage);
 router.get("/announcements", listAnnouncements);
-router.post("/announcements", createAnnouncement);
+router.post("/announcements", createAnnouncement, listPlatformAudits);
 router.get("/institutions", listInstitutions);
 router.post("/institutions", validateRequest(createInstitutionSchema), createInstitution);
 router.get("/institutions/:institutionId", validateRequest(institutionParamsSchema), getInstitution);
@@ -100,5 +100,7 @@ router.patch(
   validateRequest(updateInstitutionModulesSchema),
   updateInstitutionModules
 );
+
+router.get("/audits", listPlatformAudits);
 
 module.exports = router;

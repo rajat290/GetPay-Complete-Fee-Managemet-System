@@ -12,7 +12,7 @@ const WebsiteContent = require("../models/WebsiteContent");
 const LegalPage = require("../models/LegalPage");
 const PlatformAnnouncement = require("../models/PlatformAnnouncement");
 const jwt = require("jsonwebtoken");
-const { logPlatformAction } = require("../services/auditLogService");
+const { logPlatformAction, listPlatformAuditLogs } = require("../services/auditLogService");
 const { buildSubscriptionSummary } = require("../services/subscriptionPlanService");
 const { MODULE_CATALOG, DEFAULT_MODULE_KEYS, normalizeModules, getEnabledModules } = require("../services/moduleAccessService");
 const { createManualInvoice, markInvoicePaid, refreshBillingLifecycle } = require("../services/billingLifecycleService");
@@ -1175,4 +1175,14 @@ exports.runBillingLifecycleRefresh = async (req, res) => {
     console.error("Error refreshing billing lifecycle:", err);
     res.status(500).json({ error: "Server error" });
   }
+};
+
+exports.listPlatformAudits = async (req, res) => {
+  try {
+    const logs = await listPlatformAuditLogs(req.query);
+    res.json(logs);
+  } catch (err) {
+    console.error(" Error listing platform audits:\, err);
+ res.status(500).json({ error: \Server error\ });
+ }
 };

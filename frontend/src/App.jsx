@@ -42,6 +42,7 @@ const SuperAdminInstitutionDetail = lazy(() => import("./pages/super-admin/Super
 const SuperAdminLeads = lazy(() => import("./pages/super-admin/SuperAdminLeads"));
 const SuperAdminWebsite = lazy(() => import("./pages/super-admin/SuperAdminWebsite"));
 const SuperAdminCommunications = lazy(() => import("./pages/super-admin/SuperAdminCommunications"));
+const SuperAdminAudits = lazy(() => import("./pages/super-admin/SuperAdminAudits"));
 
 function RouteLoader() {
   return (
@@ -131,6 +132,7 @@ function App() {
                 <Route path="leads" element={<SuperAdminLeads />} />
                 <Route path="website" element={<SuperAdminWebsite />} />
                 <Route path="communications" element={<SuperAdminCommunications />} />
+                <Route path="audits" element={<SuperAdminAudits />} />
               </Route>
             </Routes>
           </Suspense>

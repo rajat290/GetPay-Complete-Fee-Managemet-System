@@ -130,8 +130,36 @@ const listAuditLogs = async ({ institutionId, filters = {} }) => {
   };
 };
 
+const listPlatformAuditLogs = async (filters = {}) => {
+  const limit = Math.min(Math.max(Number(filters.limit) || 50, 1), 100);
+  const page = Math.max(Number(filters.page) || 1, 1);
+  
+  const query = { actorRole: "super_admin" };
+
+  if (filters.action) query.action = filters.action;
+  if (filters.entityType) query.entityType = filters.entityType;
+
+  const [logs, total] = await Promise.all([
+    AuditLog.find(query)
+      .populate("actorId", "name email role")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    AuditLog.countDocuments(query)
+  ]);
+
+  return {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+    rows: logs
+  };
+};
+
 module.exports = {
   logAdminAction,
   logPlatformAction,
-  listAuditLogs
+  listAuditLogs,
+  listPlatformAuditLogs
 };

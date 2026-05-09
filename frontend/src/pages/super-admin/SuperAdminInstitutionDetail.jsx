@@ -1,8 +1,26 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft, FiRefreshCw, FiSave, FiShield } from "react-icons/fi";
+import { 
+  ArrowLeft, 
+  RefreshCw, 
+  Save, 
+  ShieldAlert, 
+  Lock, 
+  Unlock, 
+  Zap, 
+  CreditCard, 
+  Archive, 
+  RotateCcw,
+  UserCheck,
+  Eye,
+  Settings2,
+  Calendar,
+  Layers,
+  BarChart3
+} from "lucide-react";
 import { AuthContext } from "../../context/authContextValue";
 import api from "../../services/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 const blankLimitOverrides = {
   students: "",
@@ -155,11 +173,16 @@ export default function SuperAdminInstitutionDetail() {
   };
 
   if (loading) {
-    return <div className="p-8 text-slate-500">Loading institution control...</div>;
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center p-8">
+        <RefreshCw className="h-10 w-10 animate-spin text-primary" />
+        <p className="mt-4 font-bold text-surface-900/40">Synchronizing Control Depth...</p>
+      </div>
+    );
   }
 
   if (!institution) {
-    return <div className="p-8 text-red-600">{message || "Institution not found."}</div>;
+    return <div className="p-8 text-rose-600 font-bold">{message || "Institution not found."}</div>;
   }
 
   const summary = institution.subscriptionSummary || {};
@@ -169,267 +192,320 @@ export default function SuperAdminInstitutionDetail() {
   const archived = Boolean(institution.lifecycle?.archivedAt);
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="px-8 space-y-10">
+      {/* Header */}
+      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 animate-reveal">
         <div>
-          <Link to="/super-admin/institutions" className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
-            <FiArrowLeft className="h-4 w-4" />
-            Back to institutions
+          <Link to="/super-admin/institutions" className="group mb-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Back to Command Center
           </Link>
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Institution control depth</p>
-          <h1 className="mt-1 text-2xl font-bold">{institution.name}</h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            {institution.code} . {institution.type} . {institution.subscription?.status}
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-4xl font-black tracking-tight">{institution.name}</h1>
+            <div className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${institution.isActive ? 'bg-primary/10 text-primary' : 'bg-rose-500/10 text-rose-500'}`}>
+              {institution.isActive ? 'Live' : 'Inactive'}
+            </div>
+          </div>
+          <p className="mt-2 text-surface-900/60 dark:text-slate-400 font-medium">
+            {institution.code} • {institution.type} • <span className="uppercase text-primary">{institution.subscription?.status}</span>
           </p>
         </div>
-        <button onClick={load} className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900">
-          <FiRefreshCw className="h-4 w-4" />
-          Refresh
+        
+        <button onClick={load} className="flex items-center justify-center gap-2 rounded-2xl bg-surface-900 px-6 py-3 text-sm font-black text-white hover:bg-black transition-all dark:bg-white dark:text-slate-900">
+          <RefreshCw className="h-4 w-4" />
+          Sync State
         </button>
-      </div>
+      </section>
 
       {message && (
-        <div className="mb-5 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm font-bold text-primary flex items-center gap-3 backdrop-blur-md">
+          <Zap className="h-5 w-5" />
           {message}
         </div>
       )}
+
       {temporaryPassword && (
-        <div className="mb-5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Temporary password issued: <span className="font-mono font-bold">{temporaryPassword}</span>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Lock className="h-5 w-5" />
+            <span>Temporary password issued:</span>
+            <span className="font-mono font-black bg-white px-3 py-1 rounded-lg border border-amber-100">{temporaryPassword}</span>
+          </div>
+          <p className="text-[10px] font-black uppercase">Expires after first login</p>
         </div>
       )}
 
+      {/* Telemetry Grid */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Students" value={usage.students || 0} detail={`Limit ${summary.limits?.students ?? "Unlimited"}`} />
-        <Metric label="Admins" value={usage.admins || 0} detail={`Limit ${summary.limits?.admins ?? "Unlimited"}`} />
-        <Metric label="Staff" value={breakdown.staff || 0} detail="Operational users" />
-        <Metric label="Collections" value={`INR ${Number(breakdown.payments?.totalAmount || 0).toLocaleString("en-IN")}`} detail={`${breakdown.payments?.totalCount || 0} payments`} />
-        <Metric label="Reminders" value={breakdown.reminders || 0} detail={`Limit ${summary.limits?.reminderCampaigns ?? "Unlimited"}`} />
-        <Metric label="Branches" value={breakdown.branches?.active || 0} detail={`${breakdown.branches?.total || 0} total`} />
-        <Metric label="Receipts" value={breakdown.receipts || 0} detail="Generated PDFs" />
-        <Metric label="Storage" value={`${breakdown.storage?.estimatedMb || 0} MB`} detail="Estimated receipt storage" />
+        <SmallMetric label="Platform Users" value={usage.students || 0} detail={`Cap: ${summary.limits?.students ?? "∞"}`} icon={<BarChart3 />} />
+        <SmallMetric label="Total Collections" value={`₹${Number(breakdown.payments?.totalAmount || 0).toLocaleString("en-IN")}`} detail={`${breakdown.payments?.totalCount || 0} Trx`} icon={<CreditCard />} />
+        <SmallMetric label="Reminders Sent" value={breakdown.reminders || 0} detail={`Cap: ${summary.limits?.reminderCampaigns ?? "∞"}`} icon={<Zap />} />
+        <SmallMetric label="Active Branches" value={breakdown.branches?.active || 0} detail={`${breakdown.branches?.total || 0} Total`} icon={<Layers />} />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <Card title="Subscription Renewal Control">
-          <div className="grid gap-3 md:grid-cols-3">
-            <Select label="Plan" value={subscriptionForm.plan} onChange={(value) => setSubscriptionForm({ ...subscriptionForm, plan: value })} options={[
-              ["starter", "Starter"],
-              ["growth", "Growth"],
-              ["enterprise", "Enterprise"]
-            ]} />
-            <Select label="Status" value={subscriptionForm.status} onChange={(value) => setSubscriptionForm({ ...subscriptionForm, status: value })} options={[
-              ["trialing", "Trialing"],
-              ["active", "Active"],
-              ["past_due", "Past due"],
-              ["paused", "Paused"],
-              ["cancelled", "Cancelled"]
-            ]} />
-            <Input label="Renewal date" type="date" value={subscriptionForm.currentPeriodEndsAt} onChange={(value) => setSubscriptionForm({ ...subscriptionForm, currentPeriodEndsAt: value })} />
+      {/* Control Modules Grid */}
+      <div className="grid gap-8 xl:grid-cols-2">
+        
+        {/* Module 1: Billing & Renewal */}
+        <ControlModule title="Commercial Lifecycle" icon={<RotateCcw className="text-primary" />}>
+          <div className="grid gap-4 md:grid-cols-3">
+            <ControlInput label="Tier" type="select" value={subscriptionForm.plan} onChange={(val) => setSubscriptionForm({ ...subscriptionForm, plan: val })} 
+              options={[["starter", "Starter"], ["growth", "Growth"], ["enterprise", "Enterprise"]]} 
+            />
+            <ControlInput label="State" type="select" value={subscriptionForm.status} onChange={(val) => setSubscriptionForm({ ...subscriptionForm, status: val })} 
+              options={[["trialing", "Trialing"], ["active", "Active"], ["past_due", "Past Due"], ["paused", "Paused"], ["cancelled", "Cancelled"]]} 
+            />
+            <ControlInput label="Renewal" type="date" value={subscriptionForm.currentPeriodEndsAt} onChange={(val) => setSubscriptionForm({ ...subscriptionForm, currentPeriodEndsAt: val })} />
           </div>
-          <button onClick={saveSubscription} className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
-            <FiSave className="h-4 w-4" />
-            Save Subscription
+          <button onClick={saveSubscription} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-black text-white hover:bg-primary-dark transition-all shadow-lg shadow-primary/20">
+            <Save className="h-4 w-4" />
+            Update Billing Lifecycle
           </button>
-        </Card>
+        </ControlModule>
 
-        <Card title="Module Access">
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-gray-800 dark:bg-gray-950 dark:text-slate-300">
-            Plan modules are the commercial default. Manual toggles below are the Super Admin override currently enforced for this institution.
+        {/* Module 2: Module Overrides */}
+        <ControlModule title="Module Toggles" icon={<Settings2 className="text-primary" />}>
+          <div className="rounded-2xl border border-surface-200 bg-surface-50 p-4 text-[10px] font-black uppercase tracking-wider text-surface-900/40 dark:bg-slate-800/50">
+            Override the commercial plan defaults by manually enabling or disabling features for this institution.
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {modules.map((module) => {
               const enabled = (institution.enabledModules || []).includes(module.key);
               return (
                 <button
                   key={module.key}
                   onClick={() => toggleModule(module.key)}
-                  className={`rounded-md border px-4 py-3 text-left text-sm ${
+                  className={`group rounded-2xl border p-4 text-left transition-all ${
                     enabled
-                      ? "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100"
-                      : "border-slate-200 bg-slate-100 text-slate-600 dark:border-gray-800 dark:bg-gray-800 dark:text-slate-300"
+                      ? "border-primary/30 bg-primary/5 text-primary"
+                      : "border-surface-200 bg-white text-surface-900/40 hover:border-surface-300 dark:border-slate-800 dark:bg-slate-900"
                   }`}
                 >
-                  <div className="font-semibold">{module.name}</div>
-                  <p className="mt-1 text-xs opacity-80">{module.description}</p>
-                  <span className="mt-2 inline-block text-xs font-bold">{enabled ? "Enabled override" : "Disabled override"}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-tight">{module.name}</span>
+                    {enabled ? <Zap className="h-3 w-3 fill-current" /> : <div className="h-3 w-3 rounded-full border-2 border-current opacity-20" />}
+                  </div>
+                  <p className="mt-1 text-[10px] font-medium leading-relaxed opacity-70">{module.description}</p>
                 </button>
               );
             })}
           </div>
-        </Card>
+        </ControlModule>
 
-        <Card title="Plan, Trial & Limit Overrides">
-          <div className="grid gap-3 md:grid-cols-3">
-            <Input label="Student limit override" type="number" value={limitOverrides.students} onChange={(value) => setLimitOverrides({ ...limitOverrides, students: value })} />
-            <Input label="Admin limit override" type="number" value={limitOverrides.admins} onChange={(value) => setLimitOverrides({ ...limitOverrides, admins: value })} />
-            <Input label="Reminder limit override" type="number" value={limitOverrides.reminderCampaigns} onChange={(value) => setLimitOverrides({ ...limitOverrides, reminderCampaigns: value })} />
+        {/* Module 3: Capacity Overrides */}
+        <ControlModule title="Capacity Scalers" icon={<Zap className="text-primary" />}>
+          <div className="grid gap-4 md:grid-cols-3">
+            <ControlInput label="Student Cap" type="number" value={limitOverrides.students} onChange={(val) => setLimitOverrides({ ...limitOverrides, students: val })} />
+            <ControlInput label="Admin Cap" type="number" value={limitOverrides.admins} onChange={(val) => setLimitOverrides({ ...limitOverrides, admins: val })} />
+            <ControlInput label="Reminders Cap" type="number" value={limitOverrides.reminderCampaigns} onChange={(val) => setLimitOverrides({ ...limitOverrides, reminderCampaigns: val })} />
           </div>
-          <button onClick={saveLimitOverrides} className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
-            <FiSave className="h-4 w-4" />
-            Save Overrides
+          <button onClick={saveLimitOverrides} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-surface-900 py-4 text-sm font-black text-surface-900 hover:bg-surface-900 hover:text-white transition-all dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-slate-900">
+            <Save className="h-4 w-4" />
+            Apply Custom Capacity
           </button>
-
-          <div className="grid gap-3 border-t border-slate-200 pt-4 md:grid-cols-2 dark:border-gray-800">
-            <div>
-              <Input label="Extend trial by days" type="number" value={trialDays} onChange={(value) => setTrialDays(value)} />
-              <button onClick={() => patchInstitution("/trial/extend", { days: trialDays }, "Trial extended.")} className="mt-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
-                Extend Trial
+          
+          <div className="mt-4 grid gap-4 border-t border-surface-100 pt-6 md:grid-cols-2 dark:border-slate-800">
+            <div className="space-y-4">
+              <ControlInput label="Extend Trial (Days)" type="number" value={trialDays} onChange={setTrialDays} />
+              <button onClick={() => patchInstitution("/trial/extend", { days: trialDays }, "Trial extended.")} className="w-full rounded-2xl bg-surface-100 py-3 text-xs font-black uppercase tracking-widest hover:bg-surface-200 dark:bg-slate-800">
+                Grant Extension
               </button>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Convert to paid plan
-                <select value={convertPlan} onChange={(e) => setConvertPlan(e.target.value)} className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
-                  <option value="starter">Starter</option>
-                  <option value="growth">Growth</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
-              </label>
-              <button onClick={() => patchInstitution("/trial/convert", { plan: convertPlan }, "Trial converted to paid.")} className="mt-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">
-                Convert Trial
+            <div className="space-y-4">
+              <ControlInput label="Direct Conversion" type="select" value={convertPlan} onChange={setConvertPlan} 
+                options={[["starter", "Starter"], ["growth", "Growth"], ["enterprise", "Enterprise"]]} 
+              />
+              <button onClick={() => patchInstitution("/trial/convert", { plan: convertPlan }, "Trial converted.")} className="w-full rounded-2xl bg-emerald-500 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-600">
+                Convert to Paid
               </button>
             </div>
           </div>
-        </Card>
+        </ControlModule>
 
-        <Card title="Risk Controls">
-          <Input label="Control reason" value={riskReason} onChange={setRiskReason} />
-          <div className="grid gap-3 md:grid-cols-2">
+        {/* Module 4: Risk & Compliance */}
+        <ControlModule title="Risk & Safety" icon={<ShieldAlert className="text-primary" />}>
+          <ControlInput label="Justification Reason" value={riskReason} onChange={setRiskReason} placeholder="e.g. Non-payment, Audit pending..." />
+          <div className="grid gap-3 sm:grid-cols-2">
             {[
-              ["freezeInstitution", "Freeze institution"],
-              ["blockPayments", "Block payments"],
-              ["disableLogins", "Disable logins"],
-              ["restrictExports", "Restrict exports"]
-            ].map(([field, label]) => (
+              ["freezeInstitution", "Freeze All Ops", Archive],
+              ["blockPayments", "Block Payments", CreditCard],
+              ["disableLogins", "Disable Access", Lock],
+              ["restrictExports", "Limit Exports", BarChart3]
+            ].map(([field, label, Icon]) => (
               <button
                 key={field}
                 onClick={() => toggleRisk(field)}
-                className={`rounded-md px-4 py-3 text-left text-sm font-semibold ${
+                className={`flex items-center gap-4 rounded-2xl p-4 text-left transition-all border ${
                   risk[field]
-                    ? "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-200"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-slate-200"
+                    ? "border-rose-500 bg-rose-500/5 text-rose-600"
+                    : "border-surface-200 bg-white text-surface-900/40 hover:bg-surface-50 dark:border-slate-800 dark:bg-slate-900"
                 }`}
               >
-                <FiShield className="mb-2 h-4 w-4" />
-                {label}: {risk[field] ? "On" : "Off"}
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Lifecycle">
-          {archived ? (
-            <>
-              <p className="text-sm text-slate-600 dark:text-slate-300">Archived: {institution.lifecycle?.archiveReason || "No reason recorded"}</p>
-              <button onClick={() => patchInstitution("/restore", {}, "Institution restored.")} className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">
-                Restore Institution
-              </button>
-            </>
-          ) : (
-            <>
-              <Input label="Archive reason" value={archiveReason} onChange={setArchiveReason} />
-              <button onClick={() => patchInstitution("/archive", { reason: archiveReason || "Archived by Super Admin" }, "Institution archived.")} className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
-                Archive Institution
-              </button>
-            </>
-          )}
-        </Card>
-
-        <Card title="Organization Admin Recovery">
-          <Input label="Recovery reason" value={recoveryReason} onChange={setRecoveryReason} />
-          <Input label="Support mode reason" value={impersonationReason} onChange={setImpersonationReason} />
-          <div className="space-y-3">
-            {admins.length === 0 ? (
-              <p className="text-sm text-slate-500">No organization admins found.</p>
-            ) : admins.map((admin) => (
-              <div key={admin._id} className="rounded-md border border-slate-200 p-3 dark:border-gray-800">
-                <div className="font-semibold">{admin.name}</div>
-                <div className="text-xs text-slate-500">{admin.email}</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button onClick={() => recoverAdmin(admin, "force_password_change")} className="rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-slate-200">
-                    Force Password Change
-                  </button>
-                  <button onClick={() => recoverAdmin(admin, "temporary_password_reset")} className="rounded-md bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-800">
-                    Reset Temporary Password
-                  </button>
-                  <button onClick={() => impersonateAdmin(admin)} className="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700">
-                    Login as Admin
-                  </button>
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${risk[field] ? 'bg-rose-500 text-white' : 'bg-surface-100 dark:bg-slate-800'}`}>
+                  <Icon size={18} />
                 </div>
-              </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-tight">{label}</p>
+                  <p className="text-[10px] font-bold mt-0.5">{risk[field] ? "ACTIVE" : "INACTIVE"}</p>
+                </div>
+              </button>
             ))}
           </div>
-        </Card>
-      </div>
+          
+          <div className="mt-4 border-t border-surface-100 pt-6 dark:border-slate-800">
+            {archived ? (
+              <button onClick={() => patchInstitution("/restore", {}, "Restored.")} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-4 text-sm font-black text-white">
+                <RotateCcw className="h-4 w-4" />
+                Reactivate Institution
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <ControlInput label="Archive Rationale" value={archiveReason} onChange={setArchiveReason} placeholder="Permanent archive reason..." />
+                <button onClick={() => patchInstitution("/archive", { reason: archiveReason || "Super Admin archive" }, "Archived.")} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-rose-500 py-4 text-sm font-black text-rose-500 hover:bg-rose-500 hover:text-white transition-all">
+                  <Archive className="h-4 w-4" />
+                  Terminate & Archive
+                </button>
+              </div>
+            )}
+          </div>
+        </ControlModule>
 
-      <Card title="Recovery History" className="mt-6">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-gray-800">
-            <thead className="bg-slate-100 text-left text-xs uppercase text-slate-500 dark:bg-gray-950">
-              <tr>
-                <th className="px-4 py-3">Admin</th>
-                <th className="px-4 py-3">Action</th>
-                <th className="px-4 py-3">Reason</th>
-                <th className="px-4 py-3">When</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
-              {recoveryLogs.length === 0 ? (
-                <tr><td colSpan="4" className="px-4 py-6 text-center text-slate-500">No recovery actions yet.</td></tr>
-              ) : recoveryLogs.map((log) => (
-                <tr key={log._id}>
-                  <td className="px-4 py-3">{log.adminId?.email || "Admin"}</td>
-                  <td className="px-4 py-3">{log.action?.replaceAll("_", " ")}</td>
-                  <td className="px-4 py-3">{log.reason}</td>
-                  <td className="px-4 py-3">{log.createdAt?.slice(0, 10)}</td>
+        {/* Module 5: Admin Support & Recovery */}
+        <ControlModule title="Support Mode (Impersonation)" icon={<UserCheck className="text-primary" />} className="xl:col-span-2">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <ControlInput label="Recovery Intent" value={recoveryReason} onChange={setRecoveryReason} placeholder="Reason for password override..." />
+              <ControlInput label="Investigation Reason" value={impersonationReason} onChange={setImpersonationReason} placeholder="Why are you logging in as this user?" />
+              <div className="rounded-2xl bg-amber-500/10 p-4 border border-amber-500/20">
+                <p className="text-[10px] font-black uppercase text-amber-600 mb-2 flex items-center gap-2">
+                  <ShieldAlert className="h-3 w-3" />
+                  Audit Compliance
+                </p>
+                <p className="text-[11px] font-medium leading-relaxed text-amber-800/80">
+                  Impersonation and recovery actions are logged with your ID, timestamp, and IP address. Ensure you have explicit authorization before proceeding.
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-900/40">Registered Organization Admins</p>
+              <div className="space-y-3">
+                {admins.map((admin) => (
+                  <div key={admin._id} className="glass-card !bg-white/40 !rounded-2xl p-5 border border-surface-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="font-black text-sm tracking-tight">{admin.name}</p>
+                        <p className="text-xs text-surface-900/40">{admin.email}</p>
+                      </div>
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <UserCheck size={18} />
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => recoverAdmin(admin, "force_password_change")} className="flex-1 rounded-xl bg-surface-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-slate-900">
+                        Force Pwd Reset
+                      </button>
+                      <button onClick={() => recoverAdmin(admin, "temporary_password_reset")} className="flex-1 rounded-xl border border-surface-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider dark:border-white">
+                        Issue Temp Pwd
+                      </button>
+                      <button onClick={() => impersonateAdmin(admin)} className="flex-1 rounded-xl bg-amber-500 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg shadow-amber-500/20">
+                        Login As Admin
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ControlModule>
+
+        {/* Recovery History Table */}
+        <ControlModule title="Platform Action Audit" icon={<BarChart3 className="text-primary" />} className="xl:col-span-2">
+          <div className="overflow-x-auto rounded-2xl border border-surface-200 dark:border-slate-800">
+            <table className="min-w-full divide-y divide-surface-100 text-sm dark:divide-slate-800">
+              <thead className="bg-surface-50 dark:bg-slate-900">
+                <tr>
+                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-900/40">Target Admin</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-900/40">Action Triggered</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-900/40">Justification</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-900/40">Performed By</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-900/40">Timestamp</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-surface-100 bg-white dark:divide-slate-800 dark:bg-slate-900/40">
+                {recoveryLogs.map((log) => (
+                  <tr key={log._id} className="hover:bg-surface-50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4 font-bold">{log.adminId?.email || "N/A"}</td>
+                    <td className="px-6 py-4">
+                      <span className="rounded-full bg-surface-900/5 px-2 py-1 text-[10px] font-black uppercase tracking-tighter text-surface-900/60 dark:bg-white/5 dark:text-white">
+                        {log.action?.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-surface-900/60 dark:text-slate-400">{log.reason}</td>
+                    <td className="px-6 py-4 text-xs font-bold">{log.performedBy?.name || "System"}</td>
+                    <td className="px-6 py-4 text-[10px] font-black opacity-40">{new Date(log.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ControlModule>
+      </div>
+    </div>
+  );
+}
+
+function SmallMetric({ label, value, detail, icon }) {
+  return (
+    <div className="glass-card group p-6 relative overflow-hidden transition-all hover:-translate-y-1">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[10px] font-black uppercase tracking-widest text-surface-900/40 dark:text-slate-500">{label}</p>
+        <div className="text-primary opacity-30 group-hover:opacity-100 transition-opacity">
+          {icon}
         </div>
-      </Card>
+      </div>
+      <p className="font-display text-2xl font-black tracking-tight">{value}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">{detail}</p>
     </div>
   );
 }
 
-function Metric({ label, value, detail }) {
+function ControlModule({ title, icon, children, className = "" }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold">{value}</p>
-      <p className="mt-2 text-xs text-slate-500">{detail}</p>
-    </div>
-  );
-}
-
-function Card({ title, children, className = "" }) {
-  return (
-    <section className={`rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 ${className}`}>
-      <h2 className="mb-4 text-lg font-semibold">{title}</h2>
-      <div className="space-y-4">{children}</div>
+    <section className={`glass-card p-8 space-y-6 ${className}`}>
+      <div className="flex items-center gap-3 border-b border-surface-100 pb-6 dark:border-slate-800">
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          {Object.cloneElement(icon, { size: 18, strokeWidth: 2.5 })}
+        </div>
+        <h2 className="font-display text-lg font-black tracking-tight">{title}</h2>
+      </div>
+      <div className="space-y-6">{children}</div>
     </section>
   );
 }
 
-function Input({ label, value, onChange, type = "text" }) {
+function ControlInput({ label, value, onChange, type = "text", options, placeholder }) {
   return (
-    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-      {label}
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950" />
-    </label>
-  );
-}
-
-function Select({ label, value, onChange, options }) {
-  return (
-    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-      {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
-        {options.map(([optionValue, optionLabel]) => (
-          <option key={optionValue} value={optionValue}>{optionLabel}</option>
-        ))}
-      </select>
+    <label className="block space-y-2">
+      <span className="text-[10px] font-black uppercase tracking-widest text-surface-900/40 dark:text-slate-500">{label}</span>
+      {type === "select" ? (
+        <select 
+          value={value} 
+          onChange={(e) => onChange(e.target.value)} 
+          className="w-full rounded-2xl border border-surface-200 bg-white px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 dark:border-slate-800 dark:bg-slate-900 transition-all outline-none"
+        >
+          {options.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
+        </select>
+      ) : (
+        <input 
+          type={type} 
+          value={value} 
+          onChange={(e) => onChange(e.target.value)} 
+          placeholder={placeholder}
+          className="w-full rounded-2xl border border-surface-200 bg-white px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 dark:border-slate-800 dark:bg-slate-900 transition-all outline-none placeholder:opacity-30" 
+        />
+      )}
     </label>
   );
 }

@@ -78,6 +78,9 @@ const institutionSchema = new mongoose.Schema({
     currentPeriodEndsAt: {
       type: Date,
     },
+    gracePeriodEndsAt: {
+      type: Date,
+    },
     externalCustomerId: {
       type: String,
       trim: true,

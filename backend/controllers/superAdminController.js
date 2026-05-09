@@ -1,8 +1,10 @@
 const Institution = require("../models/Institution");
 const Student = require("../models/Student");
+const Invoice = require("../models/Invoice");
 const { logPlatformAction } = require("../services/auditLogService");
 const { buildSubscriptionSummary } = require("../services/subscriptionPlanService");
 const { MODULE_CATALOG, DEFAULT_MODULE_KEYS, normalizeModules, getEnabledModules } = require("../services/moduleAccessService");
+const { createManualInvoice, markInvoicePaid, refreshBillingLifecycle } = require("../services/billingLifecycleService");
 
 const institutionTypes = ["school", "college", "coaching", "other"];
 const subscriptionPlans = ["starter", "growth", "enterprise"];
@@ -274,6 +276,115 @@ exports.updateInstitutionSubscription = async (req, res) => {
     res.json(await serializeInstitution(institution));
   } catch (err) {
     console.error("Error updating institution subscription:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.listInstitutionInvoices = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const invoices = await Invoice.find({ institutionId: institution._id }).sort({ createdAt: -1 });
+    res.json(invoices);
+  } catch (err) {
+    console.error("Error listing invoices:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.createInstitutionInvoice = async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.institutionId);
+    if (!institution) {
+      return res.status(404).json({ error: "Institution not found" });
+    }
+
+    const { amountInr, billingPeriodStart, billingPeriodEnd, dueDate, notes } = req.body;
+    if (!amountInr || !billingPeriodStart || !billingPeriodEnd || !dueDate) {
+      return res.status(400).json({ error: "Amount, billing period, and due date are required" });
+    }
+
+    const invoice = await createManualInvoice({
+      institution,
+      amountInr: Number(amountInr),
+      billingPeriodStart: new Date(billingPeriodStart),
+      billingPeriodEnd: new Date(billingPeriodEnd),
+      dueDate: new Date(dueDate),
+      notes
+    });
+
+    await logPlatformAction({
+      req,
+      action: "platform.invoice_created",
+      entityType: "Invoice",
+      entityId: invoice._id,
+      summary: `Created invoice ${invoice.invoiceNumber} for ${institution.name}`,
+      metadata: {
+        institutionId: institution._id,
+        invoiceNumber: invoice.invoiceNumber,
+        amountInr: invoice.amountInr,
+        dueDate: invoice.dueDate
+      }
+    });
+
+    res.status(201).json(invoice);
+  } catch (err) {
+    console.error("Error creating invoice:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.markInstitutionInvoicePaid = async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({
+      _id: req.params.invoiceId,
+      institutionId: req.params.institutionId
+    });
+
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    await markInvoicePaid({ invoice, paidAt: req.body.paidAt ? new Date(req.body.paidAt) : new Date() });
+
+    await logPlatformAction({
+      req,
+      action: "platform.invoice_paid",
+      entityType: "Invoice",
+      entityId: invoice._id,
+      summary: `Marked invoice ${invoice.invoiceNumber} as paid`,
+      metadata: {
+        institutionId: invoice.institutionId,
+        invoiceNumber: invoice.invoiceNumber,
+        paidAt: invoice.paidAt
+      }
+    });
+
+    res.json(invoice);
+  } catch (err) {
+    console.error("Error marking invoice paid:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.runBillingLifecycleRefresh = async (req, res) => {
+  try {
+    const results = await refreshBillingLifecycle();
+
+    await logPlatformAction({
+      req,
+      action: "platform.billing_lifecycle_refreshed",
+      entityType: "BillingLifecycle",
+      summary: `Refreshed billing lifecycle for ${results.length} institutions`,
+      metadata: { results }
+    });
+
+    res.json({ updated: results.length, results });
+  } catch (err) {
+    console.error("Error refreshing billing lifecycle:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

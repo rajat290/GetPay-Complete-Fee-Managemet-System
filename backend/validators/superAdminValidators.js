@@ -38,9 +38,17 @@ const updateInstitutionModulesSchema = {
   }
 };
 
+const invoiceParamsSchema = {
+  params: {
+    institutionId: { required: true, type: "objectId" },
+    invoiceId: { required: true, type: "objectId" }
+  }
+};
+
 module.exports = {
   createInstitutionSchema,
   institutionParamsSchema,
   updateInstitutionSubscriptionSchema,
-  updateInstitutionModulesSchema
+  updateInstitutionModulesSchema,
+  invoiceParamsSchema
 };

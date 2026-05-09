@@ -23,6 +23,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 - Multi-tenant institution isolation through `institutionId`
 - Institution profile, billing contact, and branding configuration
 - SaaS plan metadata, subscription status, and institution usage limits
+- Manual SaaS invoice records and billing lifecycle controls
 - Admin, staff, and student role-based access control
 - Institution-scoped staff roles and granular permissions
 - Student onboarding and class-based organization
@@ -45,6 +46,7 @@ saas, fee-management, education-technology, edtech, payments, razorpay, mern, re
 ### Admin Experience
 
 - Super Admin dashboard and organization control screen
+- Super Admin manual invoice creation and paid status controls
 - Module-aware organization admin navigation
 - Staff and role management screen for organization admins
 - Permission-aware admin navigation for staff users
@@ -386,12 +388,13 @@ Recommended production settings:
 - Organization module access control
 - Staff users and granular RBAC permissions
 - Password lifecycle foundation and forced staff password change
+- Billing lifecycle foundation with manual invoices and grace-period suspension
 
 ### Next Priorities
 
 - Student/admin reset policy controls and reset request queue
 - Error tracking integration such as Sentry or OpenTelemetry
-- Billing checkout and invoice lifecycle integration
+- Razorpay subscription checkout and billing payment automation
 
 ## Repository Status
 

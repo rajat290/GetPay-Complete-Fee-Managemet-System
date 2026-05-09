@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, cloneElement } from "react";
 import { 
   Building2, 
   DollarSign, 
@@ -150,7 +150,7 @@ function MetricTile({ icon, label, value, trend, color, variants }) {
       className="glass-card group p-8 relative overflow-hidden transition-all duration-500 hover:-translate-y-2"
     >
       <div className={`mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 ${color}`}>
-        {Object.cloneElement(icon, { size: 24, strokeWidth: 2.5 })}
+        {cloneElement(icon, { size: 24, strokeWidth: 2.5 })}
       </div>
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-surface-900/40 dark:text-slate-500 mb-2">{label}</p>
@@ -172,7 +172,7 @@ function StatusCard({ icon, label, value, detail, alert }) {
     <div className="rounded-[32px] border border-surface-200 bg-white/40 p-6 flex items-center justify-between dark:border-slate-800 dark:bg-slate-900/40 backdrop-blur-sm">
       <div className="flex items-center gap-4">
         <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${alert ? 'bg-rose-500/10 text-rose-500' : 'bg-surface-100 text-surface-900/40 dark:bg-slate-800'}`}>
-          {Object.cloneElement(icon, { size: 20 })}
+          {cloneElement(icon, { size: 20 })}
         </div>
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-surface-900/40 dark:text-slate-500">{label}</p>

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState, cloneElement } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { 
   ArrowLeft, 
@@ -476,7 +476,7 @@ function ControlModule({ title, icon, children, className = "" }) {
     <section className={`glass-card p-8 space-y-6 ${className}`}>
       <div className="flex items-center gap-3 border-b border-surface-100 pb-6 dark:border-slate-800">
         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          {Object.cloneElement(icon, { size: 18, strokeWidth: 2.5 })}
+          {cloneElement(icon, { size: 18, strokeWidth: 2.5 })}
         </div>
         <h2 className="font-display text-lg font-black tracking-tight">{title}</h2>
       </div>

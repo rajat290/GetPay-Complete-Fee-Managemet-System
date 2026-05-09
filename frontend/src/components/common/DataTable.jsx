@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -31,32 +31,37 @@ export default function DataTable({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Debounce search
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page, search, limit: 10 };
+      const response = await fetchData(params);
+      const rows = Array.isArray(response) ? response : response.data || [];
+      const nextMeta = response.meta || {
+        total: rows.length,
+        page,
+        limit: 10,
+        totalPages: rows.length > 0 ? 1 : 0
+      };
+      setData(rows);
+      setMeta(nextMeta);
+    } catch (err) {
+      console.error("DataTable fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData, page, search]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
-      loadData();
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
 
   useEffect(() => {
     loadData();
-  }, [page]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const params = { page, search, limit: 10 };
-      const response = await fetchData(params);
-      setData(response.data);
-      setMeta(response.meta);
-    } catch (err) {
-      console.error("DataTable fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadData]);
 
   return (
     <div className="space-y-4">

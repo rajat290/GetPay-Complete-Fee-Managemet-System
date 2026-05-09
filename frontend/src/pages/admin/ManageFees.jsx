@@ -13,7 +13,8 @@ import {
   Download,
   FileSpreadsheet,
   Share2,
-  Copy
+  Copy,
+  Users as UsersIcon
 } from "lucide-react";
 import api from "../../services/api";
 import Card from "../../components/common/Card";

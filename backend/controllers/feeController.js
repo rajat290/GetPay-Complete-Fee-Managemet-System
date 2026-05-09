@@ -218,49 +218,76 @@ exports.bulkAssignFee = async (req, res) => {
       ? installments 
       : [{ name: 'Full Payment', amount: fee.amount, dueDate: dueDate || fee.dueDate }];
 
+    const studentIdsToAssign = students.map((student) => student._id);
+    const installmentNames = installmentList.map((inst) => inst.name || "Full Payment");
+
+    const existingAssignments = await FeeAssignment.find({
+      institutionId: req.institutionId,
+      feeId,
+      studentId: { $in: studentIdsToAssign },
+      installmentName: { $in: installmentNames }
+    }).select("studentId installmentName");
+
+    const existingKeys = new Set(
+      existingAssignments.map((assignment) => `${assignment.studentId.toString()}::${assignment.installmentName}`)
+    );
+
     const assignmentsToCreate = [];
-    const skippedCount = 0;
+    let skippedCount = 0;
 
     for (const student of students) {
       for (const inst of installmentList) {
+        const installmentName = inst.name || "Full Payment";
+        const key = `${student._id.toString()}::${installmentName}`;
+        if (existingKeys.has(key)) {
+          skippedCount++;
+          continue;
+        }
+
         assignmentsToCreate.push({
           institutionId: req.institutionId,
           academicSessionId: fee.academicSessionId,
           studentId: student._id,
           feeId,
           feeTitle: fee.title,
-          amount: inst.amount,
-          installmentName: inst.name,
-          dueDate: inst.dueDate,
+          amount: inst.amount || fee.amount,
+          installmentName,
+          dueDate: inst.dueDate || dueDate || fee.dueDate,
           status: "pending"
         });
       }
     }
 
-    // Use insertMany with ordered: false to skip duplicates
-    const result = await FeeAssignment.insertMany(assignmentsToCreate, { ordered: false }).catch(err => {
-      // Partial success is fine for bulk
-      return err.insertedDocs || [];
-    });
+    const createdAssignments = assignmentsToCreate.length > 0
+      ? await FeeAssignment.insertMany(assignmentsToCreate, { ordered: false })
+      : [];
 
     await logAdminAction({
       req,
       action: "fee.bulk_assigned",
       entityType: "FeeAssignment",
       entityId: fee._id,
-      summary: `Bulk assigned ${fee.title} to ${students.length} students (${installments.length || 1} installments each)`,
+      summary: `Bulk assigned ${fee.title} to ${createdAssignments.length} students`,
       metadata: {
         feeId,
         className: className || null,
-        createdCount: result.length,
-        installmentCount: installmentList.length
+        requestedStudentIds: studentIds,
+        matchedStudents: students.length,
+        createdCount: createdAssignments.length,
+        skippedCount,
+        installmentCount: installmentList.length,
+        createdAssignmentIds: createdAssignments.map((assignment) => assignment._id),
+        skippedStudentIds: existingAssignments.map((assignment) => assignment.studentId)
       }
     });
 
     res.status(201).json({
       message: "Bulk assignment completed",
-      createdCount: result.length,
-      matchedStudents: students.length
+      matchedStudents: students.length,
+      createdCount: createdAssignments.length,
+      skippedCount,
+      createdAssignmentIds: createdAssignments.map((assignment) => assignment._id),
+      skippedStudentIds: existingAssignments.map((assignment) => assignment.studentId.toString())
     });
   } catch (err) {
     console.error("Error bulk assigning fee:", err);

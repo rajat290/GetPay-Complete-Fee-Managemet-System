@@ -17,6 +17,7 @@ const { getUserPermissions } = require("../middleware/permissionMiddleware");
 const {
   buildSubscriptionSummary,
   assertCanAddStudent,
+  assertCanAddStudents,
   assertCanAddReminderCampaign
 } = require("../services/subscriptionPlanService");
 
@@ -1165,12 +1166,7 @@ exports.importStudents = async (req, res) => {
 
     await processCSV();
 
-    // Check plan limits
-    const currentStudentCount = await Student.countDocuments({ institutionId: req.institutionId });
-    const totalAfterImport = currentStudentCount + results.length;
-    
-    // Simple limit check (actual logic is in assertCanAddStudent, but we need to check bulk here)
-    // For now, we'll proceed but ideally we'd check the plan limit against totalAfterImport
+    await assertCanAddStudents(institution, results.length);
     
     const importedStudents = [];
     const duplicateErrors = [];
@@ -1222,6 +1218,12 @@ exports.importStudents = async (req, res) => {
     });
 
   } catch (err) {
+    if (err.code === "PLAN_STUDENT_LIMIT_REACHED") {
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(err.statusCode).json({ error: err.message, details: err.details });
+    }
     console.error("Error importing students:", err);
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);

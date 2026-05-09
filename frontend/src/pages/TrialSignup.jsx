@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
-import axios from "axios";
+import api from "../services/api";
 
 export default function TrialSignup() {
   const [step, setStep] = useState(1);
@@ -54,7 +54,7 @@ export default function TrialSignup() {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/public/register-trial", formData);
+      const res = await api.post("/public/register-trial", formData);
       if (res.data.success) {
         setSuccess(true);
         setTimeout(() => {

@@ -1,448 +1,275 @@
-import { useCallback, useEffect, useState } from "react";
-import { FiSearch, FiFileText, FiCalendar, FiDownload, FiBell, FiUser, FiChevronDown } from "react-icons/fi";
+import { useState, useEffect, useCallback } from "react";
+import { 
+  Search, 
+  Calendar, 
+  Download, 
+  Filter, 
+  TrendingUp, 
+  Clock, 
+  AlertCircle,
+  FileText,
+  Eye,
+  ArrowUpRight,
+  ArrowDownRight
+} from "lucide-react";
 import api from "../../services/api";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Badge from "../../components/common/Badge";
+import Card from "../../components/common/Card";
+import DataTable from "../../components/common/DataTable";
 import PaymentDetailsModal from "../../components/PaymentDetailsModal";
 import NewPaymentNotification from "../../components/NewPaymentNotification";
 
 export default function ManagePayments() {
-  const [payments, setPayments] = useState([]);
   const [stats, setStats] = useState({
     totalReceived: { amount: 0, percentageChange: 0, trend: 'up' },
     pending: { amount: 0, count: 0 },
     failed: { amount: 0, count: 0 }
   });
   const [classNames, setClassNames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [newPaymentNotification, setNewPaymentNotification] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchStatsAndClasses = useCallback(async () => {
     try {
-      setLoading(true);
-      
-      // Fetch payments with filters
-      const paymentParams = new URLSearchParams();
-      if (selectedClass) paymentParams.append('className', selectedClass);
-      if (selectedStatus !== 'all') paymentParams.append('status', selectedStatus);
-      if (searchTerm) paymentParams.append('search', searchTerm);
-      if (dateRange.startDate) paymentParams.append('startDate', dateRange.startDate);
-      if (dateRange.endDate) paymentParams.append('endDate', dateRange.endDate);
-      
-      const [paymentsRes, statsRes, classesRes] = await Promise.all([
-        api.get(`/admin/payments?${paymentParams}`),
-        api.get(`/admin/payments/stats?${paymentParams}`),
+      const [statsRes, classesRes] = await Promise.all([
+        api.get('/admin/payments/stats'),
         api.get('/admin/classes')
       ]);
-      
-      setPayments((previousPayments) => {
-        const previousPaymentIds = new Set(previousPayments.map((payment) => payment._id));
-        const newPayments = paymentsRes.data.filter((payment) => !previousPaymentIds.has(payment._id));
-
-        if (newPayments.length > 0 && previousPayments.length > 0) {
-          setNewPaymentNotification(newPayments[0]);
-          setShowNotification(true);
-        }
-
-        return paymentsRes.data;
-      });
       setStats(statsRes.data);
       setClassNames(classesRes.data);
     } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching meta data:", err);
     }
-  }, [dateRange.endDate, dateRange.startDate, searchTerm, selectedClass, selectedStatus]);
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchStatsAndClasses();
+  }, [fetchStatsAndClasses]);
 
-  // Real-time updates - poll every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchData();
+  const fetchPayments = async (params) => {
+    // Add filters to params
+    const queryParams = { 
+      ...params,
+      className: selectedClass !== "all" ? selectedClass : undefined,
+      status: selectedStatus !== "all" ? selectedStatus : undefined,
+      startDate: dateRange.startDate || undefined,
+      endDate: dateRange.endDate || undefined
+    };
+    const res = await api.get("/admin/payments", { params: queryParams });
+    return res.data;
   };
 
-  const handleExport = () => {
-    // Export functionality - you can implement CSV export here
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Payment ID,Student ID,Student,Amount,Type,Date,Status,Razorpay Transaction ID\n" +
-      payments.map(p => 
-        `${p.paymentId},${p.studentId},${p.student},${p.amount},${p.type},${new Date(p.date).toLocaleDateString()},${p.status},${p.razorpayTransactionId}`
-      ).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "payments_report.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handlePaymentDetails = (paymentId) => {
-    setSelectedPaymentId(paymentId);
-    setShowPaymentModal(true);
-  };
-
-  const closePaymentModal = () => {
-    setShowPaymentModal(false);
-    setSelectedPaymentId(null);
-  };
-
-  const closeNotification = () => {
-    setShowNotification(false);
-    setNewPaymentNotification(null);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleExport = async () => {
+    // Basic export functionality
+    try {
+      const res = await api.get("/admin/payments", { params: { limit: 1000 } });
+      const payments = res.data.data;
+      const csvContent = "data:text/csv;charset=utf-8," + 
+        "Payment ID,Student ID,Student,Amount,Type,Date,Status,Mode,Reference No\n" +
+        payments.map(p => 
+          `${p.paymentId},${p.studentId},${p.student},${p.amount},${p.type},${new Date(p.date).toLocaleDateString()},${p.status},${p.mode},${p.razorpayTransactionId || p.referenceNo}`
+        ).join("\n");
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `payments_export_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Export failed", err);
     }
   };
 
-  const getStatusDot = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-500';
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'failed':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+  const columns = [
+    { 
+      header: "Payment ID", 
+      render: (row) => (
+        <span className="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded">
+          {row.paymentId}
+        </span>
+      )
+    },
+    { 
+      header: "Student", 
+      render: (row) => (
+        <div>
+          <p className="font-semibold text-slate-900 dark:text-white">{row.student}</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-tighter font-bold">{row.studentId}</p>
+        </div>
+      )
+    },
+    { 
+      header: "Amount", 
+      render: (row) => (
+        <span className="font-bold text-slate-900 dark:text-white">
+          ₹{row.amount.toLocaleString('en-IN')}
+        </span>
+      )
+    },
+    { header: "Type", accessor: "type" },
+    { 
+      header: "Date", 
+      render: (row) => new Date(row.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    },
+    { 
+      header: "Status", 
+      render: (row) => (
+        <Badge variant={row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'error'}>
+          {row.status === 'completed' ? 'Paid' : row.status === 'pending' ? 'Pending' : 'Failed'}
+        </Badge>
+      )
+    },
+    {
+      header: "Actions",
+      render: (row) => (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => {
+            setSelectedPaymentId(row._id);
+            setShowPaymentModal(true);
+          }}
+          icon={Eye}
+        >
+          Details
+        </Button>
+      )
     }
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">PayWise Institution</h1>
-              <p className="text-gray-600">Payments Management</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <FiBell className="h-6 w-6 text-gray-600" />
-                <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <FiUser className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Raj Kumar Singh</p>
-                  <p className="text-xs text-gray-500">Administrator</p>
-                </div>
-                <FiChevronDown className="h-4 w-4 text-gray-600" />
-              </div>
-            </div>
-          </div>
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Financial Ledger</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Track collections, manage refunds, and audit transaction history.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" icon={Download} onClick={handleExport}>
+            Export CSV
+          </Button>
+          <Button icon={FileText}>
+            Generate Report
+          </Button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Payment Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Total Received */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm font-medium">Total Received</p>
-                <p className="text-3xl font-bold">{formatCurrency(stats.totalReceived.amount)}</p>
-                <div className="flex items-center mt-2">
-                  <span className="text-green-100 text-sm">
-                    {stats.totalReceived.trend === 'up' ? '+' : '-'}{stats.totalReceived.percentageChange}% from last month
-                  </span>
-                </div>
-              </div>
-              <div className="h-12 w-12 bg-green-400 rounded-lg flex items-center justify-center">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Pending */}
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-yellow-100 text-sm font-medium">Pending</p>
-                <p className="text-3xl font-bold">{formatCurrency(stats.pending.amount)}</p>
-                <div className="flex items-center mt-2">
-                  <span className="text-yellow-100 text-sm">
-                    {stats.pending.count} payments
-                  </span>
-                </div>
-              </div>
-              <div className="h-12 w-12 bg-yellow-400 rounded-lg flex items-center justify-center">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Failed */}
-          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100 text-sm font-medium">Failed</p>
-                <p className="text-3xl font-bold">{formatCurrency(stats.failed.amount)}</p>
-                <div className="flex items-center mt-2">
-                  <span className="text-red-100 text-sm">
-                    {stats.failed.count} payment
-                  </span>
-                </div>
-              </div>
-              <div className="h-12 w-12 bg-red-400 rounded-lg flex items-center justify-center">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Action Bar */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            {/* Search Bar */}
-            <div className="flex-1 max-w-md">
-              <form onSubmit={handleSearch} className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiSearch className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search payments..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </form>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center space-x-3">
-              {/* Class Filter */}
-              <div className="relative">
-                <select
-                  value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Classes</option>
-                  {classNames.map((className) => (
-                    <option key={className} value={className}>{className}</option>
-                  ))}
-                </select>
-                <FiChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Status Filter */}
-              <div className="relative">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="completed">Paid</option>
-                  <option value="pending">Pending</option>
-                  <option value="failed">Failed</option>
-                </select>
-                <FiChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Date Range */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowDatePicker(!showDatePicker)}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <FiCalendar className="h-4 w-4 mr-2" />
-                  Date Range
-                </button>
-                {showDatePicker && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-300 rounded-md shadow-lg z-10 p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                        <input
-                          type="date"
-                          value={dateRange.startDate}
-                          onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-                          className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                        <input
-                          type="date"
-                          value={dateRange.endDate}
-                          onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-                          className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Report Button */}
-              <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <FiFileText className="h-4 w-4 mr-2" />
-                Report
-              </button>
-
-              {/* Export Button */}
-              <button
-                onClick={handleExport}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <FiDownload className="h-4 w-4 mr-2" />
-                Export
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Payments Table */}
-        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razorpay Transaction ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {payments.length > 0 ? (
-                  payments.map((payment) => (
-                    <tr key={payment._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-blue-600 font-medium cursor-pointer hover:underline">
-                          {payment.paymentId}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.studentId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.student}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        {formatCurrency(payment.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(payment.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.razorpayTransactionId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className={`h-2 w-2 rounded-full ${getStatusDot(payment.status)} mr-2`}></div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status)}`}>
-                            {payment.status === 'completed' ? 'Paid' : payment.status === 'pending' ? 'Pending' : 'Failed'}
-                          </span>
-                        </div>
-                      </td>
-                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                         <button 
-                           onClick={() => handlePaymentDetails(payment._id)}
-                           className="text-blue-600 hover:text-blue-900 cursor-pointer"
-                         >
-                           Details
-                         </button>
-                       </td>
-                    </tr>
-                  ))
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-emerald-500/5 border-emerald-500/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Total Collections</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                ₹{stats.totalReceived.amount.toLocaleString('en-IN')}
+              </h3>
+              <div className="flex items-center gap-1 mt-2">
+                {stats.totalReceived.trend === 'up' ? (
+                  <ArrowUpRight className="w-3 h-3 text-emerald-500" />
                 ) : (
-                  <tr>
-                    <td colSpan="9" className="px-6 py-12 text-center text-sm text-gray-500">
-                      No payments found
-                    </td>
-                  </tr>
+                  <ArrowDownRight className="w-3 h-3 text-rose-500" />
                 )}
-              </tbody>
-            </table>
+                <span className={`text-xs font-bold ${stats.totalReceived.trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {stats.totalReceived.percentageChange}%
+                </span>
+                <span className="text-xs text-slate-400 font-medium">vs last month</span>
+              </div>
+            </div>
+            <div className="w-12 h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <TrendingUp className="w-6 h-6" />
+            </div>
           </div>
-                 </div>
-       </div>
+        </Card>
 
-       {/* Payment Details Modal */}
-       <PaymentDetailsModal
-         paymentId={selectedPaymentId}
-         isOpen={showPaymentModal}
-         onClose={closePaymentModal}
-       />
+        <Card className="bg-amber-500/5 border-amber-500/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Pending Dues</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                ₹{stats.pending.amount.toLocaleString('en-IN')}
+              </h3>
+              <p className="text-xs text-slate-400 font-medium mt-2">
+                Across {stats.pending.count} active invoices
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Clock className="w-6 h-6" />
+            </div>
+          </div>
+        </Card>
 
-       {/* New Payment Notification */}
-       <NewPaymentNotification
-         isVisible={showNotification}
-         payment={newPaymentNotification}
-         onClose={closeNotification}
-       />
-     </div>
-   );
- }
+        <Card className="bg-rose-500/5 border-rose-500/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1">Failed Attempts</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                ₹{stats.failed.amount.toLocaleString('en-IN')}
+              </h3>
+              <p className="text-xs text-slate-400 font-medium mt-2">
+                {stats.failed.count} failed transactions
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-rose-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Table Card */}
+      <Card title="Transaction History" noPadding>
+        <DataTable 
+          columns={columns}
+          fetchData={fetchPayments}
+          searchPlaceholder="Search by ID, Student, or Reference..."
+          filters={
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <select 
+                  value={selectedClass} 
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="pl-9 pr-8 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-premium appearance-none"
+                >
+                  <option value="all">All Classes</option>
+                  {classNames.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <select 
+                value={selectedStatus} 
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-premium"
+              >
+                <option value="all">All Status</option>
+                <option value="completed">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+          }
+        />
+      </Card>
+
+      <PaymentDetailsModal
+        paymentId={selectedPaymentId}
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+      />
+
+      <NewPaymentNotification
+        isVisible={showNotification}
+        payment={newPaymentNotification}
+        onClose={() => setShowNotification(false)}
+      />
+    </div>
+  );
+}

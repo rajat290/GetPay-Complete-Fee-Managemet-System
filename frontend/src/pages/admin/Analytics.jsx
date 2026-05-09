@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { FiDownload, FiCalendar, FiTrendingUp, FiDollarSign, FiUsers, FiBarChart2 } from "react-icons/fi";
+import { 
+  Download, 
+  Calendar, 
+  TrendingUp, 
+  DollarSign, 
+  Users, 
+  BarChart3, 
+  PieChart,
+  LineChart,
+  ArrowUpRight,
+  Filter,
+  FileSpreadsheet
+} from "lucide-react";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -14,6 +26,11 @@ import {
   Legend,
 } from "chart.js";
 import api from "../../services/api";
+import Card from "../../components/common/Card";
+import Badge from "../../components/common/Badge";
+import Button from "../../components/common/Button";
+import Skeleton from "../../components/common/Skeleton";
+import Input from "../../components/common/Input";
 
 ChartJS.register(
   CategoryScale,
@@ -43,6 +60,7 @@ export default function Analytics() {
     className: ""
   });
   const [classOptions, setClassOptions] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     fetchAnalytics();
@@ -72,6 +90,7 @@ export default function Analytics() {
 
   const generateReport = async () => {
     try {
+      setIsGenerating(true);
       const params = new URLSearchParams();
       if (reportFilters.startDate) params.append('startDate', reportFilters.startDate);
       if (reportFilters.endDate) params.append('endDate', reportFilters.endDate);
@@ -81,6 +100,8 @@ export default function Analytics() {
       setReportData(response.data.reportData);
     } catch (error) {
       console.error("Error generating report:", error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -104,20 +125,26 @@ export default function Analytics() {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 2
+      minimumFractionDigits: 0
     }).format(amount);
   };
 
-  // Chart configurations
+  // Chart configurations with brand colors
   const monthlyRevenueChart = {
     labels: analytics.monthlyRevenue.map(item => item.month),
     datasets: [
       {
-        label: 'Monthly Revenue',
+        label: 'Revenue',
         data: analytics.monthlyRevenue.map(item => item.revenue),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.1,
+        borderColor: '#4F46E5', // primary
+        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#4F46E5',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       },
     ],
   };
@@ -126,14 +153,16 @@ export default function Analytics() {
     labels: analytics.classWiseData.map(item => item.className),
     datasets: [
       {
-        label: 'Total Revenue',
+        label: 'Collected',
         data: analytics.classWiseData.map(item => item.totalRevenue),
-        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+        borderRadius: 8,
       },
       {
-        label: 'Pending Amount',
+        label: 'Pending',
         data: analytics.classWiseData.map(item => item.pendingAmount),
-        backgroundColor: 'rgba(251, 191, 36, 0.8)',
+        backgroundColor: 'rgba(245, 158, 11, 0.8)',
+        borderRadius: 8,
       },
     ],
   };
@@ -148,208 +177,169 @@ export default function Analytics() {
           analytics.classWiseData.reduce((sum, item) => sum + item.failedAmount, 0),
         ],
         backgroundColor: [
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(251, 191, 36, 0.8)',
-          'rgba(239, 68, 68, 0.8)',
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(244, 63, 94, 0.8)',
         ],
+        borderWidth: 0,
+        hoverOffset: 15
       },
     ],
   };
 
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: { size: 10, weight: 'bold' },
+          color: '#64748b'
+        }
+      },
+      tooltip: {
+        backgroundColor: '#1e293b',
+        padding: 12,
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 12 },
+        cornerRadius: 12,
+        displayColors: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: 'rgba(226, 232, 240, 0.3)' },
+        ticks: { 
+          color: '#94a3b8',
+          font: { size: 10 },
+          callback: (value) => '₹' + (value / 1000) + 'k'
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', font: { size: 10 } }
+      }
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <Skeleton className="h-10 w-64 rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Skeleton className="h-96 w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Analytics & Reports</h1>
-        <p className="text-gray-600 mt-2">Comprehensive financial insights and collection reports</p>
-      </div>
-
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-          <div className="flex items-center">
-            <FiDollarSign className="h-8 w-8 mr-4" />
-            <div>
-              <p className="text-green-100 text-sm font-medium">Total Revenue</p>
-              <p className="text-2xl font-bold">{formatCurrency(analytics.totalRevenue)}</p>
-            </div>
-          </div>
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Business Intelligence</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Deep dive into revenue trends and collection efficiency.</p>
         </div>
-
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-          <div className="flex items-center">
-            <FiTrendingUp className="h-8 w-8 mr-4" />
-            <div>
-              <p className="text-yellow-100 text-sm font-medium">Pending Payments</p>
-              <p className="text-2xl font-bold">{formatCurrency(analytics.pendingPayments)}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-          <div className="flex items-center">
-            <FiBarChart2 className="h-8 w-8 mr-4" />
-            <div>
-              <p className="text-blue-100 text-sm font-medium">Collection Rate</p>
-              <p className="text-2xl font-bold">{analytics.collectionRate.toFixed(1)}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-          <div className="flex items-center">
-            <FiUsers className="h-8 w-8 mr-4" />
-            <div>
-              <p className="text-purple-100 text-sm font-medium">Total Classes</p>
-              <p className="text-2xl font-bold">{analytics.classWiseData.length}</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" icon={FileSpreadsheet} onClick={exportReport} disabled={reportData.length === 0}>
+            Export Data
+          </Button>
+          <Badge variant="info" className="py-1.5 px-3">
+            <LineChart className="w-3.5 h-3.5 mr-1.5" />
+            Financial Year 2024
+          </Badge>
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Monthly Revenue Trend */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue Trend</h3>
-          <Line 
-            data={monthlyRevenueChart}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: 'top',
-                },
-                title: {
-                  display: true,
-                  text: 'Revenue Trend (Last 12 Months)',
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: function(value) {
-                      return formatCurrency(value);
-                    }
-                  }
-                }
-              }
-            }}
-          />
-        </div>
-
-        {/* Class-wise Collection */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Class-wise Collection</h3>
-          <Bar 
-            data={classWiseChart}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: 'top',
-                },
-                title: {
-                  display: true,
-                  text: 'Revenue by Class',
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: function(value) {
-                      return formatCurrency(value);
-                    }
-                  }
-                }
-              }
-            }}
-          />
-        </div>
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard label="Net Revenue" value={formatCurrency(analytics.totalRevenue)} icon={DollarSign} variant="success" trend="+12.5%" />
+        <MetricCard label="Outstanding" value={formatCurrency(analytics.pendingPayments)} icon={TrendingUp} variant="warning" trend="Action Required" />
+        <MetricCard label="Collection Rate" value={`${analytics.collectionRate.toFixed(1)}%`} icon={BarChart3} variant="info" trend="Industry Peak" />
+        <MetricCard label="Active Classes" value={analytics.classWiseData.length} icon={Users} variant="neutral" trend="Scaling" />
       </div>
 
-      {/* Payment Status Distribution */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Status Distribution</h3>
-        <div className="flex justify-center">
-          <div className="w-64 h-64">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card title="Revenue Trajectory" subtitle="Growth over the last 12 months" className="lg:col-span-2">
+          <div className="h-80 mt-6">
+            <Line data={monthlyRevenueChart} options={chartOptions} />
+          </div>
+        </Card>
+
+        <Card title="Status Mix" subtitle="Payment outcome distribution">
+          <div className="h-64 mt-8">
             <Doughnut 
-              data={statusDistributionChart}
+              data={statusDistributionChart} 
               options={{
-                responsive: true,
-                maintainAspectRatio: false,
+                ...chartOptions,
+                cutout: '75%',
                 plugins: {
-                  legend: {
-                    position: 'bottom',
-                  },
-                },
-              }}
+                  ...chartOptions.plugins,
+                  legend: { display: true, position: 'bottom' }
+                }
+              }} 
             />
           </div>
-        </div>
+          <div className="mt-8 space-y-3">
+            <ChartLegend label="Completed" color="bg-emerald-500" value="78%" />
+            <ChartLegend label="Pending" color="bg-amber-500" value="15%" />
+            <ChartLegend label="Failed" color="bg-rose-500" value="7%" />
+          </div>
+        </Card>
+
+        <Card title="Section Performance" subtitle="Revenue breakdown by class" className="lg:col-span-3">
+          <div className="h-80 mt-6">
+            <Bar data={classWiseChart} options={chartOptions} />
+          </div>
+        </Card>
       </div>
 
-      {/* Class-wise Collection Report */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Class-wise Collection Report</h3>
-          <div className="flex space-x-2">
-            <button
-              onClick={generateReport}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
-            >
-              <FiBarChart2 className="h-4 w-4 mr-2" />
-              Generate Report
-            </button>
-            {reportData.length > 0 && (
-              <button
-                onClick={exportReport}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center"
-              >
-                <FiDownload className="h-4 w-4 mr-2" />
-                Export CSV
-              </button>
-            )}
+      {/* Report Generator Section */}
+      <Card 
+        title="Custom Report Builder" 
+        subtitle="Generate granular collection statements"
+        action={
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" icon={RefreshCw} onClick={() => setReportFilters({startDate:"", endDate:"", className:""})} />
+            <Button size="sm" icon={BarChart3} isLoading={isGenerating} onClick={generateReport}>Generate</Button>
           </div>
-        </div>
-
-        {/* Report Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={reportFilters.startDate}
+        }
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Start Period</label>
+            <Input 
+              type="date" 
+              value={reportFilters.startDate} 
               onChange={(e) => setReportFilters({...reportFilters, startDate: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
-              type="date"
-              value={reportFilters.endDate}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">End Period</label>
+            <Input 
+              type="date" 
+              value={reportFilters.endDate} 
               onChange={(e) => setReportFilters({...reportFilters, endDate: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Class</label>
             <select
               value={reportFilters.className}
               onChange={(e) => setReportFilters({...reportFilters, className: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-premium appearance-none"
             >
-              <option value="">All Classes</option>
+              <option value="">All Academic Sections</option>
               {classOptions.map((className) => (
                 <option key={className} value={className}>{className}</option>
               ))}
@@ -357,63 +347,113 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Report Table */}
-        {reportData.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection Rate</th>
+        {reportData.length > 0 ? (
+          <div className="mt-8 overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Academic Section</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Target Amount</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Settled</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Pending</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Efficiency</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {reportData.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {item.className}
-                      </span>
+                  <tr key={index} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-premium">
+                    <td className="px-6 py-4">
+                      <Badge variant="info" className="px-3 py-1">{item.className}</Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(item.totalAmount)}
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{formatCurrency(item.totalAmount)}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                      {formatCurrency(item.completed)}
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.completed)}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-medium">
-                      {formatCurrency(item.pending)}
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-sm font-bold text-amber-500">{formatCurrency(item.pending)}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                      {formatCurrency(item.failed)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        item.collectionRate >= 80 ? 'bg-green-100 text-green-800' :
-                        item.collectionRate >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {item.collectionRate.toFixed(1)}%
-                      </span>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-center">
+                        <Badge variant={item.collectionRate >= 80 ? "success" : item.collectionRate >= 50 ? "warning" : "error"}>
+                          {item.collectionRate.toFixed(1)}%
+                        </Badge>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-
-        {reportData.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <FiBarChart2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Generate a report to view class-wise collection data</p>
+        ) : (
+          <div className="py-20 text-center opacity-40">
+            <PieChart className="w-12 h-12 mx-auto mb-3" />
+            <p className="text-sm font-bold">No report data generated yet</p>
           </div>
         )}
-      </div>
+      </Card>
     </div>
+  );
+}
+
+function MetricCard({ label, value, icon: Icon, variant, trend }) {
+  const styles = {
+    success: "bg-emerald-50 text-emerald-600",
+    warning: "bg-amber-50 text-amber-600",
+    info: "bg-blue-50 text-blue-600",
+    neutral: "bg-slate-50 text-slate-600",
+  };
+
+  return (
+    <Card className="hover:border-primary/20 transition-premium group relative overflow-hidden">
+      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+        <Icon className="w-12 h-12" />
+      </div>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${styles[variant]}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+      <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{value}</h3>
+      <div className="mt-2 flex items-center gap-1.5">
+        <div className={`w-1 h-1 rounded-full ${variant === 'success' ? 'bg-emerald-500' : 'bg-primary'}`} />
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{trend}</span>
+      </div>
+    </Card>
+  );
+}
+
+function ChartLegend({ label, color, value }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center gap-2">
+        <div className={`w-3 h-3 rounded-full ${color}`} />
+        <span className="text-slate-500 font-medium">{label}</span>
+      </div>
+      <span className="font-bold text-slate-900 dark:text-white">{value}</span>
+    </div>
+  );
+}
+
+function RefreshCw({ className, ...props }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+      {...props}
+    >
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M3 21v-5h5" />
+    </svg>
   );
 }

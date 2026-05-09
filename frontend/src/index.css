@@ -1,2 +1,83 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  --color-primary: oklch(0.511 0.262 276.966); /* Indigo-600 */
+  --color-primary-dark: oklch(0.435 0.225 275.75);
+  --color-surface-50: oklch(0.985 0.002 247.839);
+  --color-surface-100: oklch(0.967 0.003 264.542);
+  --color-surface-200: oklch(0.92 0.004 286.32);
+  --color-surface-900: oklch(0.129 0.042 264.695);
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --brand-600: 243 75% 59%;
+    --brand-700: 243 75% 52%;
+  }
+
+  body {
+    @apply antialiased text-slate-900 bg-slate-50 dark:bg-slate-950 dark:text-slate-100;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 dark:bg-slate-900/70 dark:border-slate-800/50;
+  }
+  
+  .transition-premium {
+    @apply transition-all duration-500;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-in {
+    animation-duration: 600ms;
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fade-in {
+    animation-name: fadeIn;
+  }
+
+  .slide-in-from-top-2 {
+    animation-name: slideInTop;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideInTop {
+    from { transform: translateY(-0.5rem); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 dark:bg-slate-800 rounded-full hover:bg-slate-300 dark:hover:bg-slate-700;
+  @apply transition-all duration-500;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Global Transition for dark mode */
+* {
+  transition: background-color 300ms ease, border-color 300ms ease;
+}

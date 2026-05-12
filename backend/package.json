@@ -7,6 +7,7 @@
     "dev": "nodemon server.js",
     "check:env": "node scripts/validateEnv.js",
     "seed:demo": "node seedDemo.js",
+    "seed:full": "node seedFullData.js",
     "seed:super-admin": "node createSuperAdmin.js",
     "backup:verify": "node scripts/verifyBackupRestore.js",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
@@ -35,6 +36,7 @@
     "razorpay": "^2.9.6"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.4.0",
     "jest": "^30.0.5",
     "mongodb-memory-server": "^10.1.3",
     "supertest": "^7.1.4"
